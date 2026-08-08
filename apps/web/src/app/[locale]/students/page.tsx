@@ -61,6 +61,7 @@ import BlurLoader from "@/components/BlurLoader";
 import AnimatedContent from "@/components/AnimatedContent";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAcademicYear } from "@/contexts/AcademicYearContext";
+import { getAcademicYearMode } from "@/lib/academic-year-scope";
 import UnifiedNavigation from "@/components/UnifiedNavigation";
 import AdminResetPasswordModal from "@/components/AdminResetPasswordModal";
 
@@ -432,6 +433,7 @@ export default function StudentsPage({
   const { locale } = use(params);
   const router = useRouter();
   const { selectedYear } = useAcademicYear();
+  const isHistoricalReadOnly = getAcademicYearMode(selectedYear) === "historical";
 
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 150);
@@ -535,6 +537,7 @@ export default function StudentsPage({
 
   const handleDelete = useCallback(
     async (id: string) => {
+      if (isHistoricalReadOnly) return;
       if (!confirm(t("confirmDeleteSingle"))) return;
 
       try {
@@ -549,18 +552,20 @@ export default function StudentsPage({
         alert(error.message);
       }
     },
-    [mutate],
+    [isHistoricalReadOnly, mutate, t],
   );
 
   const handleEdit = useCallback((student: Student) => {
+    if (isHistoricalReadOnly) return;
     setSelectedStudent(student);
     setShowModal(true);
-  }, []);
+  }, [isHistoricalReadOnly]);
 
   const handleAdd = useCallback(() => {
+    if (isHistoricalReadOnly) return;
     setSelectedStudent(null);
     setShowModal(true);
-  }, []);
+  }, [isHistoricalReadOnly]);
 
   const handleModalClose = useCallback(
     (refresh?: boolean) => {
@@ -574,16 +579,17 @@ export default function StudentsPage({
   );
 
   const handleOpenReassign = useCallback((student: Student) => {
+    if (isHistoricalReadOnly) return;
     setStudentToReassign(student);
     setTargetClassId("");
     setReassignEffectiveDate(new Date().toLocaleDateString("en-CA"));
     setReassignReason("");
     setReassignMessage(null);
     setShowReassignModal(true);
-  }, []);
+  }, [isHistoricalReadOnly]);
 
   const handleReassignStudent = async () => {
-    if (!studentToReassign || !targetClassId) return;
+    if (isHistoricalReadOnly || !studentToReassign || !targetClassId) return;
 
     setIsReassigning(true);
     setReassignMessage(null);
@@ -939,7 +945,7 @@ export default function StudentsPage({
   ]);
 
   const handleBulkArchive = useCallback(async () => {
-    if (selectedStudents.size === 0 || isBulkArchiving) return;
+    if (isHistoricalReadOnly || selectedStudents.size === 0 || isBulkArchiving) return;
     if (!confirm(t("confirmDeleteBulk", { count: selectedStudents.size })))
       return;
 
@@ -977,7 +983,7 @@ export default function StudentsPage({
     } finally {
       setIsBulkArchiving(false);
     }
-  }, [isBulkArchiving, locale, mutate, selectedStudents, t]);
+  }, [isBulkArchiving, isHistoricalReadOnly, locale, mutate, selectedStudents, t]);
 
   const summaryCards = useMemo(
     () => [
@@ -1265,7 +1271,8 @@ export default function StudentsPage({
                   <button
                     type="button"
                     onClick={() => setShowBulkImportModal(true)}
-                    className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-indigo-500/20 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
+                    disabled={isHistoricalReadOnly}
+                    className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-colors hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-indigo-500/20 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
                   >
                     <FileSpreadsheet className="h-3.5 w-3.5" />
                     {localLabel(locale, "Bulk Import", "នាំចូលច្រើន")}
@@ -1281,7 +1288,8 @@ export default function StudentsPage({
                   <button
                     type="button"
                     onClick={handleAdd}
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white transition-colors hover:bg-blue-700"
+                    disabled={isHistoricalReadOnly}
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Plus className="h-4 w-4" />
                     {localLabel(locale, "Add Student", "បន្ថែមសិស្ស")}
@@ -1641,7 +1649,8 @@ export default function StudentsPage({
                       <button
                         type="button"
                         onClick={handleAdd}
-                        className="mt-6 inline-flex items-center gap-2 rounded-[0.75rem] bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                        disabled={isHistoricalReadOnly}
+                        className="mt-6 inline-flex items-center gap-2 rounded-[0.75rem] bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Plus className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_1a08c62e" />
@@ -1871,6 +1880,7 @@ export default function StudentsPage({
                                         icon={ArrowRightLeft}
                                         title={t("assignToClass")}
                                         tone="blue"
+                                        disabled={isHistoricalReadOnly}
                                         onClick={() =>
                                           handleOpenReassign(student)
                                         }
@@ -1897,6 +1907,7 @@ export default function StudentsPage({
                                         icon={Trash2}
                                         title={t("delete")}
                                         tone="red"
+                                        disabled={isHistoricalReadOnly}
                                         onClick={() => handleDelete(student.id)}
                                       />
                                       <IconActionButton
@@ -1911,6 +1922,7 @@ export default function StudentsPage({
                                       <IconActionButton
                                         icon={Edit}
                                         title={t("edit")}
+                                        disabled={isHistoricalReadOnly}
                                         onClick={() => handleEdit(student)}
                                       />
                                     </div>
@@ -2039,6 +2051,7 @@ export default function StudentsPage({
                                       icon={ArrowRightLeft}
                                       label={t("assign")}
                                       tone="blue"
+                                      disabled={isHistoricalReadOnly}
                                       onClick={() =>
                                         handleOpenReassign(student)
                                       }
@@ -2055,6 +2068,7 @@ export default function StudentsPage({
                                     <MobileActionButton
                                       icon={Edit}
                                       label={t("edit")}
+                                      disabled={isHistoricalReadOnly}
                                       onClick={() => handleEdit(student)}
                                     />
                                     <MobileActionButton
@@ -2071,6 +2085,7 @@ export default function StudentsPage({
                                       icon={Trash2}
                                       label={t("delete")}
                                       tone="red"
+                                      disabled={isHistoricalReadOnly}
                                       onClick={() => handleDelete(student.id)}
                                     />
                                   </div>
@@ -2162,7 +2177,7 @@ export default function StudentsPage({
           </AnimatedContent>
         </main>
 
-        {selectedStudents.size > 0 && (
+        {selectedStudents.size > 0 && !isHistoricalReadOnly && (
           <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 lg:left-[calc(50%+128px)]">
             <AnimatedContent animation="slide-up" delay={0}>
               <div className="flex flex-wrap items-center gap-4 rounded-3xl border border-slate-700 bg-slate-900 px-6 py-4 text-white dark:bg-slate-950">
@@ -2248,10 +2263,10 @@ export default function StudentsPage({
         )}
       </div>
 
-      {showModal && (
+      {showModal && !isHistoricalReadOnly && (
         <StudentModal student={selectedStudent} onClose={handleModalClose} />
       )}
-      {showBulkImportModal && (
+      {showBulkImportModal && !isHistoricalReadOnly && (
         <BulkImportModal
           type="student"
           educationModel={
@@ -2280,7 +2295,7 @@ export default function StudentsPage({
         />
       )}
 
-      {showReassignModal && studentToReassign && (
+      {showReassignModal && !isHistoricalReadOnly && studentToReassign && (
         <div className="animate-fadeIn fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm dark:bg-black/60">
           <div className="animate-slideUp w-full max-w-xl overflow-hidden rounded-[1rem] border border-slate-200 bg-white dark:border-gray-800 dark:bg-gray-950">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 dark:border-gray-800 dark:bg-gray-900/80">
@@ -2497,7 +2512,7 @@ export default function StudentsPage({
         </div>
       )}
 
-      {showBulkReassignModal && (
+      {showBulkReassignModal && !isHistoricalReadOnly && (
         <div className="animate-fadeIn fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm dark:bg-black/60">
           <div className="animate-slideUp w-full max-w-2xl overflow-hidden rounded-[1rem] border border-slate-200 bg-white dark:border-gray-800 dark:bg-gray-950">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 dark:border-gray-800 dark:bg-gray-900/80">

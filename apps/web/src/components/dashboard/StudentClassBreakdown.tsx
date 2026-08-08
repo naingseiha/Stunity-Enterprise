@@ -119,7 +119,8 @@ export default function StudentClassBreakdown({ classData, locale = 'km' }: Stud
     },
   ], [isKhmer]);
 
-  const activeClasses = (classData && classData.length > 0) ? classData : defaultClasses;
+  // An empty array is authoritative and must not reveal demo/current-year data.
+  const activeClasses = classData ?? defaultClasses;
 
   // Extract unique grades available
   const availableGrades = useMemo(() => {

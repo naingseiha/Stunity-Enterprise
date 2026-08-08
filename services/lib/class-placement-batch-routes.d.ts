@@ -1,3 +1,4 @@
+export const placementApproverRoles: string[];
 export function registerClassPlacementBatchRoutes(input: {
   app: any;
   prisma: any;

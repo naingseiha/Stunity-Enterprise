@@ -9,6 +9,12 @@ export const SCHOOL_CONTEXT_CHANGED_EVENT = 'stunity:school-context-changed';
 
 export type AcademicYearMode = 'operational' | 'planning' | 'historical';
 
+function utcDay(value: string | Date): number | null {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
 export function selectedAcademicYearStorageKey(schoolId: string): string {
   return `${SELECTED_YEAR_KEY_PREFIX}${schoolId}`;
 }
@@ -35,8 +41,18 @@ export function persistSelectedAcademicYearId(schoolId: string, academicYearId: 
   );
 }
 
-export function getAcademicYearMode(year?: AcademicYear | null): AcademicYearMode {
+export function getAcademicYearMode(
+  year?: AcademicYear | null,
+  now: Date = new Date(),
+): AcademicYearMode {
   if (!year || year.status === 'ENDED' || year.status === 'ARCHIVED') return 'historical';
+  const endDay = utcDay(year.endDate);
+  const today = utcDay(now);
+  // A stale PLANNING status must not make a past school year writable. Future
+  // planning years remain editable for structural setup such as class shells.
+  if (!year.isCurrent && endDay !== null && today !== null && endDay < today) {
+    return 'historical';
+  }
   if (year.status === 'PLANNING') return 'planning';
   return year.isCurrent ? 'operational' : 'historical';
 }

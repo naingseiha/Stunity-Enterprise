@@ -35,8 +35,11 @@ const STALE_MS = 24 * 60 * 60 * 1000;
 const STORAGE_PREFIX = "stunity:classes-hub:v1:";
 const DETAIL_PREFIX = "stunity:class-detail:v1:";
 
-function hubKey(userId: string) {
-  return `${STORAGE_PREFIX}${userId}`;
+function hubScopeKey(userId: string, academicYearId?: string | null) {
+  return `${userId}:${academicYearId || "current"}`;
+}
+function hubKey(userId: string, academicYearId?: string | null) {
+  return `${STORAGE_PREFIX}${hubScopeKey(userId, academicYearId)}`;
 }
 function detailKey(userId: string, classId: string) {
   return `${DETAIL_PREFIX}${userId}:${classId}`;
@@ -68,33 +71,35 @@ function writeDisk<T>(key: string, entry: CacheEntry<T>) {
   }
 }
 
-export function readClassesHubCache(userId: string): ClassesHubCachePayload | null {
+export function readClassesHubCache(userId: string, academicYearId?: string | null): ClassesHubCachePayload | null {
   if (!userId) return null;
-  const mem = MEMORY.get(userId);
+  const scopeKey = hubScopeKey(userId, academicYearId);
+  const mem = MEMORY.get(scopeKey);
   if (mem?.data) return mem.data;
-  const disk = readDisk<ClassesHubCachePayload>(hubKey(userId));
+  const disk = readDisk<ClassesHubCachePayload>(hubKey(userId, academicYearId));
   if (disk?.data) {
-    MEMORY.set(userId, disk);
+    MEMORY.set(scopeKey, disk);
     return disk.data;
   }
   return null;
 }
 
-export function isClassesHubCacheFresh(userId: string, now = Date.now()): boolean {
+export function isClassesHubCacheFresh(userId: string, academicYearId?: string | null, now = Date.now()): boolean {
   if (!userId) return false;
-  const mem = MEMORY.get(userId);
+  const scopeKey = hubScopeKey(userId, academicYearId);
+  const mem = MEMORY.get(scopeKey);
   if (mem) return now - mem.cachedAt < FRESH_MS;
-  const disk = readDisk<ClassesHubCachePayload>(hubKey(userId));
+  const disk = readDisk<ClassesHubCachePayload>(hubKey(userId, academicYearId));
   if (!disk) return false;
-  MEMORY.set(userId, disk);
+  MEMORY.set(scopeKey, disk);
   return now - disk.cachedAt < FRESH_MS;
 }
 
-export function writeClassesHubCache(userId: string, data: ClassesHubCachePayload): void {
+export function writeClassesHubCache(userId: string, data: ClassesHubCachePayload, academicYearId?: string | null): void {
   if (!userId) return;
   const entry = { data, cachedAt: Date.now() };
-  MEMORY.set(userId, entry);
-  writeDisk(hubKey(userId), entry);
+  MEMORY.set(hubScopeKey(userId, academicYearId), entry);
+  writeDisk(hubKey(userId, academicYearId), entry);
 }
 
 export function readClassDetailCache(
@@ -138,11 +143,15 @@ function genderCounts(students: ClassStudent[], fallbackTotal = 0) {
 
 async function fetchHubNetwork(
   userId: string,
-  role?: string
+  role?: string,
+  academicYearId?: string | null,
 ): Promise<ClassesHubCachePayload> {
-  const years = await classesHubApi.getAcademicYears();
-  const currentYear = years.find((y) => y.isCurrent) || years[0];
-  const yearId = currentYear?.id || null;
+  let yearId = academicYearId || null;
+  if (!yearId) {
+    const years = await classesHubApi.getAcademicYears();
+    const currentYear = years.find((y) => y.isCurrent) || years[0];
+    yearId = currentYear?.id || null;
+  }
 
   const [myClasses, stats] = await Promise.all([
     classesHubApi.getMyClasses(yearId || undefined),
@@ -164,7 +173,7 @@ async function fetchHubNetwork(
     });
   }
 
-  const prev = readClassesHubCache(userId);
+  const prev = readClassesHubCache(userId, yearId);
   // Teachers: prefer a class they actually teach (timetable assignment), like native ClubsScreen.
   const teachingFirst =
     roleUpper === "TEACHER"
@@ -189,30 +198,32 @@ async function fetchHubNetwork(
 export async function fetchClassesHub(options: {
   userId: string;
   role?: string;
+  academicYearId?: string | null;
   force?: boolean;
 }): Promise<ClassesHubCachePayload | null> {
-  const { userId, role, force } = options;
+  const { userId, role, academicYearId, force } = options;
   if (!userId) return null;
+  const scopeKey = hubScopeKey(userId, academicYearId);
 
-  if (!force && isClassesHubCacheFresh(userId)) {
-    return readClassesHubCache(userId);
+  if (!force && isClassesHubCacheFresh(userId, academicYearId)) {
+    return readClassesHubCache(userId, academicYearId);
   }
 
-  const existing = IN_FLIGHT.get(userId);
+  const existing = IN_FLIGHT.get(scopeKey);
   if (existing && !force) return existing;
 
-  const cached = readClassesHubCache(userId);
-  const request = fetchHubNetwork(userId, role)
+  const cached = readClassesHubCache(userId, academicYearId);
+  const request = fetchHubNetwork(userId, role, academicYearId)
     .then((payload) => {
-      writeClassesHubCache(userId, payload);
+      writeClassesHubCache(userId, payload, payload.academicYearId);
       return payload;
     })
     .catch(() => cached)
     .finally(() => {
-      IN_FLIGHT.delete(userId);
+      IN_FLIGHT.delete(scopeKey);
     });
 
-  IN_FLIGHT.set(userId, request);
+  IN_FLIGHT.set(scopeKey, request);
   return request;
 }
 
@@ -262,10 +273,10 @@ export async function fetchClassDetail(options: {
   return request;
 }
 
-export function prefetchClassesHub(userId: string, role?: string): void {
+export function prefetchClassesHub(userId: string, role?: string, academicYearId?: string | null): void {
   if (!userId || typeof window === "undefined") return;
-  if (isClassesHubCacheFresh(userId)) return;
-  void fetchClassesHub({ userId, role });
+  if (isClassesHubCacheFresh(userId, academicYearId)) return;
+  void fetchClassesHub({ userId, role, academicYearId });
 }
 
 export function prefetchClassDetail(

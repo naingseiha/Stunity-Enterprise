@@ -4,11 +4,11 @@ import { useTranslations } from "next-intl";
 import { I18nText as AutoI18nText } from "@/components/i18n/I18nText";
 import {
   useState,
-  useTransition,
   useMemo,
   useCallback,
   useEffect,
   useRef,
+  type MouseEvent as ReactMouseEvent,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -95,6 +95,7 @@ import {
 } from "@/lib/route-data-cache";
 import { formatEducationModelLabel } from "@/lib/educationModel";
 import { isSchoolAttendanceAdminRole } from "@/lib/permissions/schoolAttendance";
+import { reportClientOperationalError } from "@/lib/observability/clientError";
 import GlobalSearch from "@/components/search/GlobalSearch";
 
 interface UnifiedNavProps {
@@ -166,7 +167,6 @@ export default function UnifiedNavigation({
   const { resolvedTheme, toggleTheme } = useTheme();
   const { selectedYear } = useAcademicYear();
   const locale = pathname.split("/")[1] || "en";
-  const [, startTransition] = useTransition();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -176,12 +176,7 @@ export default function UnifiedNavigation({
   >({});
   const [isHydrated, setIsHydrated] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [, setTransitionSkeleton] = useState<{
-    type: SchoolSkeletonType;
-    hasSidebar: boolean;
-  } | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const warmedPrimaryNavKeyRef = useRef<string | null>(null);
   const warmedSchoolDataKeyRef = useRef<string | null>(null);
   const navFeedbackDedupRef = useRef<{ path: string; at: number } | null>(null);
   const navFeedbackTimeoutRef = useRef<number | null>(null);
@@ -200,10 +195,11 @@ export default function UnifiedNavigation({
   // Clear optimistic path when pathname changes (navigation completed)
   useEffect(() => {
     setOptimisticPath(null);
-    setTransitionSkeleton(null);
   }, [pathname]);
 
-  // Fail-safe: clear optimistic nav feedback if route transition stalls.
+  // If a client-side transition ever stalls, finish it with a document
+  // navigation. This keeps every menu item recoverable without asking the user
+  // to reload or open a new tab.
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -215,10 +211,19 @@ export default function UnifiedNavigation({
     if (!optimisticPath || pathname === optimisticPath) return;
 
     navFeedbackTimeoutRef.current = window.setTimeout(() => {
-      setOptimisticPath(null);
-      setTransitionSkeleton(null);
       navFeedbackTimeoutRef.current = null;
-    }, 4000);
+      const target = new URL(optimisticPath, window.location.origin);
+      const current = `${window.location.pathname}${window.location.search}`;
+      const expected = `${target.pathname}${target.search}`;
+      if (current !== expected) {
+        reportClientOperationalError(
+          "navigation-transition-timeout",
+          new Error("Client-side navigation did not commit within 4.5 seconds"),
+          { from: current, to: expected },
+        );
+        window.location.assign(expected);
+      }
+    }, 4500);
 
     return () => {
       if (navFeedbackTimeoutRef.current) {
@@ -787,7 +792,7 @@ export default function UnifiedNavigation({
           });
           break;
         case "subjects":
-          prefetchSubjects({ isActive: true, includeTeachers: true });
+          prefetchSubjects({ isActive: true, includeTeachers: true, academicYearId: selectedAcademicYearId });
           break;
         case "locations":
           prefetchSchoolLocations();
@@ -800,7 +805,7 @@ export default function UnifiedNavigation({
         case "attendance-dashboard": {
           if (!canOpenAttendanceDashboard) break;
           const { school } = TokenManager.getUserData();
-          prefetchAttendanceSummary(school?.id, "month");
+          prefetchAttendanceSummary(school?.id, "month", selectedYear);
           break;
         }
         case "grades-core": {
@@ -810,7 +815,7 @@ export default function UnifiedNavigation({
             limit: 50,
             academicYearId: selectedAcademicYearId,
           });
-          prefetchSubjects({ isActive: true, includeTeachers: true });
+          prefetchSubjects({ isActive: true, includeTeachers: true, academicYearId: selectedAcademicYearId });
           break;
         }
         case "attendance-core": {
@@ -844,7 +849,7 @@ export default function UnifiedNavigation({
             limit: 50,
             academicYearId: selectedAcademicYearId,
           });
-          prefetchSubjects({ isActive: true, includeTeachers: true });
+          prefetchSubjects({ isActive: true, includeTeachers: true, academicYearId: selectedAcademicYearId });
           break;
         case "dashboard": {
           const token = TokenManager.getAccessToken();
@@ -874,7 +879,7 @@ export default function UnifiedNavigation({
         }
       }
     },
-    [canOpenAttendanceDashboard, selectedYear?.id],
+    [canOpenAttendanceDashboard, selectedYear],
   );
 
   const primeRoute = useCallback(
@@ -886,7 +891,11 @@ export default function UnifiedNavigation({
   );
 
   const beginNavigationFeedback = useCallback(
-    (path: string, skeleton: SchoolSkeletonType | null, hasSidebar = true) => {
+    (
+      path: string,
+      _skeleton: SchoolSkeletonType | null,
+      _hasSidebar = true,
+    ) => {
       const now = Date.now();
       const lastFeedback = navFeedbackDedupRef.current;
       if (
@@ -899,10 +908,48 @@ export default function UnifiedNavigation({
       navFeedbackDedupRef.current = { path, at: now };
 
       setOptimisticPath(path);
-      setTransitionSkeleton(skeleton ? { type: skeleton, hasSidebar } : null);
-      router.prefetch(path);
     },
-    [router],
+    [],
+  );
+
+  const handleNavigationClick = useCallback(
+    (
+      event: ReactMouseEvent<HTMLAnchorElement>,
+      path: string,
+      skeleton: SchoolSkeletonType | null,
+      hasSidebar = true,
+    ) => {
+      // Preserve expected browser behavior for new-tab/window gestures.
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+
+      const targetPathname = new URL(path, window.location.origin).pathname;
+      if (targetPathname === pathname) {
+        setOptimisticPath(null);
+        return;
+      }
+
+      beginNavigationFeedback(path, skeleton, hasSidebar);
+
+      // The report studio is a large client workspace and has demonstrated a
+      // reproducible frozen App Router state in production. Leaving it through
+      // a direct document navigation is both faster and deterministic.
+      if (pathname.includes("/grades/monthly-report")) {
+        event.preventDefault();
+        window.location.assign(path);
+      }
+      // All other links keep Next.js Link's built-in navigation and native
+      // anchor semantics; no duplicate router.push is issued here.
+    },
+    [beginNavigationFeedback, pathname],
   );
 
   const warmSchoolServices = useCallback(() => {
@@ -935,32 +982,6 @@ export default function UnifiedNavigation({
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const primaryNavPaths = navItems
-      .map((item) => item.path)
-      .filter((path) => path !== pathname);
-    const warmKey = primaryNavPaths.join("|");
-
-    if (!warmKey || warmedPrimaryNavKeyRef.current === warmKey) return;
-
-    const warmPrimaryRoutes = () => {
-      primaryNavPaths.forEach((path) => router.prefetch(path));
-      warmedPrimaryNavKeyRef.current = warmKey;
-    };
-
-    if (typeof window.requestIdleCallback === "function") {
-      const idleId = window.requestIdleCallback(warmPrimaryRoutes, {
-        timeout: 1500,
-      });
-      return () => window.cancelIdleCallback(idleId);
-    }
-
-    const timeoutId = window.setTimeout(warmPrimaryRoutes, 200);
-    return () => window.clearTimeout(timeoutId);
-  }, [navItems, pathname, router]);
-
-  useEffect(() => {
     if (typeof window === "undefined" || !user?.id || isSchoolContext) return;
 
     const token = TokenManager.getAccessToken();
@@ -983,7 +1004,7 @@ export default function UnifiedNavigation({
     const warmPrimaryNavData = async () => {
       // Mobile hubs first (Learn path + Class hub + Reels) — native MainNavigator parity
       prefetchLearnHome(user.id);
-      prefetchClassesHub(user.id, user.role);
+      prefetchClassesHub(user.id, user.role, selectedYear?.id);
       prefetchReelsFeed(user.id);
 
       const startOfToday = new Date();
@@ -1151,7 +1172,6 @@ export default function UnifiedNavigation({
 
     const warmSchoolData = () => {
       warmSchoolServices();
-      schoolMenuItems.forEach((item) => router.prefetch(item.path));
       warmedSchoolDataKeyRef.current = warmKey;
     };
 
@@ -1165,13 +1185,10 @@ export default function UnifiedNavigation({
     const timeoutId = window.setTimeout(warmSchoolData, 250);
     return () => window.clearTimeout(timeoutId);
   }, [
-    handleLinkHover,
     isAdminPanelContext,
     isSchoolContext,
     pathname,
-    router,
     selectedYear?.id,
-    schoolMenuItems,
     warmSchoolServices,
   ]);
 
@@ -1218,17 +1235,15 @@ export default function UnifiedNavigation({
                 }
                 prefetch={true}
                 onClick={(e) => {
-                  e.preventDefault();
                   const targetPath = isSchoolContext
                     ? `/${locale}/dashboard`
                     : `/${locale}/feed`;
-                  setOptimisticPath(targetPath);
-                  setTransitionSkeleton(
-                    isSchoolContext
-                      ? { type: "dashboard", hasSidebar: true }
-                      : { type: "cards", hasSidebar: false },
+                  handleNavigationClick(
+                    e,
+                    targetPath,
+                    isSchoolContext ? "dashboard" : "cards",
+                    isSchoolContext,
                   );
-                  router.push(targetPath);
                 }}
                 className="group relative flex shrink-0 items-center gap-2"
                 title={isSchoolContext ? "Go to Dashboard" : "Go to Feed"}
@@ -1257,27 +1272,16 @@ export default function UnifiedNavigation({
                       href={item.path}
                       prefetch={true}
                       onClick={(e) => {
-                        e.preventDefault();
-                        // Escape valve: if this item is already stuck in navigating state, clear it
-                        if (
-                          optimisticPath === item.path &&
-                          pathname !== item.path
-                        ) {
-                          setOptimisticPath(null);
-                          setTransitionSkeleton(null);
-                        }
                         const skeletonType =
                           item.key === "school" ? "dashboard" : "cards";
                         const hasSidebar = item.key === "school";
-                        beginNavigationFeedback(
+                        handleNavigationClick(
+                          e,
                           item.path,
                           skeletonType,
                           hasSidebar,
                         );
-                        router.push(item.path);
                       }}
-                      onMouseEnter={() => router.prefetch(item.path)}
-                      onFocus={() => router.prefetch(item.path)}
                       className="relative px-3 py-2"
                     >
                       <span
@@ -1550,26 +1554,16 @@ export default function UnifiedNavigation({
                     href={item.path}
                     prefetch={true}
                     onClick={(e) => {
-                      e.preventDefault();
-                      // Escape valve: if this item is already stuck in navigating state, clear it
-                      if (
-                        optimisticPath === item.path &&
-                        pathname !== item.path
-                      ) {
-                        setOptimisticPath(null);
-                        setTransitionSkeleton(null);
-                        setMobileMenuOpen(false);
-                      }
                       const skeletonType =
                         item.name === "School" ? "dashboard" : "cards";
                       const hasSidebar = item.name === "School";
-                      beginNavigationFeedback(
+                      handleNavigationClick(
+                        e,
                         item.path,
                         skeletonType,
                         hasSidebar,
                       );
                       setMobileMenuOpen(false);
-                      router.push(item.path);
                     }}
                     className={`
                       flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors
@@ -1796,9 +1790,12 @@ export default function UnifiedNavigation({
                       onMouseEnter={() => primeRoute(item.path, item.prefetch)}
                       onFocus={() => primeRoute(item.path, item.prefetch)}
                       onClick={(event) => {
-                        event.preventDefault();
-                        beginNavigationFeedback(item.path, item.skeleton, true);
-                        router.push(item.path);
+                        handleNavigationClick(
+                          event,
+                          item.path,
+                          item.skeleton,
+                          true,
+                        );
                       }}
                       className={`relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-colors ${
                         isActive
@@ -1914,21 +1911,12 @@ export default function UnifiedNavigation({
                                 primeRoute(item.path, item.prefetch)
                               }
                               onClick={(e) => {
-                                e.preventDefault();
-                                // Escape valve: if this item is already stuck in navigating state, clear it
-                                if (
-                                  optimisticPath === item.path &&
-                                  pathname !== item.path
-                                ) {
-                                  setOptimisticPath(null);
-                                  setTransitionSkeleton(null);
-                                }
-                                beginNavigationFeedback(
+                                handleNavigationClick(
+                                  e,
                                   item.path,
                                   item.skeleton,
                                   true,
                                 );
-                                router.push(item.path);
                               }}
                               className={`group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors ${
                                 isActive

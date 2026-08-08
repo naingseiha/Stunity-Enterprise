@@ -233,11 +233,13 @@ function ActionIconButton({
   onClick,
   tone,
   icon: Icon,
+  disabled = false,
 }: {
   title: string;
   onClick: () => void;
   tone: "slate" | "blue" | "rose";
   icon: LucideIcon;
+  disabled?: boolean;
 }) {
   const toneClasses = {
     slate:
@@ -251,7 +253,8 @@ function ActionIconButton({
       type="button"
       title={title}
       onClick={onClick}
-      className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${toneClasses[tone]}`}
+      disabled={disabled}
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${toneClasses[tone]}`}
     >
       <Icon className="h-4 w-4" />
     </button>
@@ -292,7 +295,8 @@ export default function ClassesPage(props: {
   const { locale } = params;
   const t = useTranslations("classes");
   const router = useRouter();
-  const { currentYear, selectedYear, setSelectedYear } = useAcademicYear();
+  const { selectedYear, selectedYearMode } = useAcademicYear();
+  const isHistoricalYear = selectedYearMode === "historical";
 
   const [selectedGrade, setSelectedGrade] = useState<number | undefined>(
     undefined,
@@ -316,12 +320,6 @@ export default function ClassesPage(props: {
       router.replace(`/${locale}/auth/login`);
     }
   }, [locale, router]);
-
-  useEffect(() => {
-    if (!currentYear) return;
-    if (selectedYear?.id === currentYear.id) return;
-    setSelectedYear(currentYear);
-  }, [currentYear, selectedYear?.id, setSelectedYear]);
 
   const filteredClasses = useMemo(() => {
     const query = debouncedSearch.toLowerCase();
@@ -407,18 +405,20 @@ export default function ClassesPage(props: {
   }, [mutate]);
 
   const handleAdd = useCallback(() => {
-    if (!selectedYear?.id) return;
+    if (!selectedYear?.id || isHistoricalYear) return;
     setSelectedClass(null);
     setShowModal(true);
-  }, [selectedYear?.id]);
+  }, [isHistoricalYear, selectedYear?.id]);
 
   const handleEdit = useCallback((classItem: Class) => {
+    if (isHistoricalYear) return;
     setSelectedClass(classItem);
     setShowModal(true);
-  }, []);
+  }, [isHistoricalYear]);
 
   const handleDelete = useCallback(
     async (id: string) => {
+      if (isHistoricalYear) return;
       const confirmed = window.confirm(t("deleteClassConfirm"));
       if (!confirmed) return;
 
@@ -429,7 +429,7 @@ export default function ClassesPage(props: {
         window.alert(deleteError.message || t("failedToDelete"));
       }
     },
-    [mutate],
+    [isHistoricalYear, mutate, t],
   );
 
   const handleModalClose = useCallback(
@@ -594,7 +594,7 @@ export default function ClassesPage(props: {
                 <button
                   type="button"
                   onClick={() => router.push(`/${locale}/classes/placement`)}
-                  disabled={!selectedYear?.id}
+                  disabled={!selectedYear?.id || isHistoricalYear}
                   className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 text-xs font-black uppercase tracking-[0.08em] text-indigo-700 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300"
                 >
                   <Shuffle className="h-3.5 w-3.5" />
@@ -603,7 +603,7 @@ export default function ClassesPage(props: {
                 <button
                   type="button"
                   onClick={handleAdd}
-                  disabled={!selectedYear?.id}
+                  disabled={!selectedYear?.id || isHistoricalYear}
                   className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 text-xs font-black uppercase tracking-[0.12em] text-white transition-colors hover:from-emerald-700 hover:to-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -803,7 +803,8 @@ export default function ClassesPage(props: {
                         <button
                           type="button"
                           onClick={handleAdd}
-                          className="mt-6 inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white  transition-all "
+                          disabled={isHistoricalYear}
+                          className="mt-6 inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Plus className="h-4 w-4" />
                           {t("createClass")}
@@ -874,12 +875,14 @@ export default function ClassesPage(props: {
                                     onClick={() => handleEdit(classItem)}
                                     tone="slate"
                                     icon={Edit2}
+                                    disabled={isHistoricalYear}
                                   />
                                   <ActionIconButton
                                     title={t("deleteClass")}
                                     onClick={() => handleDelete(classItem.id)}
                                     tone="rose"
                                     icon={Trash2}
+                                    disabled={isHistoricalYear}
                                   />
                                 </div>
                               </div>
@@ -1082,12 +1085,14 @@ export default function ClassesPage(props: {
                                       onClick={() => handleEdit(classItem)}
                                       tone="slate"
                                       icon={Edit2}
+                                      disabled={isHistoricalYear}
                                     />
                                     <ActionIconButton
                                       title={t("deleteClass")}
                                       onClick={() => handleDelete(classItem.id)}
                                       tone="rose"
                                       icon={Trash2}
+                                      disabled={isHistoricalYear}
                                     />
                                   </div>
                                 </td>

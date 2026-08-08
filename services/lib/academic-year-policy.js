@@ -3,6 +3,19 @@
  * planning years remain queryable, but operational records can be changed only
  * in the school's single ACTIVE + current year.
  */
+function utcDay(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
+function isAcademicYearHistoricallyReadOnly(academicYear, now = new Date()) {
+  if (!academicYear || ['ENDED', 'ARCHIVED'].includes(academicYear.status)) return true;
+  const endDay = utcDay(academicYear.endDate);
+  const today = utcDay(now);
+  return !academicYear.isCurrent && endDay !== null && today !== null && endDay < today;
+}
+
 function getAcademicYearWriteBlock(academicYear, recordDate) {
   if (academicYear.status !== 'ACTIVE' || !academicYear.isCurrent) {
     return {
@@ -34,4 +47,4 @@ function getAcademicYearWriteBlock(academicYear, recordDate) {
   return null;
 }
 
-module.exports = { getAcademicYearWriteBlock };
+module.exports = { getAcademicYearWriteBlock, isAcademicYearHistoricallyReadOnly };

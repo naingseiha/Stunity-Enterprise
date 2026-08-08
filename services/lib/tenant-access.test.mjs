@@ -3,7 +3,11 @@ import test from 'node:test';
 
 import tenantAccess from './tenant-access.js';
 
-const { canAccessTargetSchool, canManageTargetSchool } = tenantAccess;
+const {
+  canAccessTargetSchool,
+  canManageTargetSchool,
+  canAccessTargetSchoolWithPersistedActor,
+} = tenantAccess;
 const ADMIN_ROLES = new Set(['ADMIN', 'SCHOOL_ADMIN', 'SUPER_ADMIN']);
 
 test('school A credentials cannot access school B', () => {
@@ -27,4 +31,34 @@ test('missing actor or target context is denied closed', () => {
   assert.equal(canAccessTargetSchool(null, 'school-a'), false);
   assert.equal(canAccessTargetSchool({ role: 'ADMIN', schoolId: 'school-a' }, ''), false);
   assert.equal(canManageTargetSchool(undefined, 'school-a', ADMIN_ROLES), false);
+});
+
+test('legacy token without schoolId can use an active persisted school membership', () => {
+  assert.equal(
+    canAccessTargetSchoolWithPersistedActor(
+      { role: 'ADMIN', schoolId: null },
+      { role: 'ADMIN', schoolId: 'school-a', isActive: true },
+      'school-a',
+    ),
+    true,
+  );
+});
+
+test('persisted membership fallback rejects inactive or cross-school actors', () => {
+  assert.equal(
+    canAccessTargetSchoolWithPersistedActor(
+      { role: 'ADMIN', schoolId: null },
+      { role: 'ADMIN', schoolId: 'school-a', isActive: false },
+      'school-a',
+    ),
+    false,
+  );
+  assert.equal(
+    canAccessTargetSchoolWithPersistedActor(
+      { role: 'ADMIN', schoolId: null },
+      { role: 'ADMIN', schoolId: 'school-b', isActive: true },
+      'school-a',
+    ),
+    false,
+  );
 });

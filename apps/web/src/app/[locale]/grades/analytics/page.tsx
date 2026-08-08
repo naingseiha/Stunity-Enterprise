@@ -101,6 +101,11 @@ export default function GradeAnalyticsPage() {
   });
 
   useEffect(() => {
+    setSelectedClass('');
+    setAnalyticsData(null);
+  }, [selectedYear]);
+
+  useEffect(() => {
     if (!classes.length) {
       setSelectedClass('');
       return;

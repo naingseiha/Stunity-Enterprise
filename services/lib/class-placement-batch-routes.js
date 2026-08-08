@@ -1,9 +1,13 @@
 "use strict";
 
 const { createHash } = require("node:crypto");
+const { isAcademicYearHistoricallyReadOnly } = require("./academic-year-policy");
 
 const gradeKey = (value) => String(value ?? "").replace(/\D/g, "");
-const historicalStatuses = new Set(["ENDED", "ARCHIVED"]);
+// These values are persisted Prisma UserRole values. SCHOOL_ADMIN is accepted
+// as a token-level compatibility alias by route authorization, but it is not a
+// database enum value and must never be sent to a Prisma role filter.
+const placementApproverRoles = ["ADMIN", "STAFF", "SUPER_ADMIN"];
 
 function httpError(statusCode, message, details) {
   return Object.assign(new Error(message), { statusCode, details });
@@ -44,10 +48,10 @@ async function validateAssignments(tx, { schoolId, academicYearId, grade, assign
   }
   const year = await tx.academicYear.findFirst({
     where: { id: academicYearId, schoolId },
-    select: { id: true, startDate: true, status: true },
+    select: { id: true, startDate: true, endDate: true, isCurrent: true, status: true },
   });
   if (!year) throw httpError(404, "Academic year not found");
-  if (historicalStatuses.has(year.status)) throw httpError(409, "Historical academic years are read-only");
+  if (isAcademicYearHistoricallyReadOnly(year)) throw httpError(409, "Historical academic years are read-only");
 
   const studentIds = assignments.map((item) => item.studentId);
   const classIds = [...new Set(assignments.map((item) => item.classId))];
@@ -197,7 +201,7 @@ function registerClassPlacementBatchRoutes({ app, prisma, requireClassAdmin, cac
       if (!batch) return res.status(404).json({ success: false, message: "Placement batch not found" });
       if (batch.status !== "IN_REVIEW") return res.status(409).json({ success: false, message: "Only a submitted batch can be approved" });
       if (batch.submittedBy === actorId) {
-        const eligibleApprovers = await prisma.user.count({ where: { schoolId, isActive: true, role: { in: ["ADMIN", "STAFF", "SUPER_ADMIN"] } } });
+        const eligibleApprovers = await prisma.user.count({ where: { schoolId, isActive: true, role: { in: placementApproverRoles } } });
         if (eligibleApprovers > 1) return res.status(409).json({ success: false, message: "A different administrator must approve this placement batch" });
       }
       const updated = await prisma.classPlacementBatch.updateMany({ where: { id: batch.id, schoolId, status: "IN_REVIEW", currentVersion: batch.currentVersion }, data: { status: "APPROVED", approvedBy: actorId, approvedAt: new Date() } });
@@ -317,4 +321,4 @@ function registerClassPlacementBatchRoutes({ app, prisma, requireClassAdmin, cac
   });
 }
 
-module.exports = { registerClassPlacementBatchRoutes };
+module.exports = { placementApproverRoles, registerClassPlacementBatchRoutes };

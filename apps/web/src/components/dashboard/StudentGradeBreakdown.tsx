@@ -80,7 +80,7 @@ export default function StudentGradeBreakdown({
   const [chartMode, setChartMode] = useState<'gender' | 'total'>('gender');
 
   // Selected filter states for Grade & Class
-  const [selectedGrade, setSelectedGrade] = useState<string>('12');
+  const [selectedGrade, setSelectedGrade] = useState<string>('ALL');
   const [selectedClassId, setSelectedClassId] = useState<string>('ALL');
 
   // Fallback realistic datasets
@@ -126,8 +126,10 @@ export default function StudentGradeBreakdown({
     [isKhmer]
   );
 
-  const activeStats = (gradeData && gradeData.length > 0) ? gradeData : defaultGradeStats;
-  const activeClassList = (classData && classData.length > 0) ? classData : defaultClasses;
+  // An empty array is authoritative: the selected academic year has no data.
+  // Only fall back for older callers that omit the props entirely.
+  const activeStats = gradeData ?? defaultGradeStats;
+  const activeClassList = classData ?? defaultClasses;
 
   // Extract unique available grades
   const availableGrades = useMemo(() => {

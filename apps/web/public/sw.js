@@ -1,7 +1,7 @@
 // Stunity Service Worker - PWA Support
-// Version: 1.1.0 — align with native app shell
+// Version: 1.2.0 — keep Next.js navigation traffic out of the PWA cache
 
-const CACHE_VERSION = 'stunity-v1.1';
+const CACHE_VERSION = 'stunity-v1.2';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGE_CACHE = `${CACHE_VERSION}-pages`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -82,6 +82,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Next.js App Router navigation and build assets already have their own
+  // cache semantics. Intercepting Flight/RSC requests can leave a client
+  // transition waiting on a stale or unresolved service-worker response.
+  // Let the browser and Next.js handle these requests directly.
+  if (
+    url.pathname.startsWith('/_next/') ||
+    url.searchParams.has('_rsc') ||
+    request.headers.get('RSC') === '1' ||
+    request.headers.has('Next-Router-State-Tree') ||
+    request.headers.has('Next-Router-Prefetch') ||
+    request.headers.has('Next-Router-Segment-Prefetch')
+  ) {
+    return;
+  }
+
   // Never cache the service worker itself or HTML navigations of auth pages deeply
   if (url.pathname === '/sw.js') {
     event.respondWith(fetch(request));
@@ -90,7 +105,6 @@ self.addEventListener('fetch', (event) => {
 
   // Static assets — Cache First
   if (
-    url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/fonts/') ||
     url.pathname.startsWith('/icons/') ||
     url.pathname === '/manifest.json' ||
@@ -167,7 +181,10 @@ self.addEventListener('fetch', (event) => {
 
   // Default: network, fall back to cache
   event.respondWith(
-    fetch(request).catch(() => caches.match(request))
+    fetch(request).catch(async () => {
+      const cached = await caches.match(request);
+      return cached || Response.error();
+    })
   );
 });
 

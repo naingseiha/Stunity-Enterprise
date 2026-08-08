@@ -11,29 +11,33 @@ import { prefetchClassesHub, readClassesHubCache } from "@/lib/classes-hub-cache
 import { prefetchReelsFeed, readReelsCache } from "@/lib/reels-cache";
 import { prefetchProfile, readProfileCache } from "@/lib/profile-cache";
 import { FEED_SERVICE_URL } from "@/lib/api/config";
+import { useAcademicYear } from "@/contexts/AcademicYearContext";
 
 export default function MobileBootWarm() {
+  const { selectedYear } = useAcademicYear();
+  const selectedYearId = selectedYear?.id || "";
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const { user } = TokenManager.getUserData();
-    if (!user?.id) return;
+    if (!user?.id || !selectedYearId) return;
 
     // Sync hydrate already happens inside read*Cache (localStorage → memory).
     // Touch reads so memory is hot before first tab tap.
     readLearnHomeCache(user.id);
-    readClassesHubCache(user.id);
+    readClassesHubCache(user.id, selectedYearId);
     readReelsCache(user.id);
     readProfileCache("me");
 
-    const sessionKey = `stunity:mobile-hub-warmed:${user.id}`;
+    const sessionKey = `stunity:mobile-hub-warmed:${user.id}:${selectedYearId}`;
     if (sessionStorage.getItem(sessionKey) === "true") return;
     sessionStorage.setItem(sessionKey, "true");
 
     const warm = () => {
       const token = TokenManager.getAccessToken();
       prefetchLearnHome(user.id);
-      prefetchClassesHub(user.id, user.role);
+      prefetchClassesHub(user.id, user.role, selectedYearId);
       prefetchReelsFeed(user.id);
       prefetchProfile("me", { token, feedBaseUrl: FEED_SERVICE_URL });
     };
@@ -54,7 +58,7 @@ export default function MobileBootWarm() {
       }
       if (timeoutId != null) clearTimeout(timeoutId);
     };
-  }, []);
+  }, [selectedYearId]);
 
   return null;
 }

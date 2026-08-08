@@ -69,7 +69,7 @@ export function useAcademicYearDetail<T = unknown>(schoolId?: string | null, yea
     {
       dedupingInterval: ACADEMIC_YEAR_RESOURCE_CACHE_TTL_MS,
       revalidateOnFocus: false,
-      keepPreviousData: true,
+      keepPreviousData: false,
       fallbackData,
     }
   );
@@ -98,7 +98,7 @@ export function useAcademicCalendar<T = unknown>(schoolId?: string | null, yearI
     {
       dedupingInterval: ACADEMIC_YEAR_RESOURCE_CACHE_TTL_MS,
       revalidateOnFocus: false,
-      keepPreviousData: true,
+      keepPreviousData: false,
       fallbackData,
     }
   );
@@ -127,7 +127,7 @@ export function useAcademicYearTemplate<T = unknown>(schoolId?: string | null, y
     {
       dedupingInterval: ACADEMIC_YEAR_TEMPLATE_CACHE_TTL_MS,
       revalidateOnFocus: false,
-      keepPreviousData: true,
+      keepPreviousData: false,
       fallbackData,
     }
   );
@@ -156,7 +156,7 @@ export function useAcademicYearComparison<T = unknown>(schoolId?: string | null)
     {
       dedupingInterval: ACADEMIC_YEAR_RESOURCE_CACHE_TTL_MS,
       revalidateOnFocus: false,
-      keepPreviousData: true,
+      keepPreviousData: false,
       fallbackData,
     }
   );
@@ -185,7 +185,7 @@ export function useSetupTemplates<T = unknown>(schoolId?: string | null) {
     {
       dedupingInterval: SETUP_TEMPLATES_CACHE_TTL_MS,
       revalidateOnFocus: false,
-      keepPreviousData: true,
+      keepPreviousData: false,
       fallbackData,
     }
   );

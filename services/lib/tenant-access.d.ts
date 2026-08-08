@@ -13,3 +13,9 @@ export function canManageTargetSchool(
   targetSchoolId: string | null | undefined,
   allowedRoles: ReadonlySet<string>,
 ): boolean;
+
+export function canAccessTargetSchoolWithPersistedActor(
+  tokenActor: TenantActor,
+  persistedActor: (Exclude<TenantActor, null | undefined> & { isActive?: boolean | null }) | null | undefined,
+  targetSchoolId: string | null | undefined,
+): boolean;

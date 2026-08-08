@@ -37,6 +37,7 @@ import {
   prefetchClassDetail,
 } from "@/lib/classes-hub-cache";
 import { timetableAPI, type TimetableEntry, type DayOfWeek } from "@/lib/api/timetable";
+import { useAcademicYear } from "@/contexts/AcademicYearContext";
 
 const CLASS_CARD_PALETTE = [
   { accent: "#0EA5E9", bg: "#F0F9FF", darkBg: "rgba(14,165,233,0.12)" },
@@ -116,8 +117,10 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
   const isAdminStaff = role === "ADMIN" || role === "STAFF" || role === "SCHOOL_ADMIN" || role === "SUPER_ADMIN";
   const hasTeacherProfile = Boolean(user?.teacherId || user?.teacher?.id);
   const userId = user?.id || "";
+  const { selectedYear } = useAcademicYear();
+  const selectedYearId = selectedYear?.id || "";
 
-  const cachedHub = userId ? readClassesHubCache(userId) : null;
+  const cachedHub = userId && selectedYearId ? readClassesHubCache(userId, selectedYearId) : null;
   const initialClassId = cachedHub?.selectedClassId || cachedHub?.myClasses?.[0]?.id || null;
   const cachedDetail =
     userId && initialClassId ? readClassDetailCache(userId, initialClassId) : null;
@@ -151,7 +154,10 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
   );
 
   const load = useCallback(async (opts?: { silent?: boolean; force?: boolean }) => {
-    if (!userId) {
+    if (!userId || !selectedYearId) {
+      setMyClasses([]);
+      setDirectory([]);
+      setSelectedClassId(null);
       setLoading(false);
       return;
     }
@@ -161,7 +167,7 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
       setError(false);
       if (!silent) setLoading(true);
 
-      if (!opts?.force && isClassesHubCacheFresh(userId) && hasVisible) {
+      if (!opts?.force && isClassesHubCacheFresh(userId, selectedYearId) && hasVisible) {
         setLoading(false);
         return;
       }
@@ -169,6 +175,7 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
       const payload = await fetchClassesHub({
         userId,
         role: user?.role,
+        academicYearId: selectedYearId,
         force: opts?.force,
       });
       if (payload) {
@@ -187,7 +194,7 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
     } finally {
       setLoading(false);
     }
-  }, [userId, user?.role, myClasses.length, directory.length]);
+  }, [userId, user?.role, selectedYearId, myClasses.length, directory.length]);
 
   const refresh = useCallback(async () => {
     if (!userId || refreshing) return;
@@ -213,29 +220,38 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
 
 
   useEffect(() => {
-    if (!userId) {
+    if (!userId || !selectedYearId) {
+      setMyClasses([]);
+      setDirectory([]);
+      setSelectedClassId(null);
+      setStats(null);
       setLoading(false);
       return;
     }
-    if (cachedHub) {
+    const scopedCache = readClassesHubCache(userId, selectedYearId);
+    setMyClasses(scopedCache?.myClasses ?? []);
+    setDirectory(scopedCache?.directory ?? []);
+    setSelectedClassId(scopedCache?.selectedClassId ?? null);
+    setStats(scopedCache?.stats ?? null);
+    if (scopedCache) {
       setLoading(false);
-      if (!isClassesHubCacheFresh(userId)) void load({ silent: true });
+      if (!isClassesHubCacheFresh(userId, selectedYearId)) void load({ silent: true });
       return;
     }
     void load({ silent: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [userId, selectedYearId]);
 
   useEffect(() => {
     if (!userId) return;
     const onVisible = () => {
-      if (document.visibilityState === "visible" && !isClassesHubCacheFresh(userId)) {
+      if (document.visibilityState === "visible" && !isClassesHubCacheFresh(userId, selectedYearId)) {
         void load({ silent: true });
       }
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [userId, load]);
+  }, [userId, selectedYearId, load]);
 
   // Load hub detail when class selected (hydrate-first)
   useEffect(() => {
@@ -265,15 +281,15 @@ export default function ClassHubMobile({ locale, user }: ClassHubMobileProps) {
     })();
 
     // Persist selected class id into hub cache
-    const hub = readClassesHubCache(userId);
+    const hub = readClassesHubCache(userId, selectedYearId);
     if (hub && hub.selectedClassId !== selectedClassId) {
-      writeClassesHubCache(userId, { ...hub, selectedClassId });
+      writeClassesHubCache(userId, { ...hub, selectedClassId }, selectedYearId);
     }
 
     return () => {
       cancelled = true;
     };
-  }, [selectedClassId, userId, selected?.studentCount]);
+  }, [selectedClassId, selectedYearId, userId, selected?.studentCount]);
 
   // Prefetch detail for sibling classes
   useEffect(() => {

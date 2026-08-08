@@ -269,13 +269,13 @@ export default function KhmerMonthlyReportPage() {
 
   const { students: certClassStudents, isLoading: isLoadingCertClassStudents } = useStudents(
     activeTab === 'certificate' && recipientTab === 'class' && certSelectedClassId
-      ? { classId: certSelectedClassId, limit: 100 }
+      ? { classId: certSelectedClassId, academicYearId: selectedYear, limit: 100 }
       : { disabled: true }
   );
 
   const { students: certSearchStudents, isLoading: isLoadingCertSearchStudents } = useStudents(
     activeTab === 'certificate' && recipientTab === 'search' && debouncedCertSearchQuery.length >= 2
-      ? { search: debouncedCertSearchQuery, limit: 50 }
+      ? { search: debouncedCertSearchQuery, academicYearId: selectedYear, limit: 50 }
       : { disabled: true }
   );
   const [printQueue, setPrintQueue] = useState<any[]>([]);
@@ -383,6 +383,12 @@ export default function KhmerMonthlyReportPage() {
     academicYearId: selectedYear || undefined,
     limit: 200,
   });
+
+  useEffect(() => {
+    setReports([]);
+    setSelectedClasses([]);
+    setSelectedGrade('');
+  }, [selectedYear]);
 
   const grades = useMemo(() => {
     return Array.from(new Set(classes.map((classItem) => String(classItem.grade)).filter(Boolean))).sort(
@@ -814,10 +820,7 @@ export default function KhmerMonthlyReportPage() {
       const key = event.key.toLowerCase();
       if (key === 'g' && !isFormElement) {
         event.preventDefault();
-        if (canGenerate && !loadingReport) handleGenerate(false);
-      } else if (key === 'r' && !isFormElement && event.shiftKey) {
-        event.preventDefault();
-        if (canGenerate && !loadingReport) handleGenerate(true);
+        if (canGenerate && !loadingReport) handleGenerate(event.shiftKey);
       } else if (key === 'p' && reports.length > 0) {
         event.preventDefault();
         window.print();
@@ -1094,7 +1097,12 @@ export default function KhmerMonthlyReportPage() {
     setMonthlyOutput('results');
     const params = new URLSearchParams(searchParams.toString());
     params.set('type', kind);
-    router.replace(`/${locale}/grades/monthly-report?${params.toString()}`, { scroll: false });
+    const nextUrl = `/${locale}/grades/monthly-report?${params.toString()}`;
+
+    // This is a local workspace filter, so updating browser history avoids an
+    // unnecessary RSC transition and remains responsive even while a large
+    // report preview is mounted.
+    window.history.replaceState(window.history.state, '', nextUrl);
   };
 
 
@@ -1220,7 +1228,7 @@ export default function KhmerMonthlyReportPage() {
     };
 
     const theme = themes[certThemeColor] || themes.gold;
-    
+
     // Container Classes
     // For print: use inline style dimensions to ensure the browser print engine
     // respects exact A4 landscape dimensions regardless of Tailwind purging.
@@ -1229,7 +1237,7 @@ export default function KhmerMonthlyReportPage() {
       : {};
     let containerClass = "bg-white relative flex flex-col justify-between overflow-hidden ";
     containerClass += isPrint ? "certificate-print-page p-10 " : "shadow-xl p-10 aspect-[297/210] w-[297mm] h-[210mm] ";
-    
+
     if (isModern) {
       containerClass += `border-l-[20px] ${theme.border} rounded-r-3xl`;
     } else if (isRoyal) {
@@ -3104,7 +3112,7 @@ export default function KhmerMonthlyReportPage() {
               onClick={() => handleGenerate(true)}
               disabled={!canGenerate || loadingReport}
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              title="Refresh (⌘⇧R)"
+              title="Refresh report (⌘⇧G)"
             >
               <RefreshCw className="h-3.5 w-3.5" />
             </button>

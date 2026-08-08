@@ -19,6 +19,7 @@ import { prefetchClassesHub } from "@/lib/classes-hub-cache";
 import { prefetchReelsFeed } from "@/lib/reels-cache";
 import { prefetchProfile } from "@/lib/profile-cache";
 import { FEED_SERVICE_URL } from "@/lib/api/config";
+import { useAcademicYear } from "@/contexts/AcademicYearContext";
 
 interface MobileBottomNavProps {
   locale: string;
@@ -58,6 +59,7 @@ export default function MobileBottomNav({
 }: MobileBottomNavProps) {
   const pathname = usePathname();
   const isKm = locale === "km";
+  const { selectedYear } = useAcademicYear();
 
   const isSchoolContext =
     pathname.includes("/dashboard") ||
@@ -164,14 +166,14 @@ export default function MobileBottomNav({
       const uid = user?.id || TokenManager.getUserData()?.user?.id;
       if (!uid) return;
       if (key === "learn") prefetchLearnHome(uid);
-      if (key === "clubs") prefetchClassesHub(uid, user?.role);
+      if (key === "clubs") prefetchClassesHub(uid, user?.role, selectedYear?.id);
       if (key === "reel") prefetchReelsFeed(uid);
       if (key === "profile") {
         const token = TokenManager.getAccessToken();
         prefetchProfile("me", { token, feedBaseUrl: FEED_SERVICE_URL });
       }
     },
-    [user?.id, user?.role]
+    [selectedYear?.id, user?.id, user?.role]
   );
 
   const isReelsTab = pathname.includes("/reels");

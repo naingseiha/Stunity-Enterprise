@@ -41,8 +41,10 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
   const [terms, setTerms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const loadSequence = useRef(0);
+  const resolvedSchoolId = useRef<string | null>(null);
 
   const resetContext = useCallback(() => {
+    resolvedSchoolId.current = null;
     setCurrentYear(null);
     setSelectedYearState(null);
     setAllYears([]);
@@ -74,9 +76,16 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Never retain another tenant's working-year data while a school switch
-      // is resolving.
-      setSelectedYearState((year) => year?.schoolId === schoolIdFromData ? year : null);
+      // Clear every year-derived value synchronously when the tenant changes.
+      // Otherwise pages that render while the new tenant is resolving can
+      // briefly issue requests with the previous school's current year.
+      if (resolvedSchoolId.current !== schoolIdFromData) {
+        resolvedSchoolId.current = schoolIdFromData;
+        setCurrentYear(null);
+        setSelectedYearState(null);
+        setAllYears([]);
+        setTerms([]);
+      }
       setSchoolId(schoolIdFromData);
 
       const yearsCacheKey = `academic-years:${schoolIdFromData}`;

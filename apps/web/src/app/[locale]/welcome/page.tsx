@@ -14,8 +14,8 @@ export default function WelcomePage(props: { params: Promise<{ locale: string }>
   const params = use(props.params);
   const router = useRouter();
   const { locale } = params;
-  const { schoolId, selectedYear, currentYear } = useAcademicYear();
-  const activeYear = selectedYear ?? currentYear;
+  const { schoolId, selectedYear } = useAcademicYear();
+  const activeYear = selectedYear;
 
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
@@ -37,6 +37,8 @@ export default function WelcomePage(props: { params: Promise<{ locale: string }>
   }, [locale, router]);
 
   useEffect(() => {
+    let cancelled = false;
+    setYearStats(null);
     if (!schoolId || !activeYear?.id) return;
     const token = TokenManager.getAccessToken();
     if (!token) return;
@@ -48,7 +50,7 @@ export default function WelcomePage(props: { params: Promise<{ locale: string }>
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
-        if (data.success && data.data) {
+        if (!cancelled && data.success && data.data) {
           setYearStats(data.data);
         }
       } catch (err) {
@@ -57,6 +59,9 @@ export default function WelcomePage(props: { params: Promise<{ locale: string }>
     };
 
     fetchStats();
+    return () => {
+      cancelled = true;
+    };
   }, [activeYear?.id, schoolId]);
 
   const handleLogout = async () => {

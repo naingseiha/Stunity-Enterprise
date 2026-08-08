@@ -5,11 +5,21 @@ import useSWR, { preload } from 'swr';
 import { ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
 import { TokenManager } from '@/lib/api/auth';
 import { readPersistentCache, removePersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import {
+  getAttendanceSummaryDateRange,
+  type AttendanceAcademicYearScope,
+  type AttendanceSummaryRange,
+} from '@/lib/attendance/summary-range';
+
+export {
+  formatLocalDateEnCa,
+  getAttendanceSummaryDateRange,
+  type AttendanceAcademicYearScope,
+  type AttendanceSummaryRange,
+} from '@/lib/attendance/summary-range';
 
 const ATTENDANCE_SUMMARY_CACHE_TTL_MS = 60 * 1000;
 const ATTENDANCE_SWR_DEDUP_MS = 5000;
-
-export type AttendanceSummaryRange = 'day' | 'week' | 'month' | 'semester' | (string & {});
 
 interface AttendanceSummaryStats {
   studentCount: number;
@@ -52,98 +62,56 @@ interface AttendanceSummaryResponse {
   data: AttendanceSummaryData;
 }
 
-export function formatLocalDateEnCa(value: Date): string {
-  return value.toLocaleDateString('en-CA');
-}
-
-/** Mirrors dashboard date-range chips — used by summary cache keys and CSV exports */
-export function getAttendanceSummaryDateRange(
-  dateRange: AttendanceSummaryRange,
-  now: Date = new Date()
-): { startDate: string; endDate: string } {
-  let start = new Date(now);
-  const end = new Date(now);
-
-  if (/^\d{4}-\d{2}$/.test(dateRange)) {
-    const [year, month] = dateRange.split('-').map(Number);
-    start = new Date(year, month - 1, 1);
-    start.setHours(0, 0, 0, 0);
-    const endOfMonth = new Date(year, month, 0);
-    const endToUse = endOfMonth > now ? now : endOfMonth;
-    return {
-      startDate: formatLocalDateEnCa(start),
-      endDate: formatLocalDateEnCa(endToUse),
-    };
-  }
-
-  if (dateRange === 'day') {
-    start.setHours(0, 0, 0, 0);
-  } else if (dateRange === 'week') {
-    const mondayBase = new Date(now);
-    const day = mondayBase.getDay();
-    const diff = mondayBase.getDate() - day + (day === 0 ? -6 : 1);
-    start = new Date(mondayBase.setDate(diff));
-    start.setHours(0, 0, 0, 0);
-  } else if (dateRange === 'semester') {
-    start = new Date(now);
-    start.setMonth(now.getMonth() - 5);
-    start.setDate(1);
-    start.setHours(0, 0, 0, 0);
-  } else {
-    start = new Date(now.getFullYear(), now.getMonth(), 1);
-    start.setHours(0, 0, 0, 0);
-  }
-
-  return {
-    startDate: formatLocalDateEnCa(start),
-    endDate: formatLocalDateEnCa(end),
-  };
-}
-
 export function createAttendanceSummaryCacheKey(
   schoolId?: string | null,
-  dateRange: AttendanceSummaryRange = 'month'
+  dateRange: AttendanceSummaryRange = 'month',
+  academicYear?: AttendanceAcademicYearScope | null,
 ): string | null {
-  if (typeof window === 'undefined' || !schoolId) return null;
-  const { startDate, endDate } = getAttendanceSummaryDateRange(dateRange);
-  return `attendance-summary:${schoolId}:${startDate}:${endDate}`;
+  if (typeof window === 'undefined' || !schoolId || !academicYear?.id) return null;
+  const { startDate, endDate } = getAttendanceSummaryDateRange(dateRange, new Date(), academicYear);
+  return `attendance-summary:v2:${schoolId}:${academicYear.id}:${startDate}:${endDate}`;
 }
 
 function parseAttendanceSummaryCacheKey(
   cacheKey: string
-): { schoolId: string; startDate: string; endDate: string } | null {
-  const prefix = 'attendance-summary:';
+): { schoolId: string; academicYearId: string; startDate: string; endDate: string } | null {
+  const prefix = 'attendance-summary:v2:';
   if (!cacheKey.startsWith(prefix)) return null;
   const rest = cacheKey.slice(prefix.length);
   const firstColon = rest.indexOf(':');
   if (firstColon <= 0) return null;
   const schoolId = rest.slice(0, firstColon);
-  const restDates = rest.slice(firstColon + 1);
+  const restWithYear = rest.slice(firstColon + 1);
+  const yearColon = restWithYear.indexOf(':');
+  if (yearColon <= 0) return null;
+  const academicYearId = restWithYear.slice(0, yearColon);
+  const restDates = restWithYear.slice(yearColon + 1);
   const secondColon = restDates.indexOf(':');
   if (secondColon <= 0) return null;
   const startDate = restDates.slice(0, secondColon);
   const endDate = restDates.slice(secondColon + 1);
-  if (!schoolId || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+  if (!schoolId || !academicYearId || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
     return null;
   }
-  return { schoolId, startDate, endDate };
+  return { schoolId, academicYearId, startDate, endDate };
 }
 
 async function fetchAttendanceSummaryResponse(
   schoolId: string,
+  academicYearId: string,
   startDate: string,
   endDate: string,
   bypassServerCache: boolean
 ): Promise<AttendanceSummaryResponse> {
   const token = typeof window !== 'undefined' ? TokenManager.getAccessToken() : null;
 
-  if (!token || !schoolId || !startDate || !endDate) {
+  if (!token || !schoolId || !academicYearId || !startDate || !endDate) {
     throw new Error('Missing authentication for attendance summary');
   }
 
   const fresh = bypassServerCache ? '&fresh=1' : '';
   const response = await fetch(
-    `${ATTENDANCE_SERVICE_URL}/attendance/school/summary?startDate=${startDate}&endDate=${endDate}${fresh}`,
+    `${ATTENDANCE_SERVICE_URL}/attendance/school/summary?academicYearId=${encodeURIComponent(academicYearId)}&startDate=${startDate}&endDate=${endDate}${fresh}`,
     {
       headers: { Authorization: `Bearer ${token}` },
     }
@@ -183,6 +151,7 @@ async function fetchAttendanceSummary(cacheKey: string): Promise<AttendanceSumma
   }
   const data = await fetchAttendanceSummaryResponse(
     parsed.schoolId,
+    parsed.academicYearId,
     parsed.startDate,
     parsed.endDate,
     false
@@ -193,9 +162,10 @@ async function fetchAttendanceSummary(cacheKey: string): Promise<AttendanceSumma
 
 export function useAttendanceSummary(
   schoolId?: string | null,
-  dateRange: AttendanceSummaryRange = 'month'
+  dateRange: AttendanceSummaryRange = 'month',
+  academicYear?: AttendanceAcademicYearScope | null,
 ) {
-  const cacheKey = createAttendanceSummaryCacheKey(schoolId, dateRange);
+  const cacheKey = createAttendanceSummaryCacheKey(schoolId, dateRange, academicYear);
   const fallbackData = cacheKey
     ? readPersistentCache<AttendanceSummaryResponse>(cacheKey, ATTENDANCE_SUMMARY_CACHE_TTL_MS)
     : undefined;
@@ -207,7 +177,7 @@ export function useAttendanceSummary(
       dedupingInterval: ATTENDANCE_SWR_DEDUP_MS,
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      keepPreviousData: true,
+      keepPreviousData: false,
       fallbackData,
     }
   );
@@ -219,6 +189,7 @@ export function useAttendanceSummary(
     if (!parsed) return undefined;
     const next = await fetchAttendanceSummaryResponse(
       parsed.schoolId,
+      parsed.academicYearId,
       parsed.startDate,
       parsed.endDate,
       true
@@ -240,9 +211,10 @@ export function useAttendanceSummary(
 
 export function prefetchAttendanceSummary(
   schoolId?: string | null,
-  dateRange: AttendanceSummaryRange = 'month'
+  dateRange: AttendanceSummaryRange = 'month',
+  academicYear?: AttendanceAcademicYearScope | null,
 ) {
-  const cacheKey = createAttendanceSummaryCacheKey(schoolId, dateRange);
+  const cacheKey = createAttendanceSummaryCacheKey(schoolId, dateRange, academicYear);
   if (cacheKey) {
     preload(cacheKey, fetchAttendanceSummary);
   }

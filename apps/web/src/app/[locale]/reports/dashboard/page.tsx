@@ -55,8 +55,8 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
   const { locale } = use(props.params);
   const router = useRouter();
   const t = useTranslations('reportsDashboard');
-  const { schoolId, currentYear, selectedYear } = useAcademicYear();
-  const activeYear = selectedYear ?? currentYear;
+  const { schoolId, selectedYear } = useAcademicYear();
+  const activeYear = selectedYear;
 
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
@@ -114,6 +114,13 @@ export default function ReportsDashboardPage(props: { params: Promise<{ locale: 
   const hasAccess = canViewReportsDashboard(user?.role);
   const canDrillDownByClass = isSchoolWideReportsRole(user?.role);
   const { classes } = useClasses({ academicYearId: activeYear?.id || undefined, limit: 200 });
+
+  useEffect(() => {
+    setPendingClassFilter('');
+    setAppliedFilters(null);
+    setData(null);
+    setError(null);
+  }, [activeYear?.id]);
 
   const filteredClasses = useMemo(() => {
     let list = classes;

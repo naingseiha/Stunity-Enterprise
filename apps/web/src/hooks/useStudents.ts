@@ -161,10 +161,11 @@ export function useStudents(params?: StudentsParams) {
     cacheKey,
     fetchStudents,
     {
-      // Fresh for 2 minutes; keep showing prior page/search while next loads
+      // A key change can cross academic-year boundaries, so stale rows from the
+      // previous key must not remain visible.
       dedupingInterval: 1_000,
       revalidateOnFocus: false,
-      keepPreviousData: true,
+      keepPreviousData: false,
       // Prefer cached session data for instant paint
       revalidateIfStale: true,
     }

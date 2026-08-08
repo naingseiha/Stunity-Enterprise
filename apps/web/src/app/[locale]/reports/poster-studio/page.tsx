@@ -104,8 +104,8 @@ export default function PosterStudioPage(props: {
   const { locale } = use(props.params);
   const t = useTranslations("posterStudio");
   const router = useRouter();
-  const { schoolId, currentYear, selectedYear } = useAcademicYear();
-  const activeYear = selectedYear ?? currentYear;
+  const { schoolId, selectedYear } = useAcademicYear();
+  const activeYear = selectedYear;
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const [user, setUser] = useState<any>(null);
@@ -147,6 +147,14 @@ export default function PosterStudioPage(props: {
     academicYearId: activeYear?.id,
     limit: 300,
   });
+
+  useEffect(() => {
+    setSelectedClassIds([]);
+    setSelectedGrade("");
+    setPosterData(null);
+    setPosterPage(0);
+    setError(null);
+  }, [activeYear?.id]);
   const grades = useMemo(
     () =>
       Array.from(

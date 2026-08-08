@@ -137,7 +137,7 @@ export function useTeachers(params?: TeachersParams) {
     {
       dedupingInterval: TEACHERS_CACHE_TTL_MS,
       revalidateOnFocus: false,
-      keepPreviousData: true,
+      keepPreviousData: false,
     }
   );
 

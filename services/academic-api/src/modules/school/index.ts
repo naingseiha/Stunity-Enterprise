@@ -16,7 +16,10 @@ import { sendBulkClaimCodeEmails } from './utils/emailService';
 import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../../../lib/prisma-pool-url';
 import { getSharedPrisma } from '../../core/prisma';
 import { getJwtSecret } from '../../../../lib/jwt-secret';
-import { canAccessTargetSchool } from '../../../../lib/tenant-access';
+import {
+  canAccessTargetSchool,
+  canAccessTargetSchoolWithPersistedActor,
+} from '../../../../lib/tenant-access';
 import { PERMISSIONS, canManageSchoolResource } from '../../../../lib/admin-permissions';
 import {
   getCambodianHolidays,
@@ -1435,17 +1438,33 @@ app.use(['/schools', '/super-admin', '/api'], authenticateToken);
 
 // Multi-tenant: ensure non-super-admin users can only access their own school.
 // Super admins can access any school; regular users must use their JWT schoolId.
-const requireSchoolAccess = (req: AuthRequest, res: Response, next: NextFunction) => {
+const requireSchoolAccess = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const schoolIdParam = (req.params as any).schoolId ?? (req.params as any).id;
   if (!schoolIdParam) return next();
-  if (!canAccessTargetSchool(req.user, schoolIdParam)) {
-    return res.status(403).json({
-      success: false,
-      error: 'Access denied',
-      message: 'You can only access your own school',
-    });
+  if (canAccessTargetSchool(req.user, schoolIdParam)) return next();
+
+  try {
+    // Compatibility for still-valid access tokens issued before schoolId was
+    // included in every token. The database record remains the authority and
+    // inactive or cross-school accounts are never allowed through this path.
+    const persistedActor = req.user?.id
+      ? await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { role: true, schoolId: true, isActive: true },
+      })
+      : null;
+    if (!canAccessTargetSchoolWithPersistedActor(req.user, persistedActor, schoolIdParam)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied',
+        message: 'You can only access your own school',
+      });
+    }
+    return next();
+  } catch (error) {
+    console.error('School access guard failed:', error);
+    return res.status(500).json({ success: false, error: 'Failed to validate school access' });
   }
-  next();
 };
 
 const requireApprovedSchoolForHighRiskActions = async (req: AuthRequest, res: Response, next: NextFunction) => {

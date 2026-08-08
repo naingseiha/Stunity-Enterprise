@@ -43,8 +43,8 @@ export default function DiscoverPage(props: { params: Promise<{ locale: string }
   const router = useRouter();
   const { locale } = params;
   const isKhmer = locale === 'km';
-  const { schoolId, selectedYear, currentYear } = useAcademicYear();
-  const activeYear = selectedYear ?? currentYear;
+  const { schoolId, selectedYear } = useAcademicYear();
+  const activeYear = selectedYear;
   const { theme, toggleTheme } = useTheme();
 
   const [user, setUser] = useState<any>(null);

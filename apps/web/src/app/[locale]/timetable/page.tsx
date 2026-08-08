@@ -17,6 +17,7 @@ import {
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import AcademicYearScopeNotice from '@/components/AcademicYearScopeNotice';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import { getAcademicYearMode } from '@/lib/academic-year-scope';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import AnimatedContent from '@/components/AnimatedContent';
@@ -382,6 +383,7 @@ export default function TimetablePage() {
   const searchParams = useSearchParams();
   const { selectedYear } = useAcademicYear();
   const selectedYearId = selectedYear?.id || '';
+  const isHistoricalYear = getAcademicYearMode(selectedYear) === 'historical';
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
@@ -409,6 +411,7 @@ export default function TimetablePage() {
   const [validationReport, setValidationReport] = useState<TimetableValidationReport | null>(null);
   const [loadingGovernance, setLoadingGovernance] = useState(false);
   const timetableRequestIdRef = useRef(0);
+  const initialDataRequestIdRef = useRef(0);
 
   // Modal state
   const [showEntryModal, setShowEntryModal] = useState(false);
@@ -471,7 +474,18 @@ export default function TimetablePage() {
 
   // Initialize
   const loadInitialData = useCallback(async () => {
-    if (!selectedYearId) return;
+    const requestId = ++initialDataRequestIdRef.current;
+    setClasses([]);
+    setSubjects([]);
+    setSelectedClassId('');
+    setSelectedTeacherId('');
+    setTimetableData(null);
+    setPublishState(null);
+    setValidationReport(null);
+    if (!selectedYearId) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
 
@@ -480,6 +494,7 @@ export default function TimetablePage() {
         periodAPI.list().catch(() => ({ data: { periods: [] } })),
         shiftAPI.list().catch(() => ({ data: { shifts: [] } })),
       ]);
+      if (requestId !== initialDataRequestIdRef.current) return;
 
       const classesData = classesRes.data.classes || [];
       const periodsData = periodsRes.data.periods || [];
@@ -508,10 +523,11 @@ export default function TimetablePage() {
         setSelectedClassId('');
       }
     } catch (err) {
+      if (requestId !== initialDataRequestIdRef.current) return;
       console.error('Error loading data:', err);
       setError('Failed to load data');
     } finally {
-      setLoading(false);
+      if (requestId === initialDataRequestIdRef.current) setLoading(false);
     }
   }, [searchParams, selectedYearId]);
 
@@ -696,7 +712,7 @@ export default function TimetablePage() {
 
   // Create default periods
   const handleCreateDefaultPeriods = async () => {
-    if (isPublished) {
+    if (!canEditTimetable) {
       setError(editDisabledMessage);
       return;
     }
@@ -718,6 +734,11 @@ export default function TimetablePage() {
 
   // Create default shifts
   const handleCreateDefaultShifts = async () => {
+    if (!canEditTimetable) {
+      setError(editDisabledMessage);
+      return;
+    }
+
     try {
       setSaving(true);
       const response = await shiftAPI.createDefaults();
@@ -732,7 +753,7 @@ export default function TimetablePage() {
 
   // Open entry modal
   const openEntryModal = async (periodId: string, dayOfWeek: DayOfWeek, existingEntry?: TimetableEntry) => {
-    if (isPublished) {
+    if (!canEditTimetable) {
       setError(editDisabledMessage);
       return;
     }
@@ -762,7 +783,7 @@ export default function TimetablePage() {
   // Save entry
   const handleSaveEntry = async () => {
     if (!editingEntry) return;
-    if (isPublished) {
+    if (!canEditTimetable) {
       setError(editDisabledMessage);
       return;
     }
@@ -804,7 +825,7 @@ export default function TimetablePage() {
 
   // Delete entry
   const handleDeleteEntry = async (entryId: string) => {
-    if (isPublished) {
+    if (!canEditTimetable) {
       setError(editDisabledMessage);
       return;
     }
@@ -823,7 +844,7 @@ export default function TimetablePage() {
 
   // Auto-assign
   const handleAutoAssign = async () => {
-    if (isPublished) {
+    if (!canEditTimetable) {
       setError(editDisabledMessage);
       return;
     }
@@ -854,7 +875,7 @@ export default function TimetablePage() {
       setError('Please select an academic year before clearing a timetable.');
       return;
     }
-    if (isPublished) {
+    if (!canEditTimetable) {
       setError(editDisabledMessage);
       return;
     }
@@ -887,7 +908,7 @@ export default function TimetablePage() {
 
   // Copy timetable to another class
   const handleCopyTimetable = async () => {
-    if (isPublished) {
+    if (!canEditTimetable) {
       setError(editDisabledMessage);
       return;
     }
@@ -1004,7 +1025,7 @@ export default function TimetablePage() {
 
   // Drag and drop handlers
   const handleDragStart = async (event: DragStartEvent) => {
-    if (isPublished) {
+    if (!canEditTimetable) {
       setError(editDisabledMessage);
       return;
     }
@@ -1051,7 +1072,7 @@ export default function TimetablePage() {
     setDraggedTeacherId(null);
     setDraggedTeacherBusySlots(new Set());
 
-    if (isPublished) {
+    if (!canEditTimetable) {
       setError(editDisabledMessage);
       return;
     }
@@ -1419,7 +1440,10 @@ export default function TimetablePage() {
   const warningCount = validationReport?.warnings.length || 0;
   const approvedExceptionCount = validationReport?.approvedExceptions?.length || 0;
   const approvableIssues = validationReport?.issues.filter((issue) => issue.canApprove) || [];
-  const editDisabledMessage = 'This timetable is published and locked. Unpublish it before editing.';
+  const canEditTimetable = !isHistoricalYear && !isPublished;
+  const editDisabledMessage = isHistoricalYear
+    ? 'Historical academic years are read-only. Switch to a current or future year to edit.'
+    : 'This timetable is published and locked. Unpublish it before editing.';
   const defaultApproveReason = `Approved combined-class session for ${currentYearLabel}.`;
   const approvalModalTitle =
     approveModal?.mode === 'all'
@@ -1452,7 +1476,7 @@ export default function TimetablePage() {
   ]);
 
   const handlePublishTimetable = async () => {
-    if (!selectedYearId) return;
+    if (!selectedYearId || isHistoricalYear) return;
     if (blockerCount > 0) {
       setError('Resolve blocker validation issues before publishing.');
       return;
@@ -1478,7 +1502,7 @@ export default function TimetablePage() {
   };
 
   const handleUnpublishTimetable = async () => {
-    if (!selectedYearId) return;
+    if (!selectedYearId || isHistoricalYear) return;
     if (!confirm('Return this official timetable to draft mode? Admins will be able to edit it again.')) {
       return;
     }
@@ -1532,7 +1556,7 @@ export default function TimetablePage() {
 
   const handleSubmitApproveExceptions = async () => {
     if (!approveModal) return;
-    if (isPublished) {
+    if (!canEditTimetable) {
       setError(editDisabledMessage);
       return;
     }
@@ -1580,7 +1604,7 @@ export default function TimetablePage() {
   const handleRevokeConflictException = async (issue: TimetableValidationItem) => {
     const exceptionId = issue.exception?.id;
     if (!exceptionId) return;
-    if (isPublished) {
+    if (!canEditTimetable) {
       setError(editDisabledMessage);
       return;
     }
@@ -1749,7 +1773,7 @@ export default function TimetablePage() {
                       {periods.length === 0 && (
                         <button
                           onClick={handleCreateDefaultPeriods}
-                          disabled={saving}
+                          disabled={saving || isHistoricalYear}
                           className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
                         >
                           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
@@ -1759,7 +1783,7 @@ export default function TimetablePage() {
                       {shifts.length === 0 && (
                         <button
                           onClick={handleCreateDefaultShifts}
-                          disabled={saving}
+                          disabled={saving || isHistoricalYear}
                           className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
                         >
                           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4" />}
@@ -1777,7 +1801,7 @@ export default function TimetablePage() {
                       {isPublished ? (
                         <button
                           onClick={handleUnpublishTimetable}
-                          disabled={saving}
+                          disabled={saving || isHistoricalYear}
                           className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-900 transition hover:bg-amber-100 disabled:opacity-60 shadow-sm"
                         >
                           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}
@@ -1786,7 +1810,7 @@ export default function TimetablePage() {
                       ) : (
                         <button
                           onClick={handlePublishTimetable}
-                          disabled={saving || blockerCount > 0 || !selectedYearId}
+                          disabled={saving || blockerCount > 0 || !selectedYearId || isHistoricalYear}
                           className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                           title={blockerCount > 0 ? 'Resolve blockers before publishing' : 'Publish as official timetable'}
                         >
@@ -1797,7 +1821,7 @@ export default function TimetablePage() {
                       {viewMode === 'class' && selectedClassId && (
                         <button
                           onClick={() => setShowAutoAssignModal(true)}
-                          disabled={isPublished}
+                          disabled={!canEditTimetable}
                           className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-700 hover:to-indigo-700 hover:scale-105 active:scale-95"
                         >
                           <Wand2 className="h-4 w-4" />
@@ -1808,7 +1832,7 @@ export default function TimetablePage() {
                         <>
                           <button
                             onClick={() => setShowCopyModal(true)}
-                            disabled={isPublished}
+                            disabled={!canEditTimetable}
                             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-50"
                           >
                             <Copy className="h-4 w-4 text-indigo-600" />
@@ -1816,7 +1840,7 @@ export default function TimetablePage() {
                           </button>
                           <button
                             onClick={handleClearTimetable}
-                            disabled={saving || isPublished}
+                            disabled={saving || !canEditTimetable}
                             className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-60 shadow-sm"
                           >
                             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}
@@ -2074,7 +2098,7 @@ export default function TimetablePage() {
                             </div>
                             <button
                               onClick={openApproveAllExceptionsModal}
-                              disabled={isPublished || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
+                              disabled={!canEditTimetable || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
                               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {approvingExceptionKey === 'all' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
@@ -2091,7 +2115,7 @@ export default function TimetablePage() {
                             </div>
                             <button
                               onClick={() => openApproveExceptionModal(issue)}
-                              disabled={isPublished || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
+                              disabled={!canEditTimetable || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
                               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {approvingExceptionKey === getIssueKey(issue) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
@@ -2111,7 +2135,7 @@ export default function TimetablePage() {
                             </div>
                             <button
                               onClick={() => handleRevokeConflictException(issue)}
-                              disabled={isPublished || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
+                              disabled={!canEditTimetable || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
                               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-current/20 bg-white/80 px-3 py-2 text-xs font-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {revokingExceptionId === issue.exception?.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
@@ -2582,7 +2606,7 @@ export default function TimetablePage() {
         </div>
 
         {/* Approve Exception Modal */}
-        {approveModal && (
+        {approveModal && canEditTimetable && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm">
             <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl ring-1 ring-slate-200/70 dark:border-gray-800 dark:bg-gray-950 dark:ring-gray-800">
               <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-gray-800">
@@ -2652,7 +2676,7 @@ export default function TimetablePage() {
         )}
 
         {/* Entry Modal */}
-        {showEntryModal && editingEntry && (
+        {showEntryModal && editingEntry && canEditTimetable && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md mx-4 border border-gray-200 dark:border-gray-800">
               <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
@@ -2763,7 +2787,7 @@ export default function TimetablePage() {
         )}
 
         {/* Auto-Assign Modal */}
-        {showAutoAssignModal && (
+        {showAutoAssignModal && canEditTimetable && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg mx-4 border border-gray-200 dark:border-gray-800">
               <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
@@ -2919,7 +2943,7 @@ export default function TimetablePage() {
         </DragOverlay>
 
         {/* Copy Timetable Modal */}
-        {showCopyModal && (
+        {showCopyModal && canEditTimetable && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md mx-4 border border-gray-200 dark:border-gray-800">
               <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">

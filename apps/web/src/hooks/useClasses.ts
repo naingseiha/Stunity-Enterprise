@@ -103,7 +103,9 @@ export function useClasses(params?: ClassesParams) {
     {
       dedupingInterval: CLASSES_CACHE_TTL_MS,
       revalidateOnFocus: false,
-      keepPreviousData: true,
+      // A key change can mean an academic-year switch. Never render rows from
+      // the previous key while the selected year's request is loading.
+      keepPreviousData: false,
     }
   );
 

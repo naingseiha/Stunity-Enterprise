@@ -45,6 +45,7 @@ import {
 } from "../../../../lib/prisma-pool-url";
 import { getSharedPrisma } from "../../core/prisma";
 import { NOTIFICATION_SERVICE_AUTH_TOKEN } from "../../core/internalServiceAuth";
+import { buildAcademicYearStudentScope } from "../school/academic-year-student-scope";
 
 assertProductionEnv();
 const JWT_SECRET = getJwtSecret();
@@ -2520,19 +2521,27 @@ app.get(
   async (req: AuthRequest, res: Response) => {
     try {
       const schoolId = req.schoolId!;
-      const { startDate, endDate } = req.query;
+      const { academicYearId, startDate, endDate } = req.query;
 
-      if (!startDate || !endDate) {
+      if (!academicYearId || typeof academicYearId !== "string" || !startDate || !endDate) {
         return res
           .status(400)
-          .json({ success: false, message: "Missing date range" });
+          .json({ success: false, message: "Missing academic year or date range" });
+      }
+
+      const academicYear = await prisma.academicYear.findFirst({
+        where: { id: academicYearId, schoolId },
+        select: { id: true },
+      });
+      if (!academicYear) {
+        return res.status(404).json({ success: false, message: "Academic year not found" });
       }
 
       const bypassFresh =
         req.query.fresh === "1" ||
         req.query.fresh === "true" ||
         req.query.skipCache === "1";
-      const cacheKey = `${schoolId}:${startDate}:${endDate}`;
+      const cacheKey = `${schoolId}:${academicYearId}:${startDate}:${endDate}`;
       if (!bypassFresh) {
         const cachedResponse = readSchoolSummaryCache(cacheKey);
         if (cachedResponse) {
@@ -2555,7 +2564,7 @@ app.get(
       const [attendanceRecords, teacherRecords] = await Promise.all([
         prisma.attendance.findMany({
           where: {
-            student: { schoolId },
+            class: { schoolId, academicYearId },
             OR: [
               { date: { gte: dbStart, lte: dbEnd } },
               // Fallback for records stored as UTC midnight of the intended local day
@@ -2595,8 +2604,22 @@ app.get(
         }),
       ]);
 
-      const studentCount = await prisma.student.count({ where: { schoolId } });
-      const teacherCount = await prisma.teacher.count({ where: { schoolId } });
+      const [studentCount, teacherCount, classCount] = await Promise.all([
+        prisma.student.count({
+          where: buildAcademicYearStudentScope(schoolId, academicYearId),
+        }),
+        prisma.teacher.count({
+          where: {
+            schoolId,
+            OR: [
+              { teacherClasses: { some: { class: { schoolId, academicYearId } } } },
+              { homeroomClass: { schoolId, academicYearId } },
+              { timetableEntries: { some: { schoolId, academicYearId } } },
+            ],
+          },
+        }),
+        prisma.class.count({ where: { schoolId, academicYearId } }),
+      ]);
       const totalSchoolDays = eachDayOfInterval({ start, end }).filter(
         (date) => !isWeekend(date),
       ).length;
@@ -2736,8 +2759,6 @@ app.get(
       const atRiskClasses = performingClasses
         .slice(-5)
         .filter((c) => c.rate < 80);
-
-      const classCount = Object.keys(classStats).length;
 
       const recentCheckIns = teacherRecords
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())

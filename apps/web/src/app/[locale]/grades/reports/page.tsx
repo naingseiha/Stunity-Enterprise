@@ -85,6 +85,15 @@ export default function ReportCardsPage() {
   });
 
   useEffect(() => {
+    setSelectedClass('');
+    setSelectedStudentId('');
+    setClassReport(null);
+    setStudentReportCard(null);
+    setViewMode('select');
+    setError('');
+  }, [selectedYear]);
+
+  useEffect(() => {
     if (selectedClass && !classes.some((cls) => cls.id === selectedClass)) {
       setSelectedClass('');
     }

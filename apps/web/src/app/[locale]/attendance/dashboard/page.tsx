@@ -317,7 +317,6 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
     schoolId,
     loading: academicContextLoading,
     selectedYear,
-    currentYear,
   } = useAcademicYear();
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
@@ -348,15 +347,33 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
   const recentMonths = useMemo(() => {
     const months = [];
     const now = new Date();
+    const yearStart = selectedYear?.startDate ? new Date(selectedYear.startDate) : null;
+    const yearEnd = selectedYear?.endDate ? new Date(selectedYear.endDate) : null;
+    if (yearStart && now < yearStart) now.setTime(yearStart.getTime());
+    if (yearEnd && now > yearEnd) now.setTime(yearEnd.getTime());
     for (let i = 0; i < 6; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      if (yearStart && d < new Date(yearStart.getFullYear(), yearStart.getMonth(), 1)) break;
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const label = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(d);
       months.push({ id: `${year}-${month}`, label });
     }
     return months;
-  }, [locale]);
+  }, [locale, selectedYear?.endDate, selectedYear?.startDate]);
+
+  useEffect(() => {
+    if (!selectedYear?.startDate || !selectedYear.endDate) return;
+    const start = new Date(selectedYear.startDate);
+    const end = new Date(selectedYear.endDate);
+    const nextDate = new Date();
+    if (nextDate < start) nextDate.setTime(start.getTime());
+    if (nextDate > end) nextDate.setTime(end.getTime());
+    setMonitorDate(formatLocalDateEnCa(nextDate));
+    setMonitorClassId('');
+    setMonitorGradeGroupKey('');
+    setMonitorSelectedStatuses([]);
+  }, [selectedYear?.endDate, selectedYear?.id, selectedYear?.startDate]);
 
   const dateRangeOptions: Array<{ id: AttendanceSummaryRange; label: string; shortLabelKey: 'rangeShortDay' | 'rangeShortWeek' | 'rangeShortMonth' | 'rangeShortTerm' }> = [
     { id: 'day', label: t('today'), shortLabelKey: 'rangeShortDay' },
@@ -410,7 +427,8 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
 
   const { data, isLoading, isValidating, error, refresh } = useAttendanceSummary(
     sessionReady ? schoolId : null,
-    dateRange
+    dateRange,
+    selectedYear,
   );
 
   const summaryErrorMessage =
@@ -487,7 +505,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
     return () => ac.abort();
   }, [sessionReady, schoolId, monitorDate, monitorSession, monitorRefreshNonce, td]);
 
-  const activeAcademicYear = selectedYear ?? currentYear;
+  const activeAcademicYear = selectedYear;
   const academicYearLabel = activeAcademicYear?.name ?? '—';
 
   const academicYearProgressPct = useMemo(() => {
@@ -646,7 +664,10 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
     });
   }, [stats.sessions]);
 
-  const auditDateRange = useMemo(() => getAttendanceSummaryDateRange(dateRange), [dateRange]);
+  const auditDateRange = useMemo(
+    () => getAttendanceSummaryDateRange(dateRange, new Date(), selectedYear),
+    [dateRange, selectedYear],
+  );
 
   const handleAuditExport = useCallback(async () => {
     setAuditExportError(null);

@@ -233,17 +233,27 @@ export default function ClassPlacementPage(props: { params: Promise<{ locale: st
 
   const movePreviewStudent = (studentId: string, classId: string) => {
     if (!preview) return;
+    const movingStudentIds = selectedStudentIds.has(studentId)
+      ? new Set(selectedStudentIds)
+      : new Set([studentId]);
     const target = workspace?.classes.find((item) => item.id === classId);
-    const currentTargetCount = preview.assignments.filter((item) => item.classId === classId && item.studentId !== studentId).length + (target?.currentCount || 0);
-    if (target?.capacity != null && currentTargetCount >= target.capacity) {
+    const currentTargetCount = preview.assignments.filter(
+      (item) => item.classId === classId && !movingStudentIds.has(item.studentId),
+    ).length + (target?.currentCount || 0);
+    if (target?.capacity != null && currentTargetCount + movingStudentIds.size > target.capacity) {
       setMessage({ tone: 'error', text: tx(`${target.name} ពេញហើយ។`, `${target.name} is already full.`) });
       return;
     }
     setPreview({
       ...preview,
-      assignments: preview.assignments.map((item) => item.studentId === studentId ? { ...item, classId, pinned: true } : item),
+      assignments: preview.assignments.map((item) => movingStudentIds.has(item.studentId) ? { ...item, classId, pinned: true } : item),
     });
-    setPinned((previous) => new Map(previous).set(studentId, classId));
+    setPinned((previous) => {
+      const next = new Map(previous);
+      movingStudentIds.forEach((movingStudentId) => next.set(movingStudentId, classId));
+      return next;
+    });
+    setSelectedStudentIds(new Set());
   };
 
   const loadSavedBatch = (batch: PlacementBatch) => {

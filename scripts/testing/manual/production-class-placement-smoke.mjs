@@ -12,6 +12,7 @@ const require = createRequire(import.meta.url);
 const { signAccessToken } = require("../../../services/lib/auth-tokens.js");
 
 const OFFICIAL_SCHOOL_ID = "cmm7yhssh0000lwcvao23npok";
+const APPROVED_TEST_SCHOOL_ID = "cmnyay66600016ezcgorad0x1";
 const API_BASE = process.env.ACADEMIC_API_URL || "https://academic.stunity.app";
 const execute = process.argv.includes("--execute");
 const auditOnly = process.argv.includes("--audit");
@@ -58,25 +59,26 @@ async function officialCounts() {
 }
 
 async function findTestSchool() {
-  const schools = await prisma.school.findMany({
-    where: { id: { not: OFFICIAL_SCHOOL_ID } },
+  const school = await prisma.school.findUnique({
+    where: { id: APPROVED_TEST_SCHOOL_ID },
     select: {
       id: true,
       name: true,
       users: {
+        // SCHOOL_ADMIN is a token-level compatibility alias, not a persisted
+        // Prisma UserRole value, so it cannot appear in this database filter.
         where: { isActive: true, role: { in: ["ADMIN", "STAFF", "SUPER_ADMIN"] } },
         select: { id: true, email: true, role: true },
         orderBy: { createdAt: "asc" },
       },
+      academicYears: {
+        select: { id: true },
+        orderBy: { startDate: "desc" },
+        take: 1,
+      },
     },
   });
-  return schools
-    .filter((school) => school.users.length > 0)
-    .sort((left, right) => {
-      const leftQa = /qa|test/i.test(left.name) ? 0 : 1;
-      const rightQa = /qa|test/i.test(right.name) ? 0 : 1;
-      return leftQa - rightQa || left.name.localeCompare(right.name);
-    })[0];
+  return school?.users.length ? school : null;
 }
 
 async function cleanupFixture(fixture) {
@@ -101,7 +103,8 @@ async function main() {
   assert(process.env.DATABASE_URL?.includes("supabase.com"), "Refusing to run without the expected production Supabase DATABASE_URL");
   assert(process.env.JWT_SECRET, "JWT_SECRET is required");
   const school = await findTestSchool();
-  assert(school, "No non-official test school with an active administrator was found");
+  assert(school, "The approved production test school has no active administrator");
+  assert(school.id === APPROVED_TEST_SCHOOL_ID && school.id !== OFFICIAL_SCHOOL_ID, "Refusing to use any school except the approved production test school");
 
   console.log(JSON.stringify({
     mode: auditOnly ? "audit" : execute ? "execute" : "dry-run",
@@ -110,7 +113,21 @@ async function main() {
     officialSchoolProtected: OFFICIAL_SCHOOL_ID,
   }, null, 2));
   if (auditOnly) {
-    const [official, officialSchool, currentYears, versions, progressions, rls, enrollmentIntegrity, progressionIntegrity] = await Promise.all([
+    const [
+      official,
+      officialSchool,
+      currentYears,
+      versions,
+      progressions,
+      rls,
+      crossTenantEnrollments,
+      enrollmentYearMismatches,
+      crossTenantProgressions,
+      sourceClassYearMismatches,
+      targetClassYearMismatches,
+      duplicateActiveEnrollments,
+      orphanBatchVersions,
+    ] = await Promise.all([
       officialCounts(),
       prisma.school.findUnique({ where: { id: OFFICIAL_SCHOOL_ID }, select: { id: true, name: true } }),
       prisma.academicYear.count({ where: { schoolId: OFFICIAL_SCHOOL_ID, isCurrent: true } }),
@@ -123,7 +140,12 @@ async function main() {
         JOIN students student_record ON student_record.id = enrollment."studentId"
         JOIN classes class_record ON class_record.id = enrollment."classId"
         WHERE student_record."schoolId" <> class_record."schoolId"
-           OR enrollment."academicYearId" IS DISTINCT FROM class_record."academicYearId"
+      `),
+      prisma.$queryRawUnsafe(`
+        SELECT COUNT(*)::int AS count
+        FROM student_classes enrollment
+        JOIN classes class_record ON class_record.id = enrollment."classId"
+        WHERE enrollment."academicYearId" IS DISTINCT FROM class_record."academicYearId"
       `),
       prisma.$queryRawUnsafe(`
         SELECT COUNT(*)::int AS count
@@ -136,14 +158,68 @@ async function main() {
         WHERE source_year."schoolId" <> student_record."schoolId"
            OR target_year."schoolId" <> student_record."schoolId"
            OR source_class."schoolId" <> student_record."schoolId"
-           OR source_class."academicYearId" <> progression."fromAcademicYearId"
-           OR (progression."toClassId" IS NOT NULL AND (
-                target_class.id IS NULL
-                OR target_class."schoolId" <> student_record."schoolId"
-                OR target_class."academicYearId" <> progression."toAcademicYearId"
-           ))
+           OR (progression."toClassId" IS NOT NULL AND target_class."schoolId" <> student_record."schoolId")
+      `),
+      prisma.$queryRawUnsafe(`
+        SELECT COUNT(*)::int AS count
+        FROM student_progressions progression
+        JOIN classes source_class ON source_class.id = progression."fromClassId"
+        WHERE source_class."academicYearId" <> progression."fromAcademicYearId"
+      `),
+      prisma.$queryRawUnsafe(`
+        SELECT COUNT(*)::int AS count
+        FROM student_progressions progression
+        LEFT JOIN classes target_class ON target_class.id = progression."toClassId"
+        WHERE progression."toClassId" IS NOT NULL
+          AND (target_class.id IS NULL OR target_class."academicYearId" <> progression."toAcademicYearId")
+      `),
+      prisma.$queryRawUnsafe(`
+        SELECT COUNT(*)::int AS count
+        FROM (
+          SELECT enrollment."studentId", enrollment."academicYearId"
+          FROM student_classes enrollment
+          WHERE enrollment.status = 'ACTIVE'
+            AND enrollment."endedAt" IS NULL
+            AND enrollment."academicYearId" IS NOT NULL
+          GROUP BY enrollment."studentId", enrollment."academicYearId"
+          HAVING COUNT(*) > 1
+        ) duplicates
+      `),
+      prisma.$queryRawUnsafe(`
+        SELECT COUNT(*)::int AS count
+        FROM class_placement_batch_versions version
+        LEFT JOIN class_placement_batches batch ON batch.id = version."batchId"
+        WHERE batch.id IS NULL
       `),
     ]);
+
+    const submitter = school.users[0];
+    const adminToken = signAccessToken({
+      userId: submitter.id,
+      email: submitter.email || "",
+      role: submitter.role,
+      schoolId: school.id,
+    }, process.env.JWT_SECRET, "5m");
+    const unauthorizedToken = signAccessToken({
+      userId: submitter.id,
+      email: submitter.email || "",
+      role: "TEACHER",
+      schoolId: school.id,
+    }, process.env.JWT_SECRET, "5m");
+    assert(school.academicYears.length === 1, "The approved production test school has no academic year for runtime RLS verification");
+    const [health, unauthenticatedWorkspace, unauthorizedWorkspace, governedDirectApply, runtimeBatchRead] = await Promise.all([
+      api("/health"),
+      api("/classes/placement/nonexistent/11"),
+      api("/classes/placement/nonexistent/11", { token: unauthorizedToken }),
+      api("/classes/placement/apply", { token: adminToken, method: "POST", body: {} }),
+      api(`/classes/placement/batches/${school.academicYears[0].id}/11`, { token: adminToken }),
+    ]);
+    assert(health.status === 200, `Academic API health failed (${health.status})`);
+    assert(unauthenticatedWorkspace.status === 401, `Unauthenticated placement route returned ${unauthenticatedWorkspace.status}`);
+    assert(unauthorizedWorkspace.status === 403, `Unauthorized placement route returned ${unauthorizedWorkspace.status}`);
+    assert(governedDirectApply.status === 409, `Direct placement apply returned ${governedDirectApply.status}`);
+    assert(runtimeBatchRead.status === 200, `Application runtime could not read placement batches with RLS enabled (${runtimeBatchRead.status})`);
+
     console.log(JSON.stringify({
       audit: "PASS",
       officialSchool,
@@ -152,9 +228,21 @@ async function main() {
       globalPlacementBatchVersions: versions,
       globalStudentProgressions: progressions,
       rowLevelSecurity: rls,
+      routeChecks: {
+        health: health.status,
+        unauthenticatedPlacement: unauthenticatedWorkspace.status,
+        unauthorizedPlacement: unauthorizedWorkspace.status,
+        directApplyGovernance: governedDirectApply.status,
+        runtimePlacementTableRead: runtimeBatchRead.status,
+      },
       integrityViolations: {
-        enrollmentTenantOrYear: enrollmentIntegrity[0]?.count ?? null,
-        progressionTenantOrYear: progressionIntegrity[0]?.count ?? null,
+        crossTenantStudentClass: crossTenantEnrollments[0]?.count ?? null,
+        studentClassAcademicYearMismatch: enrollmentYearMismatches[0]?.count ?? null,
+        crossTenantStudentProgression: crossTenantProgressions[0]?.count ?? null,
+        sourceClassSourceYearMismatch: sourceClassYearMismatches[0]?.count ?? null,
+        targetClassTargetYearMismatch: targetClassYearMismatches[0]?.count ?? null,
+        duplicateActiveEnrollmentInYear: duplicateActiveEnrollments[0]?.count ?? null,
+        orphanPlacementBatchVersions: orphanBatchVersions[0]?.count ?? null,
       },
     }, null, 2));
     return;

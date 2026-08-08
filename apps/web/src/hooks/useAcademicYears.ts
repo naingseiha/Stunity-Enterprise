@@ -38,7 +38,7 @@ export function useAcademicYearsList(schoolId?: string | null) {
     {
       dedupingInterval: ACADEMIC_YEARS_CACHE_TTL_MS,
       revalidateOnFocus: false,
-      keepPreviousData: true,
+      keepPreviousData: false,
       fallbackData,
     }
   );

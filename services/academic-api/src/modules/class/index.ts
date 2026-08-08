@@ -16,6 +16,7 @@ import {
   type PlacementStrategy,
 } from "../../../../lib/class-placement";
 import { registerClassPlacementBatchRoutes } from "../../../../lib/class-placement-batch-routes";
+import { isAcademicYearHistoricallyReadOnly } from "../../../../lib/academic-year-policy";
 
 // Load environment variables from root .env
 
@@ -193,6 +194,23 @@ app.post(
         });
       }
 
+      const academicYear = await prisma.academicYear.findFirst({
+        where: { id: academicYearId, schoolId },
+        select: { status: true, isCurrent: true, endDate: true },
+      });
+      if (!academicYear) {
+        return res.status(404).json({
+          success: false,
+          message: "Academic year not found or does not belong to your school",
+        });
+      }
+      if (isAcademicYearHistoricallyReadOnly(academicYear)) {
+        return res.status(409).json({
+          success: false,
+          message: "Historical academic years are read-only",
+        });
+      }
+
       console.log(
         `➕ [Onboarding] Batch creating ${classes.length} classes for school ${schoolId}...`,
       );
@@ -305,6 +323,34 @@ const requireClassAdmin = (
   }
   next();
 };
+
+// Historical class structures and rosters are auditable records. Keep reads
+// available, but reject every mutation addressed to a concrete historical
+// class before it reaches an individual handler.
+app.use("/classes/:id", async (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+  const schoolId = req.user?.schoolId;
+  if (!schoolId) return next();
+  try {
+    const classRecord = await prisma.class.findFirst({
+      where: { id: req.params.id, schoolId },
+      select: { academicYear: { select: { status: true, isCurrent: true, endDate: true } } },
+    });
+    if (classRecord && isAcademicYearHistoricallyReadOnly(classRecord.academicYear)) {
+      return res.status(409).json({
+        success: false,
+        message: "Historical academic years are read-only",
+      });
+    }
+    return next();
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to validate the class academic year",
+      error: error.message,
+    });
+  }
+});
 
 type ScopedUserRecord = {
   id: string;
@@ -1562,7 +1608,6 @@ app.get(
           message: "Academic year not found or access denied",
         });
       }
-
       const targetClass = targetClassId
         ? await prisma.class.findFirst({ where: { id: String(targetClassId), academicYearId, schoolId }, select: { id: true, grade: true } })
         : null;
@@ -1682,7 +1727,7 @@ const sectionName = (index: number) => {
 async function loadPlacementContext(schoolId: string, academicYearId: string, grade: string) {
   const academicYear = await prisma.academicYear.findFirst({
     where: { id: academicYearId, schoolId },
-    select: { id: true, name: true, startDate: true, status: true },
+    select: { id: true, name: true, startDate: true, endDate: true, isCurrent: true, status: true },
   });
   if (!academicYear) return null;
 
@@ -1793,7 +1838,7 @@ app.post(
       const capacity = Math.min(200, Math.max(1, Number(req.body.capacity) || 50));
       const initialContext = await loadPlacementContext(schoolId, academicYearId, grade);
       if (!initialContext) return res.status(404).json({ success: false, message: "Academic year not found" });
-      if (["ENDED", "ARCHIVED"].includes(initialContext.academicYear.status)) {
+      if (isAcademicYearHistoricallyReadOnly(initialContext.academicYear)) {
         return res.status(409).json({ success: false, message: "Historical academic years are read-only" });
       }
       const requestedCount = Number(req.body.classCount);
@@ -1916,9 +1961,9 @@ app.post(
 
       const result = await prisma.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${schoolId}), hashtext(${`${academicYearId}:${grade}:placement`})) IS NULL AS "lockAcquired"`;
-        const academicYear = await tx.academicYear.findFirst({ where: { id: academicYearId, schoolId }, select: { id: true, startDate: true, status: true } });
+        const academicYear = await tx.academicYear.findFirst({ where: { id: academicYearId, schoolId }, select: { id: true, startDate: true, endDate: true, isCurrent: true, status: true } });
         if (!academicYear) throw Object.assign(new Error("Academic year not found"), { statusCode: 404 });
-        if (["ENDED", "ARCHIVED"].includes(academicYear.status)) {
+        if (isAcademicYearHistoricallyReadOnly(academicYear)) {
           throw Object.assign(new Error("Historical academic years are read-only"), { statusCode: 409 });
         }
         const studentIds = assignments.map((item: any) => item.studentId);
@@ -2166,6 +2211,12 @@ app.post(
           message: "Academic year not found or does not belong to your school",
         });
       }
+      if (isAcademicYearHistoricallyReadOnly(academicYear)) {
+        return res.status(409).json({
+          success: false,
+          message: "Historical academic years are read-only",
+        });
+      }
 
       // Check if class name already exists in this school for this academic year
       const existingClass = await prisma.class.findFirst({
@@ -2352,6 +2403,12 @@ app.put(
             success: false,
             message:
               "Academic year not found or does not belong to your school",
+          });
+        }
+        if (isAcademicYearHistoricallyReadOnly(academicYear)) {
+          return res.status(409).json({
+            success: false,
+            message: "Historical academic years are read-only",
           });
         }
       }

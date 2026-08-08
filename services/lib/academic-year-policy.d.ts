@@ -16,3 +16,8 @@ export function getAcademicYearWriteBlock(
   academicYear: OperationalAcademicYear,
   recordDate?: Date,
 ): AcademicYearWriteBlock | null;
+
+export function isAcademicYearHistoricallyReadOnly(
+  academicYear: Pick<OperationalAcademicYear, 'status' | 'isCurrent' | 'endDate'>,
+  now?: Date,
+): boolean;

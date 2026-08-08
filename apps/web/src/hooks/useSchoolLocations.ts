@@ -58,7 +58,7 @@ export function useSchoolLocations() {
     {
       dedupingInterval: SCHOOL_LOCATIONS_CACHE_TTL_MS,
       revalidateOnFocus: false,
-      keepPreviousData: true,
+      keepPreviousData: false,
       fallbackData,
     }
   );

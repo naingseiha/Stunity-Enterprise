@@ -28,6 +28,7 @@ import ActionCard from '@/components/dashboard/ActionCard';
 import { TokenManager } from '@/lib/api/auth';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { SCHOOL_SERVICE_URL, ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
+import { getAttendanceSummaryDateRange } from '@/lib/attendance/summary-range';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import AnimatedContent from '@/components/AnimatedContent';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
@@ -60,6 +61,11 @@ interface YearStats {
   classes: number;
 }
 
+interface YearBoundData<T> {
+  yearId: string;
+  data: T;
+}
+
 const DASHBOARD_STATS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export default function DashboardPage(props: { params: Promise<{ locale: string }> }) {
@@ -68,16 +74,16 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
   const router = useRouter();
   const { locale } = params;
   const t = useTranslations('dashboard');
-  const { schoolId, currentYear, selectedYear } = useAcademicYear();
+  const { schoolId, selectedYear } = useAcademicYear();
   const [user, setUser] = useState<UserData | null>(null);
   const [school, setSchool] = useState<SchoolData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [yearStats, setYearStats] = useState<YearStats | null>(null);
+  const [yearStats, setYearStats] = useState<YearBoundData<YearStats> | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
-  const activeYear = selectedYear ?? currentYear;
+  const activeYear = selectedYear;
   const [attendanceSummary, setAttendanceSummary] = useState<any>(null);
   const [attendanceData, setAttendanceData] = useState({ present: 0, absent: 0, rate: '—' });
-  const [comprehensiveData, setComprehensiveData] = useState<any>(null);
+  const [comprehensiveData, setComprehensiveData] = useState<YearBoundData<any> | null>(null);
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -93,6 +99,9 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
   }, [locale, router]);
 
   useEffect(() => {
+    let cancelled = false;
+    setYearStats(null);
+    setComprehensiveData(null);
     if (!schoolId || !activeYear?.id) {
       setStatsLoading(false);
       return;
@@ -105,7 +114,8 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
       const cacheKey = `dashboard:year-stats:v2:${schoolId}:${activeYear.id}`;
       const cachedStats = readPersistentCache<YearStats>(cacheKey, DASHBOARD_STATS_CACHE_TTL_MS);
       if (cachedStats) {
-        setYearStats(cachedStats);
+        if (cancelled) return;
+        setYearStats({ yearId: activeYear.id, data: cachedStats });
         setStatsLoading(false);
       }
 
@@ -118,8 +128,8 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
-        if (data.success && data.data) {
-          setYearStats(data.data);
+        if (!cancelled && data.success && data.data) {
+          setYearStats({ yearId: activeYear.id, data: data.data });
           writePersistentCache(cacheKey, data.data);
         }
 
@@ -129,35 +139,40 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const compJson = await compRes.json();
-        if (compJson.success && compJson.data) {
-          setComprehensiveData(compJson.data);
+        if (!cancelled && compJson.success && compJson.data) {
+          setComprehensiveData({ yearId: activeYear.id, data: compJson.data });
         }
       } catch {
-        setYearStats(null);
+        if (!cancelled) setYearStats(null);
       } finally {
-        setStatsLoading(false);
+        if (!cancelled) setStatsLoading(false);
       }
     };
 
     fetchStats();
+    return () => {
+      cancelled = true;
+    };
   }, [activeYear?.id, schoolId]);
 
   useEffect(() => {
+    let cancelled = false;
+    setAttendanceSummary(null);
+    setAttendanceData({ present: 0, absent: 0, rate: '—' });
     const fetchAttendanceSummary = async () => {
       const token = TokenManager.getAccessToken();
-      if (!token || !schoolId || !user || !isSchoolAttendanceAdminRole(user.role)) return;
+      if (!token || !schoolId || !activeYear || !user || !isSchoolAttendanceAdminRole(user.role)) return;
 
       try {
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+        const { startDate: startOfMonth, endDate: endOfMonth } =
+          getAttendanceSummaryDateRange('month', new Date(), activeYear);
 
         const res = await fetch(
           `${ATTENDANCE_SERVICE_URL}/attendance/school/summary?startDate=${startOfMonth}&endDate=${endOfMonth}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
-        if (data.success && data.data) {
+        if (!cancelled && data.success && data.data) {
           setAttendanceSummary(data.data);
           setAttendanceData({
             present: data.data.stats.totals.present || 0,
@@ -171,7 +186,10 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
     };
 
     fetchAttendanceSummary();
-  }, [schoolId, user?.role]);
+    return () => {
+      cancelled = true;
+    };
+  }, [activeYear, schoolId, user?.role]);
 
   const quickActions = useMemo(() => {
     const items: Array<{
@@ -239,14 +257,19 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
     return items;
   }, [locale, t, user?.role]);
 
+  const scopedComprehensiveData = comprehensiveData && comprehensiveData.yearId === activeYear?.id
+    ? comprehensiveData.data
+    : null;
+  const scopedYearStats = yearStats && yearStats.yearId === activeYear?.id ? yearStats.data : null;
+
   const gradeStatsData = useMemo(() => {
-    if (!comprehensiveData?.statistics?.studentsByGrade) return undefined;
-    const byGrade = comprehensiveData.statistics.studentsByGrade;
+    if (!scopedComprehensiveData?.statistics?.studentsByGrade) return [];
+    const byGrade = scopedComprehensiveData.statistics.studentsByGrade;
     const isKhmer = locale === 'km';
     return Object.keys(byGrade).map(g => {
       const total = byGrade[g] || 0;
       const female = Math.round(total * 0.54);
-      const classesInGrade = comprehensiveData.classes?.filter((c: any) => c.grade === g).length || 1;
+      const classesInGrade = scopedComprehensiveData.classes?.filter((c: any) => c.grade === g).length || 1;
       return {
         grade: g,
         gradeLabel: isKhmer ? `ថ្នាក់ទី ${g}` : `Grade ${g}`,
@@ -256,12 +279,12 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
         classCount: classesInGrade,
       };
     }).sort((a, b) => (parseInt(b.grade, 10) || 0) - (parseInt(a.grade, 10) || 0));
-  }, [comprehensiveData, locale]);
+  }, [scopedComprehensiveData, locale]);
 
   const classStatsData = useMemo(() => {
-    if (!comprehensiveData?.classes || !Array.isArray(comprehensiveData.classes)) return undefined;
+    if (!scopedComprehensiveData?.classes || !Array.isArray(scopedComprehensiveData.classes)) return [];
     const isKhmer = locale === 'km';
-    return comprehensiveData.classes.map((c: any) => {
+    return scopedComprehensiveData.classes.map((c: any) => {
       const total = c.studentCount || 0;
       const female = Math.round(total * 0.53);
       return {
@@ -281,7 +304,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
         } : null,
       };
     });
-  }, [comprehensiveData, locale]);
+  }, [scopedComprehensiveData, locale]);
   
   const handleLogout = async () => {
     await TokenManager.logout();
@@ -292,9 +315,9 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
     return <PageSkeleton user={user} school={school} type="dashboard" />;
   }
 
-  const studentsVal = yearStats ? String(yearStats.students) : (statsLoading ? '…' : '—');
-  const teachersVal = yearStats ? String(yearStats.teachers) : (statsLoading ? '…' : '—');
-  const classesVal = yearStats ? String(yearStats.classes) : (statsLoading ? '…' : '—');
+  const studentsVal = scopedYearStats ? String(scopedYearStats.students) : (statsLoading ? '…' : '—');
+  const teachersVal = scopedYearStats ? String(scopedYearStats.teachers) : (statsLoading ? '…' : '—');
+  const classesVal = scopedYearStats ? String(scopedYearStats.classes) : (statsLoading ? '…' : '—');
 
   const stats = [
     {

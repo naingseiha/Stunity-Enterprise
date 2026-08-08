@@ -172,8 +172,8 @@ export default function CertificateStudioPage(props: {
   const { locale } = use(props.params);
   const t = useTranslations("certificateStudio");
   const router = useRouter();
-  const { schoolId, currentYear, selectedYear } = useAcademicYear();
-  const activeYear = selectedYear ?? currentYear;
+  const { schoolId, selectedYear } = useAcademicYear();
+  const activeYear = selectedYear;
   const canvasRef = useRef<HTMLDivElement>(null);
   const exportPageRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
@@ -211,6 +211,15 @@ export default function CertificateStudioPage(props: {
     academicYearId: activeYear?.id,
     limit: 300,
   });
+
+  useEffect(() => {
+    setSelectedClassIds([]);
+    setSelectedGrade("");
+    setPosterData(null);
+    setCertificatePage(0);
+    setExportAllMounted(false);
+    setError(null);
+  }, [activeYear?.id]);
   
   const grades = useMemo(
     () =>

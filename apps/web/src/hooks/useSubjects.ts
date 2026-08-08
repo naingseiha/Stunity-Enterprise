@@ -105,7 +105,7 @@ export function useSubjects(params?: SubjectsParams) {
     {
       dedupingInterval: SUBJECTS_CACHE_TTL_MS,
       revalidateOnFocus: false,
-      keepPreviousData: true,
+      keepPreviousData: false,
     }
   );
 

@@ -3,6 +3,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { buildClassPlacement } = require("./class-placement");
+const { placementApproverRoles } = require("./class-placement-batch-routes");
 
 const students = Array.from({ length: 12 }, (_, index) => ({ id: `student-${index + 1}`, score: 100 - index }));
 const classes = ["A", "B", "C"].map((name) => ({ id: name, name, capacity: 4, currentCount: 0 }));
@@ -45,4 +46,11 @@ test("multi-factor placement balances gender while preserving equal class sizes"
   assert.deepEqual(Object.values(result.projectedCounts).sort(), [6, 6, 6]);
   assert.deepEqual(Object.values(result.projectedGenderCounts).map((counts) => counts.FEMALE).sort(), [3, 3, 3]);
   assert.deepEqual(Object.values(result.projectedGenderCounts).map((counts) => counts.MALE).sort(), [3, 3, 3]);
+});
+
+test("placement approver lookup uses persisted Prisma administrator roles", () => {
+  assert.deepEqual(
+    [...placementApproverRoles].sort(),
+    ["ADMIN", "STAFF", "SUPER_ADMIN"],
+  );
 });

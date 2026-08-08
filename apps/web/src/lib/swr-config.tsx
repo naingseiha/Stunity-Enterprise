@@ -26,7 +26,9 @@ export function SWRProvider({ children }: { children: ReactNode }) {
         revalidateOnFocus: false,
         revalidateOnReconnect: true,
         revalidateIfStale: true,
-        keepPreviousData: true,
+        // Keys often encode tenant and academic-year scope. Reusing the prior
+        // key's payload can briefly expose stale cross-scope data.
+        keepPreviousData: false,
         
         // Fetcher with auth + auto-refresh on 401 (remember-me)
         fetcher: async (url: string) => {

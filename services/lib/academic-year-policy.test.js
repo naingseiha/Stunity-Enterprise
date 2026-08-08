@@ -1,6 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { getAcademicYearWriteBlock } = require('./academic-year-policy');
+const {
+  getAcademicYearWriteBlock,
+  isAcademicYearHistoricallyReadOnly,
+} = require('./academic-year-policy');
 
 const activeYear = {
   id: 'year-active',
@@ -33,5 +36,35 @@ test('blocks dates that do not belong to the active academic year', () => {
   assert.equal(
     getAcademicYearWriteBlock(activeYear, new Date('2025-10-31T00:00:00.000Z')).code,
     'ACADEMIC_YEAR_DATE_OUT_OF_RANGE',
+  );
+});
+
+test('treats a past-dated planning year as historical', () => {
+  assert.equal(
+    isAcademicYearHistoricallyReadOnly(
+      {
+        ...activeYear,
+        status: 'PLANNING',
+        isCurrent: false,
+        endDate: new Date('2025-08-31T00:00:00.000Z'),
+      },
+      new Date('2026-08-09T00:00:00.000Z'),
+    ),
+    true,
+  );
+});
+
+test('keeps a future planning year structurally editable', () => {
+  assert.equal(
+    isAcademicYearHistoricallyReadOnly(
+      {
+        ...activeYear,
+        status: 'PLANNING',
+        isCurrent: false,
+        endDate: new Date('2027-08-31T00:00:00.000Z'),
+      },
+      new Date('2026-08-09T00:00:00.000Z'),
+    ),
+    false,
   );
 });

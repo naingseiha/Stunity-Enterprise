@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
@@ -444,6 +444,7 @@ export default function MasterTimetablePage() {
   const [loadingData, setLoadingData] = useState(false);
   const [loadingGrid, setLoadingGrid] = useState(false);
   const [error, setError] = useState('');
+  const loadClassStatsRequestIdRef = useRef(0);
   const [printSettings, setPrintSettings] = useState({
     officeName: 'មន្ទីរអប់រំយុជន និងកីឡា',
     clusterName: 'ខេត្ត៖ សៀមរាប',
@@ -452,12 +453,13 @@ export default function MasterTimetablePage() {
     logoUrl: '',
   });
 
-  const hydrateClassTimetables = useCallback(async (yearId: string, classList: ClassStats[]) => {
+  const hydrateClassTimetables = useCallback(async (yearId: string, classList: ClassStats[], requestId: number) => {
     setLoadingGrid(true);
     try {
       const settled = await Promise.allSettled(
         classList.map((classItem) => timetableAPI.getClassTimetable(classItem.id, yearId))
       );
+      if (requestId !== loadClassStatsRequestIdRef.current) return;
 
       const nextEntriesByClass: Record<string, ApiTimetableEntry[]> = {};
       const loadedClassIds = new Set<string>();
@@ -502,15 +504,21 @@ export default function MasterTimetablePage() {
 
   const loadClassStats = useCallback(
     async (yearId: string) => {
+      const requestId = ++loadClassStatsRequestIdRef.current;
       try {
         setLoadingData(true);
         setError('');
+        setClasses([]);
+        setEntriesByClass({});
+        setTeacherWorkloads([]);
+        setTeacherCount(0);
 
         const [masterStatsRes, workloadsRes, periodsRes] = await Promise.all([
           timetableAPI.getMasterStats(yearId),
           timetableAPI.getAllTeacherWorkloads(yearId).catch(() => ({ data: { teachers: [] } })),
           periodAPI.list().catch(() => ({ data: { periods: [] } })),
         ]);
+        if (requestId !== loadClassStatsRequestIdRef.current) return;
         const masterStats = masterStatsRes.data;
         const embeddedPeriods = (masterStats.periods || []).filter((period) => !period.isBreak);
         const fallbackPeriods = (periodsRes.data.periods || []).filter((period) => !period.isBreak);
@@ -556,12 +564,14 @@ export default function MasterTimetablePage() {
         if (hasEmbeddedEntries) {
           setEntriesByClass(embeddedEntriesByClass);
         } else {
-          void hydrateClassTimetables(yearId, classStats).catch((hydrateError) => {
+          void hydrateClassTimetables(yearId, classStats, requestId).catch((hydrateError) => {
+            if (requestId !== loadClassStatsRequestIdRef.current) return;
             console.error('Error loading timetable grid entries:', hydrateError);
             setError('The master stats loaded, but the detailed grid could not be hydrated.');
           });
         }
       } catch (err) {
+        if (requestId !== loadClassStatsRequestIdRef.current) return;
         console.error('Error loading master timetable:', err);
         const message = err instanceof Error ? err.message : 'Unknown error';
         setError(`Unable to load the master timetable right now. ${message}`);
@@ -570,7 +580,7 @@ export default function MasterTimetablePage() {
         setTeacherWorkloads([]);
         setTeacherCount(0);
       } finally {
-        setLoadingData(false);
+        if (requestId === loadClassStatsRequestIdRef.current) setLoadingData(false);
       }
     },
     [hydrateClassTimetables]
