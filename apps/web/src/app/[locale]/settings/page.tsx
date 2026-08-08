@@ -69,14 +69,6 @@ export default function SettingsHubPage(props: {
         tone: "amber",
         tools: [
           {
-            key: "workflow",
-            title: t("workflow"),
-            description: t("workflowDescription"),
-            href: `/${locale}/settings/year-end-workflow`,
-            icon: Archive,
-            tone: "amber",
-          },
-          {
             key: "promotion",
             title: t("promotion"),
             description: t("promotionDescription"),

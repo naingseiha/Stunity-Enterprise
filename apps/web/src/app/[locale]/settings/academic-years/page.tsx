@@ -950,7 +950,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                   <button
                                     onClick={() =>
                                       router.push(
-                                        `/${locale}/settings/academic-years/${year.id}/promote`
+                                        `/${locale}/settings/promotion?yearId=${year.id}`
                                       )
                                     }
                                     className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] text-emerald-700 transition hover:bg-emerald-600 hover:text-white dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300"

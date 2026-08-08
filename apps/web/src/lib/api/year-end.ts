@@ -42,7 +42,16 @@ export interface YearEndDecision {
   excusedCount: number;
   lateCount: number;
   disciplineIncidentCount: number | null;
-  evidence: { flags?: string[]; gradeRecordCount?: number } | null;
+  evidence: {
+    flags?: string[];
+    gradeRecordCount?: number;
+    academicCalculationMethod?: 'TWO_SEMESTER_AVERAGE';
+    semester1Average?: number | null;
+    semester2Average?: number | null;
+    annualAverage?: number | null;
+    annualResultComplete?: boolean;
+    academicStatus?: 'PASS' | 'FAIL' | 'INCOMPLETE';
+  } | null;
   interventions: string[] | null;
   interventionStatus: string | null;
   reviewedAt: string | null;
@@ -116,10 +125,10 @@ export const yearEndApi = {
     return request<YearEndCycle | null>(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${fromYearId}/year-end-cycle${query}`);
   },
 
-  generate(schoolId: string, fromYearId: string, toAcademicYearId: string) {
+  generate(schoolId: string, fromYearId: string, toAcademicYearId: string, recalculate = false) {
     return request<YearEndCycle>(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${fromYearId}/year-end-cycle/generate`, {
       method: 'POST',
-      body: JSON.stringify({ toAcademicYearId }),
+      body: JSON.stringify({ toAcademicYearId, recalculate }),
     });
   },
 
@@ -132,6 +141,13 @@ export const yearEndApi = {
     return request<YearEndDecision>(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${fromYearId}/year-end-cycle/decisions/${decisionId}`, {
       method: 'PATCH',
       body: JSON.stringify(update),
+    });
+  },
+
+  acceptRecommendations(schoolId: string, fromYearId: string, cycleId: string) {
+    return request<YearEndCycle & { acceptedCount: number }>(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${fromYearId}/year-end-cycle/accept-recommendations`, {
+      method: 'POST',
+      body: JSON.stringify({ cycleId }),
     });
   },
 

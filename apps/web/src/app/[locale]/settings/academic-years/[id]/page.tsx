@@ -298,11 +298,11 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
   } = useAcademicYearDetail<AcademicYearDetail>(school?.id, String(id));
 
   const handlePromoteStudents = () => {
-    router.push(`/${locale}/settings/academic-years/${id}/promote`);
+    router.push(`/${locale}/settings/promotion?yearId=${id}`);
   };
 
   const handleYearEndWorkflow = () => {
-    router.push(`/${locale}/settings/year-end-workflow?yearId=${id}`);
+    router.push(`/${locale}/settings/promotion?yearId=${id}`);
   };
 
   const handleCopySettings = () => {

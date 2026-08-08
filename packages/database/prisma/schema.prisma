@@ -4443,6 +4443,8 @@ enum UserRole {
   STUDENT
   PARENT
   STAFF
+  PRINCIPAL
+  VICE_PRINCIPAL
 }
 
 enum WorkingLevel {

@@ -42,9 +42,8 @@ import {
 } from './school-admin-access';
 import {
   DEFAULT_PROMOTION_POLICY,
-  averagePercent,
+  calculateAnnualAcademicResult,
   duplicateIds,
-  gradePercentage,
   normalizePromotionPolicy,
   parseGradeNumber,
   recommendYearEndOutcome,
@@ -3318,13 +3317,14 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
   try {
     const { schoolId, yearId } = req.params;
     const { toAcademicYearId } = req.body;
+    const recalculate = req.body.recalculate === true;
     const actorId = (req as AuthRequest).user?.id || 'SYSTEM';
     if (!toAcademicYearId || toAcademicYearId === yearId) {
       return res.status(400).json({ success: false, error: 'A different target academic year is required' });
     }
 
     const [fromYear, toYear, storedPolicy, existingCycle] = await Promise.all([
-      prisma.academicYear.findFirst({ where: { id: yearId, schoolId } }),
+      prisma.academicYear.findFirst({ where: { id: yearId, schoolId }, include: { terms: true } }),
       prisma.academicYear.findFirst({ where: { id: toAcademicYearId, schoolId } }),
       prisma.promotionPolicy.findUnique({ where: { schoolId } }),
       prisma.yearEndCycle.findUnique({
@@ -3340,9 +3340,26 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
     if (new Date(toYear.startDate) <= new Date(fromYear.startDate)) {
       return res.status(400).json({ success: false, error: 'Target year must start after the source year' });
     }
-    if (existingCycle) return res.json({ success: true, data: yearEndCycleResponse(existingCycle), existing: true });
+    if (existingCycle && !recalculate) {
+      return res.json({ success: true, data: yearEndCycleResponse(existingCycle), existing: true });
+    }
+    if (existingCycle && (existingCycle.status !== 'DRAFT' || existingCycle.decisions.some((decision) => Boolean(decision.reviewedAt)))) {
+      return res.status(409).json({
+        success: false,
+        error: 'Only an unreviewed draft register can be recalculated',
+        details: {
+          status: existingCycle.status,
+          reviewedDecisions: existingCycle.decisions.filter((decision) => Boolean(decision.reviewedAt)).length,
+        },
+      });
+    }
 
-    const policy = normalizePromotionPolicy((storedPolicy || DEFAULT_PROMOTION_POLICY) as any);
+    // Recalculation must not silently change the rules attached to an existing
+    // register. Use its immutable snapshot; only a brand-new cycle snapshots
+    // the school's current policy.
+    const policy = normalizePromotionPolicy(
+      ((existingCycle && recalculate ? existingCycle.policySnapshot : storedPolicy) || DEFAULT_PROMOTION_POLICY) as any,
+    );
     const enrollments = await prisma.studentClass.findMany({
       where: {
         class: { schoolId, academicYearId: yearId },
@@ -3371,7 +3388,18 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
     const [grades, attendance, targetClasses, targetEnrollmentCounts] = await Promise.all([
       prisma.grade.findMany({
         where: { studentId: { in: studentIds }, classId: { in: fromClassIds } },
-        select: { studentId: true, classId: true, score: true, maxScore: true, percentage: true },
+        select: {
+          studentId: true,
+          classId: true,
+          subjectId: true,
+          score: true,
+          maxScore: true,
+          percentage: true,
+          month: true,
+          monthNumber: true,
+          year: true,
+          subject: { select: { coefficient: true } },
+        },
       }),
       prisma.attendance.findMany({
         where: {
@@ -3426,7 +3454,8 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
       if (targetClass) projectedSeats.set(targetClass.id, (projectedSeats.get(targetClass.id) || 0) + 1);
 
       const studentGrades = gradesByEnrollment.get(`${enrollment.studentId}:${enrollment.classId}`) || [];
-      const academicAverage = averagePercent(studentGrades.map(gradePercentage));
+      const annualResult = calculateAnnualAcademicResult(studentGrades, fromYear.terms, gradeNumber);
+      const academicAverage = annualResult.annualAverage;
       const studentAttendance = attendanceByStudent.get(enrollment.studentId) || [];
       const absentCount = studentAttendance.filter((record) => record.status === 'ABSENT').length;
       const excusedCount = studentAttendance.filter((record) => record.status === 'EXCUSED').length;
@@ -3437,6 +3466,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
       const recommendation = recommendYearEndOutcome(
         {
           academicAverage,
+          academicEvidenceFlags: annualResult.flags,
           attendanceRate,
           absentCount,
           disciplineIncidentCount: null,
@@ -3451,7 +3481,10 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
         fromClassId: enrollment.classId,
         targetClassId: recommendation.outcome === 'GRADUATE' ? null : targetClass?.id || null,
         recommendedOutcome: recommendation.outcome,
-        finalOutcome: recommendation.outcome,
+        // A system recommendation is evidence, not the school's final
+        // decision. Every student remains unresolved until an administrator
+        // accepts the recommendation or records an override.
+        finalOutcome: 'PENDING' as const,
         reasonCode: recommendation.reasonCode,
         academicAverage,
         attendanceRate,
@@ -3462,30 +3495,70 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
         evidence: {
           flags: recommendation.flags,
           gradeRecordCount: studentGrades.length,
+          academicCalculationMethod: 'TWO_SEMESTER_AVERAGE',
+          semester1Average: annualResult.semester1Average,
+          semester2Average: annualResult.semester2Average,
+          annualAverage: annualResult.annualAverage,
+          annualResultComplete: annualResult.isComplete,
+          academicStatus: annualResult.isComplete
+            ? academicAverage! >= policy.passAverage ? 'PASS' : 'FAIL'
+            : 'INCOMPLETE',
           sourceClass: enrollment.class,
           generatedAt: new Date().toISOString(),
         },
       };
     });
 
-    const cycle = await prisma.yearEndCycle.create({
-      data: {
-        schoolId,
-        fromAcademicYearId: yearId,
-        toAcademicYearId,
-        policySnapshot: policy as any,
-        generatedBy: actorId,
-        decisions: { create: decisionCreates as any },
-      },
-      include: {
-        fromAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
-        toAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
-        decisions: { include: yearEndDecisionInclude },
-      },
-    });
+    const cycleInclude = {
+      fromAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
+      toAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
+      decisions: { include: yearEndDecisionInclude },
+    } as const;
+    const cycle = existingCycle && recalculate
+      ? await prisma.$transaction(async (tx) => {
+          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('year-end-cycle'), hashtext(${existingCycle.id})) IS NULL AS "lockAcquired"`;
+          const current = await tx.yearEndCycle.findFirst({
+            where: { id: existingCycle.id, schoolId, fromAcademicYearId: yearId },
+            include: { decisions: { select: { reviewedAt: true } } },
+          });
+          if (!current || current.status !== 'DRAFT' || current.decisions.some((decision) => Boolean(decision.reviewedAt))) {
+            throw new YearEndWorkflowError(409, 'The register changed and can no longer be recalculated');
+          }
+          // Preserve the durable cycle identity. Only its untouched SYSTEM
+          // recommendations are replaced; no student or enrollment row is
+          // mutated by recalculation.
+          await tx.yearEndDecision.deleteMany({ where: { cycleId: current.id } });
+          return tx.yearEndCycle.update({
+            where: { id: current.id },
+            data: {
+              generatedBy: actorId,
+              generatedAt: new Date(),
+              decisions: { create: decisionCreates as any },
+            },
+            include: cycleInclude,
+          });
+        }, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          maxWait: 30_000,
+          timeout: 120_000,
+        })
+      : await prisma.yearEndCycle.create({
+          data: {
+            schoolId,
+            fromAcademicYearId: yearId,
+            toAcademicYearId,
+            policySnapshot: policy as any,
+            generatedBy: actorId,
+            decisions: { create: decisionCreates as any },
+          },
+          include: cycleInclude,
+        });
     return res.status(201).json({ success: true, data: yearEndCycleResponse(cycle) });
   } catch (error: any) {
     console.error('Error generating year-end cycle:', error);
+    if (error instanceof YearEndWorkflowError) {
+      return res.status(error.statusCode).json({ success: false, error: error.message, details: error.details });
+    }
     if (error?.code === 'P2002') {
       const { schoolId, yearId } = req.params;
       const toAcademicYearId = String(req.body.toAcademicYearId || '');
@@ -3552,7 +3625,7 @@ app.patch('/schools/:schoolId/academic-years/:yearId/year-end-cycle/decisions/:d
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('year-end-cycle'), hashtext(${existing.cycleId}))`;
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('year-end-cycle'), hashtext(${existing.cycleId})) IS NULL AS "lockAcquired"`;
       const editableCycle = await tx.yearEndCycle.findFirst({
         where: { id: existing.cycleId, schoolId, fromAcademicYearId: yearId, status: { in: ['DRAFT', 'IN_REVIEW'] } },
         select: { id: true },
@@ -3567,7 +3640,7 @@ app.patch('/schools/:schoolId/academic-years/:yearId/year-end-cycle/decisions/:d
         data: {
           finalOutcome,
           targetClassId,
-          decisionSource: isOverride ? 'OVERRIDE' : req.body.decisionSource || existing.decisionSource,
+          decisionSource: isOverride ? 'OVERRIDE' : 'MANUAL',
           reasonCode: req.body.reasonCode === undefined ? existing.reasonCode : req.body.reasonCode || null,
           reasonDetails: req.body.reasonDetails === undefined ? existing.reasonDetails : req.body.reasonDetails || null,
           interventions: req.body.interventions === undefined ? existing.interventions : req.body.interventions,
@@ -3614,13 +3687,114 @@ app.patch('/schools/:schoolId/academic-years/:yearId/year-end-cycle/decisions/:d
   }
 });
 
+app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/accept-recommendations', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, yearId } = req.params;
+    const actorId = (req as AuthRequest).user?.id || 'SYSTEM';
+    const cycleId = String(req.body.cycleId || '');
+    if (!cycleId) return res.status(400).json({ success: false, error: 'Cycle ID is required' });
+
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('year-end-cycle'), hashtext(${cycleId})) IS NULL AS "lockAcquired"`;
+      const cycle = await tx.yearEndCycle.findFirst({
+        where: { id: cycleId, schoolId, fromAcademicYearId: yearId },
+        include: { decisions: true },
+      });
+      if (!cycle) throw new YearEndWorkflowError(404, 'Year-end cycle not found');
+      if (cycle.status !== 'DRAFT') {
+        throw new YearEndWorkflowError(409, 'System recommendations can only be accepted while the register is a draft');
+      }
+
+      const promotable = cycle.decisions.filter((decision) =>
+        decision.finalOutcome === 'PENDING'
+          && decision.recommendedOutcome === 'PROMOTE'
+          && Boolean(decision.targetClassId),
+      );
+      const graduating = cycle.decisions.filter((decision) =>
+        decision.finalOutcome === 'PENDING' && decision.recommendedOutcome === 'GRADUATE',
+      );
+      const confirmedAt = new Date();
+
+      if (promotable.length) {
+        await tx.yearEndDecision.updateMany({
+          where: { id: { in: promotable.map((decision) => decision.id) }, cycleId },
+          data: {
+            finalOutcome: 'PROMOTE',
+            decisionSource: 'MANUAL',
+            reviewedBy: actorId,
+            reviewedAt: confirmedAt,
+            version: { increment: 1 },
+          },
+        });
+      }
+      if (graduating.length) {
+        await tx.yearEndDecision.updateMany({
+          where: { id: { in: graduating.map((decision) => decision.id) }, cycleId },
+          data: {
+            finalOutcome: 'GRADUATE',
+            decisionSource: 'MANUAL',
+            reviewedBy: actorId,
+            reviewedAt: confirmedAt,
+            version: { increment: 1 },
+          },
+        });
+      }
+
+      const accepted = [
+        ...promotable.map((decision) => ({ ...decision, acceptedOutcome: 'PROMOTE' as const })),
+        ...graduating.map((decision) => ({ ...decision, acceptedOutcome: 'GRADUATE' as const })),
+      ];
+      if (accepted.length) {
+        await tx.yearEndDecisionEvent.createMany({
+          data: accepted.map((decision) => ({
+            decisionId: decision.id,
+            action: 'SYSTEM_RECOMMENDATION_ACCEPTED',
+            fromOutcome: 'PENDING',
+            toOutcome: decision.acceptedOutcome,
+            reasonCode: decision.reasonCode,
+            actorId,
+            metadata: { bulkAction: true, targetClassId: decision.targetClassId } as any,
+          })),
+        });
+      }
+
+      const updated = await tx.yearEndCycle.findUniqueOrThrow({
+        where: { id: cycleId },
+        include: {
+          fromAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
+          toAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
+          decisions: { include: yearEndDecisionInclude },
+        },
+      });
+      return { cycle: updated, acceptedCount: accepted.length };
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      maxWait: 30_000,
+      timeout: 120_000,
+    });
+
+    return res.json({
+      success: true,
+      data: { ...yearEndCycleResponse(result.cycle), acceptedCount: result.acceptedCount },
+    });
+  } catch (error: any) {
+    console.error('Error accepting year-end recommendations:', error);
+    const statusCode = error instanceof YearEndWorkflowError ? error.statusCode : 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: error instanceof YearEndWorkflowError ? error.message : 'Failed to accept system recommendations',
+      ...(error instanceof YearEndWorkflowError && error.details ? { details: error.details } : {}),
+    });
+  }
+});
+
 app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/submit', async (req: Request, res: Response) => {
   try {
     const actorId = (req as AuthRequest).user?.id || 'SYSTEM';
     const cycleId = String(req.body.cycleId || '');
     if (!cycleId) return res.status(400).json({ success: false, error: 'Cycle ID is required' });
     const updated = await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('year-end-cycle'), hashtext(${cycleId}))`;
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('year-end-cycle'), hashtext(${cycleId})) IS NULL AS "lockAcquired"`;
       const cycle = await tx.yearEndCycle.findFirst({
         where: { id: cycleId, schoolId: req.params.schoolId, fromAcademicYearId: req.params.yearId },
         include: { decisions: true },
@@ -3658,7 +3832,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/approve', asy
     const cycleId = String(req.body.cycleId || '');
     if (!cycleId) return res.status(400).json({ success: false, error: 'Cycle ID is required' });
     const updated = await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('year-end-cycle'), hashtext(${cycleId}))`;
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('year-end-cycle'), hashtext(${cycleId})) IS NULL AS "lockAcquired"`;
       const cycle = await tx.yearEndCycle.findFirst({
         where: { id: cycleId, schoolId: req.params.schoolId, fromAcademicYearId: req.params.yearId },
       });
@@ -3693,7 +3867,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/finalize', as
     const result = await prisma.$transaction(async (tx) => {
       // One school/source-year finalizer at a time. The lock is transaction-scoped
       // and automatically released on commit or rollback.
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${schoolId}), hashtext(${yearId}))`;
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${schoolId}), hashtext(${yearId})) IS NULL AS "lockAcquired"`;
 
       const cycle = await tx.yearEndCycle.findFirst({
         where: { id: cycleId, schoolId, fromAcademicYearId: yearId },

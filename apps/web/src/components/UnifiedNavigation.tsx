@@ -41,7 +41,6 @@ import {
   MapPin,
   Loader2,
   Shield,
-  Archive,
   Moon,
   Sun,
   Gamepad2,
@@ -603,13 +602,6 @@ export default function UnifiedNavigation({
         label: tNav("sections.yearEnd"),
         icon: Clock3,
         items: [
-          {
-            name: tNav("items.yearEndWorkflow"),
-            icon: Archive,
-            path: `/${locale}/settings/year-end-workflow`,
-            prefetch: "year-end",
-            skeleton: "table" as const,
-          },
           {
             name: tNav("items.promotion"),
             icon: TrendingUp,

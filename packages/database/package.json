@@ -6,6 +6,8 @@
     "push": "prisma db push",
     "studio": "prisma studio",
     "migrate": "prisma migrate dev",
+    "audit:year-end": "tsx scripts/audit-year-end-integrity.ts",
+    "repair:year-end": "tsx scripts/repair-year-end-integrity.ts",
     "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
