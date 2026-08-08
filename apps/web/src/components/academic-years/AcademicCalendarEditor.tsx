@@ -416,7 +416,9 @@ export default function AcademicCalendarEditor({
                           {includedMonths.length === 0 ? <span className="text-xs text-slate-400">សូមកំណត់ថ្ងៃឆមាសជាមុន</span> : null}
                         </div>
                         <p className="mt-2 text-xs leading-5 text-amber-700 dark:text-amber-300">
-                          ជ្រើសទីនេះតែករណីឈប់ពេញមួយខែ។ វិសមកាលត្រឹមចន្លោះថ្ងៃ ត្រូវកំណត់ក្នុង «ប្រតិទិនសិក្សា»។
+                          ជ្រើសខែដែលឈប់ពេញមួយខែ (ឧ. មេសា = វិសសមកាល)។ ខែទាំងនេះ{' '}
+                          <strong>មិនត្រូវបានបូកមធ្យម</strong>ក្នុងរបាយប្រចាំឆមាស។
+                          វិសសមកាលត្រឹមចន្លោះថ្ងៃក៏ដកស្វ័យប្រវត្តិពីប្រតិទិន VACATION/HOLIDAY ដែរ។
                         </p>
                       </div>
                     </div>

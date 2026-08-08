@@ -1,6 +1,6 @@
 'use client';
 
-import type { KhmerMonthlyReportData, KhmerMonthlyReportStudent } from '@/lib/api/grades';
+import type { KhmerMonthlyReportStudent } from '@/lib/api/grades';
 import { formatReportDate } from '@/lib/reports/templates/khm-moeys/khmer-date';
 import { paginateKhmerMonthlyReport } from '@/lib/reports/templates/khm-moeys/pagination';
 import type { MonthlySummaryPrintProps } from './MonthlySummaryPrint';
@@ -11,16 +11,39 @@ function hasSemester(student: KhmerMonthlyReportStudent): student is KhmerMonthl
   return Boolean(student.semesterOne);
 }
 
-/** Semester 1 result sheet (SchoolManagementApp parity — pre-semester avg + exam + final) */
-export default function SemesterOnePrint({ report, settings, schoolProfile }: Omit<MonthlySummaryPrintProps, 'subjects'> & { schoolProfile?: any }) {
+/** Semester result sheet (pre-semester avg + exam + final), or exam-only columns */
+export default function SemesterOnePrint({
+  report,
+  settings,
+  schoolProfile,
+  mode = 'full',
+}: Omit<MonthlySummaryPrintProps, 'subjects'> & {
+  schoolProfile?: any;
+  mode?: 'full' | 'exam-only';
+}) {
   const rows = report.students.filter(hasSemester);
   const pages = paginateKhmerMonthlyReport(rows, settings.firstPageStudentCount, settings.nextPageStudentCount);
   const isGradeWide = report.scope === 'grade';
   const classLabel = isGradeWide
     ? `កម្រិតថ្នាក់៖ ថ្នាក់ទី ${report.grade}`
     : report.class?.name || `ថ្នាក់ទី ${report.grade}`;
-  const isSem2 = report.format === 'semester-2';
-  const reportTitle = settings.reportTitle || (isSem2 ? 'តារាងលទ្ធផលប្រចាំឆមាសទី២' : 'តារាងលទ្ធផលប្រចាំឆមាសទី១');
+  const isSem2 =
+    report.format === 'semester-2' ||
+    report.format === 'semester-exam-2' ||
+    report.format === 'tracking-2';
+  const examOnly =
+    mode === 'exam-only' ||
+    report.format === 'semester-exam-1' ||
+    report.format === 'semester-exam-2';
+  const reportTitle =
+    settings.reportTitle ||
+    (examOnly
+      ? isSem2
+        ? 'តារាងលទ្ធផលប្រឡងឆមាសទី២'
+        : 'តារាងលទ្ធផលប្រឡងឆមាសទី១'
+      : isSem2
+        ? 'តារាងលទ្ធផលប្រចាំឆមាសទី២'
+        : 'តារាងលទ្ធផលប្រចាំឆមាសទី១');
   const teacherName = settings.teacherName || report.teacherName || '';
 
   // Use school profile data for dynamic header
@@ -33,6 +56,7 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
     formatReportDate(cleanProvince || '');
   const schoolName = schoolProfile?.nameKh || schoolProfile?.name || report.school?.name || settings.examCenter || '';
   const logoUrl = schoolProfile?.logoUrl || report.school?.logo || '';
+  const showAttendance = settings.showAttendance;
 
   return (
     <div className="khmer-monthly-print">
@@ -145,28 +169,63 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
 
             <table className="moeys-semester-table">
               <thead>
-                <tr>
-                  <th rowSpan={2}>ល.រ</th>
-                  <th rowSpan={2}>គោត្តនាម នាម</th>
-                  {isGradeWide && settings.showClassName && <th rowSpan={2}>ថ្នាក់</th>}
-                  <th colSpan={3}>អវត្តមាន</th>
-                  <th colSpan={2}>លទ្ធផលប្រចាំខែឆមាស</th>
-                  <th colSpan={3}>លទ្ធផលប្រឡងឆមាស</th>
-                  <th colSpan={3}>លទ្ធផលប្រចាំឆមាស</th>
-                </tr>
-                <tr>
-                  <th>ច</th>
-                  <th>អច្ប</th>
-                  <th>សរុប</th>
-                  <th>ម.ភាគ</th>
-                  <th>ចំ.ថ្នាក់</th>
-                  <th>ពិន្ទុ</th>
-                  <th>ម.ភាគ</th>
-                  <th>ចំ.ថ្នាក់</th>
-                  <th>ម.ភាគ</th>
-                  <th>ចំ.ថ្នាក់</th>
-                  <th>និទ្ទេស</th>
-                </tr>
+                {examOnly ? (
+                  showAttendance ? (
+                    <>
+                      <tr>
+                        <th rowSpan={2}>ល.រ</th>
+                        <th rowSpan={2}>គោត្តនាម នាម</th>
+                        {isGradeWide && settings.showClassName && <th rowSpan={2}>ថ្នាក់</th>}
+                        <th colSpan={3}>អវត្តមាន</th>
+                        <th colSpan={3}>លទ្ធផលប្រឡងឆមាស</th>
+                        <th rowSpan={2}>និទ្ទេស</th>
+                      </tr>
+                      <tr>
+                        <th>ច</th>
+                        <th>អច្ប</th>
+                        <th>សរុប</th>
+                        <th>ពិន្ទុ</th>
+                        <th>ម.ភាគ</th>
+                        <th>ចំ.ថ្នាក់</th>
+                      </tr>
+                    </>
+                  ) : (
+                    <tr>
+                      <th>ល.រ</th>
+                      <th>គោត្តនាម នាម</th>
+                      {isGradeWide && settings.showClassName && <th>ថ្នាក់</th>}
+                      <th>ពិន្ទុ</th>
+                      <th>ម.ភាគ</th>
+                      <th>ចំ.ថ្នាក់</th>
+                      <th>និទ្ទេស</th>
+                    </tr>
+                  )
+                ) : (
+                  <>
+                    <tr>
+                      <th rowSpan={2}>ល.រ</th>
+                      <th rowSpan={2}>គោត្តនាម នាម</th>
+                      {isGradeWide && settings.showClassName && <th rowSpan={2}>ថ្នាក់</th>}
+                      <th colSpan={3}>អវត្តមាន</th>
+                      <th colSpan={2}>លទ្ធផលប្រចាំខែឆមាស</th>
+                      <th colSpan={3}>លទ្ធផលប្រឡងឆមាស</th>
+                      <th colSpan={3}>លទ្ធផលប្រចាំឆមាស</th>
+                    </tr>
+                    <tr>
+                      <th>ច</th>
+                      <th>អច្ប</th>
+                      <th>សរុប</th>
+                      <th>ម.ភាគ</th>
+                      <th>ចំ.ថ្នាក់</th>
+                      <th>ពិន្ទុ</th>
+                      <th>ម.ភាគ</th>
+                      <th>ចំ.ថ្នាក់</th>
+                      <th>ម.ភាគ</th>
+                      <th>ចំ.ថ្នាក់</th>
+                      <th>និទ្ទេស</th>
+                    </tr>
+                  </>
+                )}
               </thead>
               <tbody>
                 {pageStudents.map((student, index) => {
@@ -176,6 +235,32 @@ export default function SemesterOnePrint({ report, settings, schoolProfile }: Om
                       : settings.firstPageStudentCount + (pageIndex - 1) * settings.nextPageStudentCount + index + 1;
                   const s = student.semesterOne!;
                   const totalAbs = (student.permission || 0) + (student.absent || 0);
+
+                  if (examOnly) {
+                    return (
+                      <tr key={student.studentId}>
+                        <td>{globalIndex}</td>
+                        <td className="name">{student.studentName}</td>
+                        {isGradeWide && settings.showClassName && <td>{student.className}</td>}
+                        {showAttendance && (
+                          <>
+                            <td>{student.permission || 0}</td>
+                            <td>{student.absent || 0}</td>
+                            <td>
+                              <strong>{totalAbs}</strong>
+                            </td>
+                          </>
+                        )}
+                        <td>{s.examTotal.toFixed(0)}</td>
+                        <td>{s.examAverage.toFixed(2)}</td>
+                        <td style={{ color: '#dc2626', fontWeight: 700 }}>{s.examRank}</td>
+                        <td>
+                          <strong>{s.finalGrade}</strong>
+                        </td>
+                      </tr>
+                    );
+                  }
+
                   return (
                     <tr key={student.studentId}>
                       <td>{globalIndex}</td>

@@ -8,6 +8,10 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { getAvailableMonthsForGrade, getKhmerMonthDisplayName } from '@/lib/reports/khmerMonthly';
 import { attendanceAPI, MonthlyEntryGridItem } from '@/lib/api/attendance';
+import {
+  getMonthlyEntryStatusMeta,
+  getNextMonthlyEntryStatus,
+} from '@/lib/attendance/monthlyEntryStatus';
 import { TokenManager } from '@/lib/api/auth';
 import { useClasses } from '@/hooks/useClasses';
 import BlurLoader from '@/components/BlurLoader';
@@ -27,8 +31,6 @@ import {
   Users,
   Award,
 } from 'lucide-react';
-
-type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED' | 'PERMISSION' | null;
 
 export default function MonthlyAttendanceEntryPage() {
   const autoT = useTranslations();
@@ -120,30 +122,9 @@ export default function MonthlyAttendanceEntryPage() {
   };
 
   const getNextStatus = (current: string | undefined | null): string | null => {
-    switch (current) {
-      case 'ABSENT': return 'PERMISSION';
-      case 'PERMISSION': return 'PRESENT';
-      case 'PRESENT': return null;
-      default: return 'ABSENT';
-    }
-  };
-
-  const getStatusLabel = (status: string | undefined | null) => {
-    switch (status) {
-      case 'PRESENT': return 'P';
-      case 'ABSENT': return 'A';
-      case 'PERMISSION': return 'S'; // S = Sabab / Xin
-      default: return '';
-    }
-  };
-
-  const getStatusTone = (status: string | undefined | null) => {
-    switch (status) {
-      case 'PRESENT': return 'border-emerald-200 bg-emerald-50 text-emerald-700';
-      case 'ABSENT': return 'border-rose-200 bg-rose-50 text-rose-700';
-      case 'PERMISSION': return 'border-amber-200 bg-amber-50 text-amber-700';
-      default: return 'border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-transparent';
-    }
+    return getNextMonthlyEntryStatus(
+      current as Parameters<typeof getNextMonthlyEntryStatus>[0],
+    );
   };
 
   const handleCellClick = useCallback(async (studentId: string, day: number) => {
@@ -529,9 +510,9 @@ export default function MonthlyAttendanceEntryPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         {[
-                          ['A = Absent', 'border-rose-200 bg-rose-50 text-rose-700'],
-                          ['S = Sabab', 'border-amber-200 bg-amber-50 text-amber-700'],
-                          ['P = Present', 'border-emerald-200 bg-emerald-50 text-emerald-700'],
+                          ['✓ = Present', 'border-emerald-200 bg-emerald-50 text-emerald-700'],
+                          ['A = Absent without permission', 'border-rose-200 bg-rose-50 text-rose-700'],
+                          ['P = Absent with permission', 'border-violet-200 bg-violet-50 text-violet-700'],
                         ].map(([label, tone]) => (
                           <span key={label} className={`inline-flex rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] ${tone}`}>
                             {label}
@@ -591,6 +572,9 @@ export default function MonthlyAttendanceEntryPage() {
                                 </td>
                                 {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => {
                                   const status = item.attendance[day] as string | undefined;
+                                  const statusMeta = getMonthlyEntryStatusMeta(
+                                    status as Parameters<typeof getMonthlyEntryStatusMeta>[0],
+                                  );
                                   const isPending = pendingUpdates.has(`${item.studentId}-${day}`);
                                   
                                   return (
@@ -598,9 +582,11 @@ export default function MonthlyAttendanceEntryPage() {
                                       <button
                                         type="button"
                                         onClick={() => handleCellClick(item.studentId, day)}
-                                        className={`flex h-8 w-8 items-center justify-center rounded-lg border text-xs font-black transition-all mx-auto select-none ${getStatusTone(status)} ${isPending ? 'opacity-50 animate-pulse' : ''}`}
+                                        title={statusMeta.label}
+                                        aria-label={`Day ${day}: ${statusMeta.label}`}
+                                        className={`mx-auto flex h-8 w-8 select-none items-center justify-center rounded-lg border text-xs font-black transition-all ${statusMeta.tone} ${isPending ? 'animate-pulse opacity-50' : ''}`}
                                       >
-                                        {getStatusLabel(status) || <span className="opacity-0">-</span>}
+                                        {statusMeta.code}
                                       </button>
                                     </td>
                                   );
@@ -664,13 +650,13 @@ export default function MonthlyAttendanceEntryPage() {
                   <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
                     <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Cycle Order</p>
                     <div className="mt-4 flex items-center justify-between gap-2 text-sm font-semibold">
-                      <span className="rounded border px-2 py-1 text-slate-400">Empty</span>
+                      <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-700">✓</span>
                       <span className="text-slate-300">→</span>
                       <span className="rounded border border-rose-200 bg-rose-50 px-2 py-1 text-rose-700">A</span>
                       <span className="text-slate-300">→</span>
-                      <span className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-700">S</span>
+                      <span className="rounded border border-violet-200 bg-violet-50 px-2 py-1 text-violet-700">P</span>
                       <span className="text-slate-300">→</span>
-                      <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-700">P</span>
+                      <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-700">✓</span>
                     </div>
                   </div>
                 </div>

@@ -43,6 +43,13 @@ function preferredMonthWithinTerm(startDate: Date, endDate: Date, preferredMonth
   return preferredMonths.find((month) => includedMonths.includes(month)) ?? includedMonths.at(-1) ?? null;
 }
 
+/** Holiday / no-exam months that fall inside a term window (e.g. Khmer New Year in April). */
+function defaultExcludedMonthsInTerm(startDate: Date, endDate: Date): number[] {
+  const included = new Set(monthsInTerm(dateOnly(startDate), dateOnly(endDate)));
+  // April is the usual Khmer New Year break when it sits inside a semester window.
+  return [4].filter((month) => included.has(month));
+}
+
 export function monthsInTerm(startDate: string, endDate: string): number[] {
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -81,8 +88,9 @@ export function buildCambodiaAcademicTerms(startDate: string, endDate: string): 
       startDate: dateOnly(safeStart),
       endDate: dateOnly(standardSemesterOneEnd),
       gradeLevels: [7, 8, 10, 11],
-      examMonth: preferredMonthWithinTerm(safeStart, standardSemesterOneEnd, [3, 2]),
-      excludedMonths: [],
+      // MoEYS common pattern: February semester-1 exam for these grades.
+      examMonth: preferredMonthWithinTerm(safeStart, standardSemesterOneEnd, [2, 3]),
+      excludedMonths: defaultExcludedMonthsInTerm(safeStart, standardSemesterOneEnd),
     },
     {
       name: 'Semester 2 — Grades 7, 8, 10, 11',
@@ -91,8 +99,10 @@ export function buildCambodiaAcademicTerms(startDate: string, endDate: string): 
       startDate: dateOnly(standardSemesterTwoStart),
       endDate: dateOnly(safeEnd),
       gradeLevels: [7, 8, 10, 11],
-      examMonth: preferredMonthWithinTerm(standardSemesterTwoStart, safeEnd, [8, 7]),
-      excludedMonths: [],
+      // The school year may remain open through August for administration,
+      // while Cambodia's Semester 2 result is finalized in July.
+      examMonth: preferredMonthWithinTerm(standardSemesterTwoStart, safeEnd, [7, 8]),
+      excludedMonths: defaultExcludedMonthsInTerm(standardSemesterTwoStart, safeEnd),
     },
     {
       name: 'Semester 1 — Grades 9, 12',
@@ -102,7 +112,7 @@ export function buildCambodiaAcademicTerms(startDate: string, endDate: string): 
       endDate: dateOnly(examSemesterOneEnd),
       gradeLevels: [9, 12],
       examMonth: preferredMonthWithinTerm(safeStart, examSemesterOneEnd, [2]),
-      excludedMonths: [],
+      excludedMonths: defaultExcludedMonthsInTerm(safeStart, examSemesterOneEnd),
     },
     {
       name: 'Semester 2 — Grades 9, 12',
@@ -111,8 +121,9 @@ export function buildCambodiaAcademicTerms(startDate: string, endDate: string): 
       startDate: dateOnly(examSemesterTwoStart),
       endDate: dateOnly(safeEnd),
       gradeLevels: [9, 12],
-      examMonth: preferredMonthWithinTerm(examSemesterTwoStart, safeEnd, [7, 6]),
-      excludedMonths: [],
+      // Exam grades commonly finalize Semester 2 in June.
+      examMonth: preferredMonthWithinTerm(examSemesterTwoStart, safeEnd, [6, 7]),
+      excludedMonths: defaultExcludedMonthsInTerm(examSemesterTwoStart, safeEnd),
     },
   ];
 }

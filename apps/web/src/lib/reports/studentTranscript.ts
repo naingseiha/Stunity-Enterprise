@@ -28,6 +28,86 @@ export const SEMESTER_2_MONTHS = [4, 5, 6, 7, 8] as const;
 export const SEMESTER_1_MONTHLY_MONTHS = [11, 12, 1, 2] as const;
 export const SEMESTER_2_MONTHLY_MONTHS = [4, 5, 6, 7] as const;
 
+export type TranscriptTermWindow = {
+  termNumber: number;
+  startDate: string;
+  endDate: string;
+  examMonth?: number | null;
+  excludedMonths?: number[];
+  gradeLevels?: number[];
+};
+
+function monthsBetween(startDate: string, endDate: string): number[] {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return [];
+  const values: number[] = [];
+  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+  const endValue = end.getUTCFullYear() * 100 + (end.getUTCMonth() + 1);
+  while (cursor.getUTCFullYear() * 100 + (cursor.getUTCMonth() + 1) <= endValue) {
+    values.push(cursor.getUTCMonth() + 1);
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+  return values;
+}
+
+/** Resolve semester month windows from AcademicTerm settings (falls back to MoEYS defaults). */
+export function resolveTranscriptTermMonths(
+  terms: TranscriptTermWindow[] | undefined,
+  gradeLevel?: number | null,
+): {
+  semester1Months: number[];
+  semester2Months: number[];
+  semester1MonthlyMonths: number[];
+  semester2MonthlyMonths: number[];
+  semester1ExamMonth: number;
+  semester2ExamMonth: number;
+} {
+  const pickTerm = (termNumber: number) => {
+    const matched = (terms || []).filter((term) => term.termNumber === termNumber);
+    if (!matched.length) return null;
+    if (gradeLevel == null) return matched[0];
+    return (
+      matched.find(
+        (term) => !term.gradeLevels?.length || term.gradeLevels.includes(gradeLevel),
+      ) || matched[0]
+    );
+  };
+
+  const term1 = pickTerm(1);
+  const term2 = pickTerm(2);
+
+  const build = (term: TranscriptTermWindow | null, fallbackAll: readonly number[], fallbackExam: number) => {
+    if (!term) {
+      return {
+        all: [...fallbackAll],
+        monthly: fallbackAll.filter((month) => month !== fallbackExam),
+        exam: fallbackExam,
+      };
+    }
+    const excluded = new Set(term.excludedMonths || []);
+    const all = monthsBetween(term.startDate, term.endDate).filter((month) => !excluded.has(month));
+    const exam = term.examMonth && all.includes(term.examMonth) ? term.examMonth : all.at(-1) || fallbackExam;
+    return {
+      all: all.length ? all : [...fallbackAll],
+      monthly: all.filter((month) => month !== exam),
+      exam,
+    };
+  };
+
+  const s1 = build(term1, SEMESTER_1_MONTHS, 3);
+  const s2 = build(term2, SEMESTER_2_MONTHS, 8);
+
+  return {
+    semester1Months: s1.all,
+    semester2Months: s2.all,
+    semester1MonthlyMonths: s1.monthly.length ? s1.monthly : [...SEMESTER_1_MONTHLY_MONTHS],
+    semester2MonthlyMonths: s2.monthly.length ? s2.monthly : [...SEMESTER_2_MONTHLY_MONTHS],
+    semester1ExamMonth: s1.exam,
+    semester2ExamMonth: s2.exam,
+  };
+}
+
 export function safeMean(values: Array<number | null | undefined>): number | null {
   const valid = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
   if (valid.length === 0) return null;
@@ -81,13 +161,20 @@ export function getKhmerRemark(grade: string): string {
 }
 
 export function calculateTranscriptSubject<T extends TranscriptSubjectInput>(
-  subject: T
+  subject: T,
+  options?: {
+    terms?: TranscriptTermWindow[];
+    gradeLevel?: number | null;
+  }
 ): TranscriptSubjectCalculation<T> {
+  const windows = resolveTranscriptTermMonths(options?.terms, options?.gradeLevel);
+  const semester1Months = new Set(windows.semester1Months);
+  const semester2Months = new Set(windows.semester2Months);
   const semester1Grades = subject.grades.filter((grade) =>
-    SEMESTER_1_MONTHS.includes(grade.monthNumber as (typeof SEMESTER_1_MONTHS)[number])
+    typeof grade.monthNumber === 'number' && semester1Months.has(grade.monthNumber)
   );
   const semester2Grades = subject.grades.filter((grade) =>
-    SEMESTER_2_MONTHS.includes(grade.monthNumber as (typeof SEMESTER_2_MONTHS)[number])
+    typeof grade.monthNumber === 'number' && semester2Months.has(grade.monthNumber)
   );
   const semester1 = averageRawScore(semester1Grades);
   const semester2 = averageRawScore(semester2Grades);
@@ -129,11 +216,18 @@ function averageSubjectPercentages<T extends TranscriptSubjectInput>(
   return safeMean(subjectAverages);
 }
 
-export function calculateTranscriptSummary<T extends TranscriptSubjectInput>(subjects: T[]) {
-  const semester1ExamPercentage = averageSubjectPercentages(subjects, [3]);
-  const semester2ExamPercentage = averageSubjectPercentages(subjects, [8]);
-  const semester1MonthlyPercentage = averageSubjectPercentages(subjects, SEMESTER_1_MONTHLY_MONTHS);
-  const semester2MonthlyPercentage = averageSubjectPercentages(subjects, SEMESTER_2_MONTHLY_MONTHS);
+export function calculateTranscriptSummary<T extends TranscriptSubjectInput>(
+  subjects: T[],
+  options?: {
+    terms?: TranscriptTermWindow[];
+    gradeLevel?: number | null;
+  }
+) {
+  const windows = resolveTranscriptTermMonths(options?.terms, options?.gradeLevel);
+  const semester1ExamPercentage = averageSubjectPercentages(subjects, [windows.semester1ExamMonth]);
+  const semester2ExamPercentage = averageSubjectPercentages(subjects, [windows.semester2ExamMonth]);
+  const semester1MonthlyPercentage = averageSubjectPercentages(subjects, windows.semester1MonthlyMonths);
+  const semester2MonthlyPercentage = averageSubjectPercentages(subjects, windows.semester2MonthlyMonths);
 
   const toFiftyPointScale = (percentage: number | null) => percentage === null ? null : percentage * 0.5;
   const semester1Exam = toFiftyPointScale(semester1ExamPercentage);

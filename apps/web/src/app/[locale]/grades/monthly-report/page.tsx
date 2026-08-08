@@ -2,13 +2,14 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   AlertCircle,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
   Award,
+  CalendarRange,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -46,12 +47,24 @@ import { formatEducationModelLabel } from '@/lib/educationModel';
 import {
   getKhmerMonthDisplayName,
   getKhmerMonthLabel,
-  KHMER_MONTHS,
   sortSubjectsByOrder,
   getAvailableMonthsForGrade,
+  getMonthlyReportMonthsForGrades,
 } from '@/lib/reports/khmerMonthly';
+import {
+  resolveMonthlyReportFormat,
+  type AcademicResultReportKind,
+} from '@/lib/reports/registry';
 
 type ReportScope = 'class' | 'grade';
+type MonthlyOutput = 'results' | 'honor' | 'tracking';
+
+const REPORT_KIND_QUERY: Record<string, AcademicResultReportKind> = {
+  monthly: 'monthly',
+  'semester-exam': 'semester-exam',
+  semester: 'semester',
+  annual: 'annual',
+};
 
 const SETTINGS_STORAGE = 'stunity:monthly-report-print-settings:v1';
 
@@ -110,6 +123,7 @@ const DEFAULT_SETTINGS = {
 
 export default function KhmerMonthlyReportPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const locale = useLocale();
   const t = useTranslations('monthlyReport');
   const [user, setUser] = useState<any>(null);
@@ -118,29 +132,58 @@ export default function KhmerMonthlyReportPage() {
   const [loadingReport, setLoadingReport] = useState(false);
   const [error, setError] = useState('');
   const [reports, setReports] = useState<KhmerMonthlyReportData[]>([]);
-  const { allYears, selectedYear: contextSelectedYear } = useAcademicYear();
+  const {
+    allYears,
+    selectedYear: contextSelectedYear,
+    terms: contextTerms,
+    setSelectedYear: setContextSelectedYear,
+  } = useAcademicYear();
 
   const [selectedYear, setSelectedYear] = useState(contextSelectedYear?.id || '');
   const [scope, setScope] = useState<ReportScope>('class');
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedMonthNumber, setSelectedMonthNumber] = useState(2);
-  const [reportType, setReportType] = useState<'monthly' | 'semester'>('monthly');
+  const initialKind =
+    REPORT_KIND_QUERY[String(searchParams.get('type') || '').toLowerCase()] || 'monthly';
+  const [reportKind, setReportKind] = useState<AcademicResultReportKind>(initialKind);
+  const [monthlyOutput, setMonthlyOutput] = useState<MonthlyOutput>('results');
   const [selectedSemester, setSelectedSemester] = useState<1 | 2>(1);
   const [activeTab, setActiveTab] = useState<'monthly' | 'transcript' | 'certificate'>('monthly');
-  const reportFormat: MonthlyReportFormat = reportType === 'monthly' ? 'detailed' : (selectedSemester === 1 ? 'semester-1' : 'semester-2');
   const [hiddenSubjects, setHiddenSubjects] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  
-  const availableMonths = useMemo(() => {
-    return getAvailableMonthsForGrade(contextSelectedYear?.terms || [], selectedGrade);
-  }, [contextSelectedYear?.terms, selectedGrade]);
+
+  const selectedYearDataForTerms =
+    allYears.find((year) => year.id === selectedYear) || contextSelectedYear;
+
+  /**
+   * AcademicYear list endpoints often omit nested terms; terms are loaded
+   * separately on AcademicYearContext. Prefer nested when present, else context.
+   */
+  const activeTerms = useMemo(() => {
+    const nested = selectedYearDataForTerms?.terms;
+    if (nested && nested.length > 0) return nested;
+    return contextTerms || [];
+  }, [selectedYearDataForTerms?.terms, contextTerms]);
+
+  const reportFormat: MonthlyReportFormat = resolveMonthlyReportFormat({
+    kind: reportKind,
+    semester: selectedSemester,
+    monthlyOutput: monthlyOutput === 'tracking' ? 'tracking' : 'results',
+  });
+
+  const printActiveTab =
+    activeTab === 'transcript'
+      ? 'transcript'
+      : monthlyOutput === 'honor' && reportKind === 'monthly'
+        ? 'honor'
+        : activeTab;
 
   useEffect(() => {
-    if (availableMonths.length > 0 && !availableMonths.some(m => m.number === selectedMonthNumber)) {
-      setSelectedMonthNumber(availableMonths[0].number);
-    }
-  }, [availableMonths, selectedMonthNumber]);
+    const fromQuery = REPORT_KIND_QUERY[String(searchParams.get('type') || '').toLowerCase()];
+    if (fromQuery) setReportKind(fromQuery);
+  }, [searchParams]);
+
   const [schoolProfile, setSchoolProfile] = useState<any>(null);
   const [tablePage, setTablePage] = useState(0);
   const [tableSort, setTableSort] = useState<{
@@ -350,6 +393,77 @@ export default function KhmerMonthlyReportPage() {
     );
   }, [classes]);
 
+  const gradesForMonthPicker = useMemo(() => {
+    if (scope === 'grade') {
+      // Single grade only — intersecting every school grade empties the month list
+      // when lower/upper secondary terms differ (e.g. 7–8–10–11 vs 9–12).
+      if (selectedGrade) return [selectedGrade];
+      return grades[0] ? [grades[0]] : [];
+    }
+    const fromSelected = selectedClasses
+      .map((id) => classes.find((classItem) => classItem.id === id)?.grade)
+      .map((grade) => (grade == null ? '' : String(grade)))
+      .filter(Boolean);
+    if (fromSelected.length > 0) return [...new Set(fromSelected)];
+    return grades[0] ? [grades[0]] : [];
+  }, [scope, selectedGrade, selectedClasses, classes, grades]);
+
+  /** All term months (includes exam months) — used for semester/tracking context. */
+  const termMonths = useMemo(() => {
+    const gradeHint = gradesForMonthPicker[0] || selectedGrade || grades[0] || '7';
+    return getAvailableMonthsForGrade(activeTerms, gradeHint, {
+      includeExamMonths: true,
+    });
+  }, [activeTerms, gradesForMonthPicker, selectedGrade, grades]);
+
+  /**
+   * Monthly register months only: excludes AcademicTerm.examMonth and excludedMonths
+   * (holidays). Intersection across selected grades so mixed batches stay valid.
+   */
+  const monthlyMonths = useMemo(() => {
+    return getMonthlyReportMonthsForGrades(activeTerms, gradesForMonthPicker);
+  }, [activeTerms, gradesForMonthPicker]);
+
+  const availableMonths = reportKind === 'monthly' && monthlyOutput !== 'tracking'
+    ? monthlyMonths
+    : termMonths;
+
+  /** Insight chips: which months are counted / excluded for the current selection. */
+  const periodInsight = useMemo(() => {
+    const gradeNum =
+      Number(String(gradesForMonthPicker[0] || selectedGrade || '7').replace(/[^0-9]/g, '')) || 7;
+    const applicable = activeTerms.filter(
+      (term) =>
+        !term.gradeLevels?.length || term.gradeLevels.includes(gradeNum),
+    );
+    const term =
+      applicable.find((item) => item.termNumber === selectedSemester) ||
+      applicable[0];
+    const excluded = new Set<number>(term?.excludedMonths || []);
+    const examMonth = term?.examMonth ?? null;
+    const counted = termMonths
+      .filter((month) => month.termNumber === (term?.termNumber || selectedSemester))
+      .filter((month) => !month.isExamMonth && !excluded.has(month.number));
+    return {
+      counted,
+      excluded: [...excluded].sort((a, b) => a - b),
+      examMonth,
+      termNumber: term?.termNumber || selectedSemester,
+    };
+  }, [
+    activeTerms,
+    gradesForMonthPicker,
+    selectedGrade,
+    selectedSemester,
+    termMonths,
+  ]);
+
+  useEffect(() => {
+    if (availableMonths.length > 0 && !availableMonths.some((m) => m.number === selectedMonthNumber)) {
+      setSelectedMonthNumber(availableMonths[0].number);
+    }
+  }, [availableMonths, selectedMonthNumber]);
+
   useEffect(() => {
     if (selectedClasses.length === 0 && classes[0]?.id) setSelectedClasses([classes[0].id]);
     if (!selectedGrade && grades[0]) setSelectedGrade(grades[0]);
@@ -371,21 +485,30 @@ export default function KhmerMonthlyReportPage() {
   }, [grades, selectedGrade]);
 
   useEffect(() => {
-    if (selectedYear) {
-      // Sync local context selected year when it is modified in this view
-      const matchedYearObj = allYears.find(y => y.id === selectedYear);
-      if (matchedYearObj && contextSelectedYear?.id !== selectedYear) {
-        // Only update if context provider has a matching mutator
-        // SWR automatically syncs other page views.
-      }
+    if (!selectedYear) return;
+    const matchedYearObj = allYears.find((y) => y.id === selectedYear);
+    // Keep context year in sync so contextTerms refetch for this page's year.
+    if (matchedYearObj && contextSelectedYear?.id !== selectedYear) {
+      setContextSelectedYear(matchedYearObj);
     }
-  }, [selectedYear, allYears, contextSelectedYear]);
+  }, [selectedYear, allYears, contextSelectedYear, setContextSelectedYear]);
 
   useEffect(() => {
-    if (reportType === 'semester') {
-      setSelectedMonthNumber(selectedSemester === 1 ? 2 : 7);
+    if (reportKind !== 'semester' && reportKind !== 'semester-exam') return;
+    const gradeNum =
+      Number(String(selectedGrade || '').replace(/[^0-9]/g, '')) || 0;
+    const term =
+      activeTerms.find(
+        (item) =>
+          item.termNumber === selectedSemester &&
+          (!item.gradeLevels?.length || item.gradeLevels.includes(gradeNum)),
+      ) || activeTerms.find((item) => item.termNumber === selectedSemester);
+    if (term?.examMonth) {
+      setSelectedMonthNumber(term.examMonth);
+      return;
     }
-  }, [reportType, selectedSemester]);
+    setSelectedMonthNumber(selectedSemester === 1 ? 2 : 7);
+  }, [reportKind, selectedSemester, activeTerms, selectedGrade]);
 
   useEffect(() => {
     setHiddenSubjects(new Set());
@@ -856,8 +979,24 @@ export default function KhmerMonthlyReportPage() {
 
   const formatLabelMap = {
     monthly: t('formatMonthly'),
+    'semester-exam': t('formatSemesterExam'),
     semester: t('formatSemester'),
+    annual: t('formatAnnual'),
   } as const;
+
+  const monthlyOutputLabelMap = {
+    results: t('outputResults'),
+    honor: t('outputHonor'),
+    tracking: t('outputTracking'),
+  } as const;
+
+  const updateReportKind = (kind: AcademicResultReportKind) => {
+    setReportKind(kind);
+    setMonthlyOutput('results');
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('type', kind);
+    router.replace(`/${locale}/grades/monthly-report?${params.toString()}`, { scroll: false });
+  };
 
 
 
@@ -1338,56 +1477,101 @@ export default function KhmerMonthlyReportPage() {
                     </button>
                   </div>
 
-                  {/* Output options */}
+                  {/* Report kind cards + smart filters */}
                   {activeTab !== 'transcript' && activeTab !== 'certificate' && (
-                    <div className="mt-6 space-y-1.5">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        {t('formatLabel')}
-                      </span>
-                      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                        <div
-                          role="tablist"
-                          aria-label={t('formatLabel')}
-                          className="inline-flex w-full overflow-hidden rounded-lg border border-slate-200 bg-white"
-                        >
-                          {(['monthly', 'semester'] as const).map((fmt, idx) => (
-                            <button
-                              key={fmt}
-                              type="button"
-                              role="tab"
-                              aria-pressed={reportType === fmt}
-                              onClick={() => setReportType(fmt)}
-                              className={`flex-1 px-3 py-2 text-sm font-medium transition ${
-                                idx > 0 ? 'border-l border-slate-200' : ''
-                              } ${
-                                reportType === fmt
-                                  ? 'bg-blue-600 text-white'
-                                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                              } focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300`}
-                            >
-                              {formatLabelMap[fmt]}
-                            </button>
-                          ))}
+                    <div className="mt-6 space-y-5">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            {t('step1ReportType')}
+                          </span>
+                          <span className="text-[11px] text-slate-400">{t('step1Hint')}</span>
                         </div>
-                        <div
-                          role="tablist"
-                          aria-label={t('reportSetup')}
-                          className="inline-flex overflow-hidden rounded-lg border border-slate-200 bg-white"
-                        >
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                          {([
+                            { id: 'monthly' as const, descKey: 'monthlyNote' as const, Icon: CalendarRange },
+                            { id: 'semester-exam' as const, descKey: 'semesterExamNote' as const, Icon: FileText },
+                            { id: 'semester' as const, descKey: 'semesterNote' as const, Icon: GraduationCap },
+                            { id: 'annual' as const, descKey: 'annualNote' as const, Icon: Award },
+                          ]).map(({ id, descKey, Icon }) => {
+                            const selected = reportKind === id;
+                            return (
+                              <button
+                                key={id}
+                                type="button"
+                                onClick={() => updateReportKind(id)}
+                                className={`rounded-xl border p-3 text-left transition ${
+                                  selected
+                                    ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-200'
+                                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                }`}
+                              >
+                                <div className="flex items-start gap-2.5">
+                                  <span
+                                    className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                                      selected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
+                                    }`}
+                                  >
+                                    <Icon className="h-4 w-4" />
+                                  </span>
+                                  <span className="min-w-0">
+                                    <span className={`block text-sm font-bold ${selected ? 'text-blue-800' : 'text-slate-800'}`}>
+                                      {formatLabelMap[id]}
+                                    </span>
+                                    <span className="mt-0.5 block text-[11px] leading-snug text-slate-500 line-clamp-2">
+                                      {t(descKey)}
+                                    </span>
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {reportKind === 'monthly' && (
+                        <div className="space-y-1.5">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            {t('outputLabel')}
+                          </span>
+                          <div className="inline-flex w-full overflow-hidden rounded-xl border border-slate-200 bg-white">
+                            {(['results', 'honor', 'tracking'] as const).map((output, idx) => (
+                              <button
+                                key={output}
+                                type="button"
+                                onClick={() => setMonthlyOutput(output)}
+                                className={`flex-1 px-3 py-2.5 text-sm font-medium transition ${
+                                  idx > 0 ? 'border-l border-slate-200' : ''
+                                } ${
+                                  monthlyOutput === output
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'text-slate-600 hover:bg-slate-50'
+                                }`}
+                              >
+                                {monthlyOutputLabelMap[output]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-1.5">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          {t('step2Scope')}
+                        </span>
+                        <div className="inline-flex overflow-hidden rounded-xl border border-slate-200 bg-white">
                           {(['class', 'grade'] as ReportScope[]).map((item, idx) => (
                             <button
                               key={item}
                               type="button"
-                              role="tab"
-                              aria-pressed={scope === item}
                               onClick={() => setScope(item)}
-                              className={`px-4 py-2 text-sm font-medium transition ${
+                              className={`px-4 py-2.5 text-sm font-medium transition ${
                                 idx > 0 ? 'border-l border-slate-200' : ''
                               } ${
                                 scope === item
                                   ? 'bg-blue-600 text-white'
-                                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                              } focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-300`}
+                                  : 'text-slate-600 hover:bg-slate-50'
+                              }`}
                             >
                               {item === 'class' ? t('scopeByClass') : t('scopeByGrade')}
                             </button>
@@ -1438,7 +1622,7 @@ export default function KhmerMonthlyReportPage() {
                           </label>
                         )}
 
-                        {reportType === 'monthly' ? (
+                        {reportKind === 'monthly' && monthlyOutput !== 'tracking' ? (
                           <label className="block">
                             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                               {t('monthLabel')}
@@ -1448,22 +1632,25 @@ export default function KhmerMonthlyReportPage() {
                               value={selectedMonthNumber}
                               onChange={(event) => setSelectedMonthNumber(Number(event.target.value))}
                             >
-                              {availableMonths.length > 0 ? (
-                                availableMonths.map((month) => (
+                              {monthlyMonths.length > 0 ? (
+                                monthlyMonths.map((month) => (
                                   <option key={month.number} value={month.number}>
-                                    {getKhmerMonthDisplayName(month.number, month.label, month.isExamMonth, month.termNumber)}
+                                    {getKhmerMonthDisplayName(month.number, month.label, false, month.termNumber)}
                                   </option>
                                 ))
                               ) : (
-                                KHMER_MONTHS.map((month) => (
-                                  <option key={month.number} value={month.number}>
-                                    {getKhmerMonthDisplayName(month.number, month.label)}
-                                  </option>
-                                ))
+                                <option value="">{t('noMonthlyMonths')}</option>
                               )}
                             </select>
+                            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+                              {t('monthlyMonthHint')}
+                            </p>
                           </label>
-                        ) : (
+                        ) : null}
+
+                        {(reportKind === 'semester' ||
+                          reportKind === 'semester-exam' ||
+                          (reportKind === 'monthly' && monthlyOutput === 'tracking')) && (
                           <label className="block">
                             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                               {t('formatSemester')}
@@ -1471,14 +1658,59 @@ export default function KhmerMonthlyReportPage() {
                             <select
                               className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                               value={selectedSemester}
-                              onChange={(event) => setSelectedSemester(Number(event.target.value) as 1 | 2)}
+                              onChange={(event) => {
+                                const next = Number(event.target.value) as 1 | 2;
+                                setSelectedSemester(next);
+                                const firstInTerm = availableMonths.find((m) => m.termNumber === next);
+                                if (firstInTerm) setSelectedMonthNumber(firstInTerm.number);
+                              }}
                             >
                               <option value={1}>{t('formatSemester1')}</option>
                               <option value={2}>{t('formatSemester2')}</option>
                             </select>
                           </label>
                         )}
+
+                        {reportKind === 'annual' ? (
+                          <div className="block rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800">
+                            {t('annualPeriodHint')}
+                          </div>
+                        ) : null}
                       </div>
+
+                      {(reportKind === 'semester' ||
+                        reportKind === 'semester-exam' ||
+                        reportKind === 'monthly' ||
+                        reportKind === 'annual') && (
+                        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            {t('step3Period')} · {t('smartBreakHint')}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {periodInsight.counted.map((month) => (
+                              <span
+                                key={`c-${month.number}`}
+                                className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800"
+                              >
+                                {t('periodCounted')}: {month.label}
+                              </span>
+                            ))}
+                            {periodInsight.examMonth ? (
+                              <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-800">
+                                {t('periodExam')}: {getKhmerMonthLabel(periodInsight.examMonth)}
+                              </span>
+                            ) : null}
+                            {periodInsight.excluded.map((monthNumber) => (
+                              <span
+                                key={`x-${monthNumber}`}
+                                className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800"
+                              >
+                                {t('periodExcluded')}: {getKhmerMonthLabel(monthNumber)}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {scope === 'class' && (
                         <div className="mt-5 block">
@@ -2651,7 +2883,7 @@ export default function KhmerMonthlyReportPage() {
                             settings={settings} 
                             subjects={repVisibleSubjects}
                             schoolProfile={schoolProfile}
-                            activeTab={activeTab}
+                            activeTab={printActiveTab}
                           />
                         </div>
                       );

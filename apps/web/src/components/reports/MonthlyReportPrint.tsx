@@ -4,6 +4,9 @@ import type { MonthlyReportFormat } from '@/lib/api/grades';
 import MonthlyDetailedPrint from '@/components/reports/templates/khm-moeys/MonthlyDetailedPrint';
 import MonthlySummaryPrint, { type MonthlySummaryPrintProps } from '@/components/reports/templates/khm-moeys/MonthlySummaryPrint';
 import SemesterOnePrint from '@/components/reports/templates/khm-moeys/SemesterOnePrint';
+import AnnualPrint from '@/components/reports/templates/khm-moeys/AnnualPrint';
+import TrackingBookPrint from '@/components/reports/templates/khm-moeys/TrackingBookPrint';
+import HonorRollPrint from '@/components/reports/templates/khm-moeys/HonorRollPrint';
 import TranscriptPrint from '@/components/reports/templates/khm-moeys/TranscriptPrint';
 
 function isMoeysTemplate(template?: string) {
@@ -23,19 +26,47 @@ export default function MonthlyReportPrint(props: MonthlySummaryPrintProps & { s
     return <TranscriptPrint report={report} settings={props.settings} schoolProfile={schoolProfile} />;
   }
 
+  if (activeTab === 'honor') {
+    return <HonorRollPrint report={report} settings={props.settings} schoolProfile={schoolProfile} />;
+  }
+
   if (!isMoeysTemplate(report.template)) {
     return <MonthlySummaryPrint {...props} />;
   }
 
-  if (format === 'semester-1' || format === 'semester-2') {
-    return <SemesterOnePrint report={report} settings={props.settings} schoolProfile={schoolProfile} />;
+  if (format === 'annual') {
+    return <AnnualPrint report={report} settings={props.settings} schoolProfile={schoolProfile} />;
   }
 
-  // If settings indicate subjects should be shown and there are subjects to show, render Detailed vertical table.
+  if (format === 'tracking-1' || format === 'tracking-2') {
+    return <TrackingBookPrint report={report} settings={props.settings} schoolProfile={schoolProfile} />;
+  }
+
+  if (format === 'semester-exam-1' || format === 'semester-exam-2') {
+    return (
+      <SemesterOnePrint
+        report={report}
+        settings={props.settings}
+        schoolProfile={schoolProfile}
+        mode="exam-only"
+      />
+    );
+  }
+
+  if (format === 'semester-1' || format === 'semester-2') {
+    return (
+      <SemesterOnePrint
+        report={report}
+        settings={props.settings}
+        schoolProfile={schoolProfile}
+        mode="full"
+      />
+    );
+  }
+
   if (props.settings.showSubjects && report.subjects?.length > 0) {
     return <MonthlyDetailedPrint {...props} schoolProfile={schoolProfile} />;
   }
 
-  // Otherwise fallback to the standard compact Summary table
   return <MonthlySummaryPrint {...props} schoolProfile={schoolProfile} />;
 }

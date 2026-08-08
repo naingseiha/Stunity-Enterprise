@@ -121,13 +121,30 @@ export interface MonthlyReportSemesterOne {
   finalAverage: number;
   finalRank: number;
   finalGrade: string;
+  /** Per-month averages for tracking-book layouts */
+  monthAverages?: Record<number, number>;
+}
+
+export interface MonthlyReportAnnual {
+  semester1Average: number;
+  semester1Rank: number;
+  semester2Average: number;
+  semester2Rank: number;
+  annualAverage: number;
+  annualRank: number;
+  annualGrade: string;
 }
 
 export type MonthlyReportFormat =
   | "summary"
   | "detailed"
   | "semester-1"
-  | "semester-2";
+  | "semester-2"
+  | "semester-exam-1"
+  | "semester-exam-2"
+  | "annual"
+  | "tracking-1"
+  | "tracking-2";
 
 export interface KhmerMonthlyReportStudent {
   studentId: string;
@@ -147,8 +164,10 @@ export interface KhmerMonthlyReportStudent {
   rank: number;
   absent: number;
   permission: number;
-  /** Present when API `format` is `semester-1` */
+  /** Present for semester / semester-exam / tracking formats */
   semesterOne?: MonthlyReportSemesterOne;
+  /** Present when API `format` is `annual` */
+  annual?: MonthlyReportAnnual;
 }
 
 export interface KhmerMonthlyReportData {

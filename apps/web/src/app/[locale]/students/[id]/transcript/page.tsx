@@ -22,6 +22,7 @@ import {
   getKhmerRemark,
   getLetterGrade,
 } from "@/lib/reports/studentTranscript";
+import { useAcademicYear } from "@/contexts/AcademicYearContext";
 import {
   Home,
   ChevronRight,
@@ -152,7 +153,8 @@ interface TranscriptData {
     effectiveAt: string;
     reason: string | null;
     fromClass: { id: string; name: string; grade: string } | null;
-    toClass: { id: string; name: string; grade: string };
+    toClass: { id: string; name: string; grade: string } | null;
+    toGrade?: string | null;
   }[];
   monthlySummaries: {
     month: string;
@@ -173,6 +175,7 @@ export default function StudentTranscriptPage() {
   const params = useParams();
   const studentId = params?.id as string;
   const locale = params?.locale as string;
+  const { allYears } = useAcademicYear();
 
   const [authReady, setAuthReady] = useState(false);
   const [school, setSchool] = useState<any>(null);
@@ -879,8 +882,18 @@ export default function StudentTranscriptPage() {
 
     // Only calculate from persisted grade records. Missing semester scores,
     // ranks and attendance periods remain blank; they are never synthesized.
+    const gradeLevelNum =
+      Number(String(selectedYear.gradeLevel || "").replace(/[^0-9]/g, "")) ||
+      null;
+    const yearTerms =
+      allYears.find((year) => year.id === selectedYear.yearId)?.terms || [];
+    const transcriptOptions = {
+      terms: yearTerms,
+      gradeLevel: gradeLevelNum,
+    };
+
     const subjectsData = sortedSubjects.map((subject: any) => {
-      const calculation = calculateTranscriptSubject(subject);
+      const calculation = calculateTranscriptSubject(subject, transcriptOptions);
       return {
         ...subject,
         maxScore: calculation.maxScore,
@@ -915,6 +928,7 @@ export default function StudentTranscriptPage() {
     );
     const calculatedSummary = calculateTranscriptSummary(
       sortedSubjects as any[],
+      transcriptOptions,
     );
     const s1ExamAvg = calculatedSummary.semester1Exam;
     const s2ExamAvg = calculatedSummary.semester2Exam;
