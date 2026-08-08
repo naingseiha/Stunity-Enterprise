@@ -132,10 +132,19 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
   gradientBorder = 'orange',
   variant = 'default',
 }) {
-  const dimension = SIZES[size];
-  const fontSize = FONT_SIZES[size];
+  // Prefer explicit pixel size from style so callers (e.g. Profile hero) can
+  // scale beyond the named size tokens without leaving a mismatched ring.
+  const styleDimension =
+    style && !Array.isArray(style) && typeof (style as ViewStyle).width === 'number'
+      ? ((style as ViewStyle).width as number)
+      : undefined;
+  const dimension = styleDimension ?? SIZES[size];
+  const fontSize = styleDimension
+    ? Math.round(styleDimension * 0.36)
+    : FONT_SIZES[size];
   const borderWidth = BORDER_WIDTH[size];
-  const onlineSize = Math.max(8, dimension * 0.25);
+  // Cap the badge — large avatars used 25% size which looked like a green arc.
+  const onlineSize = Math.min(14, Math.max(8, Math.round(dimension * 0.16)));
 
   // For 'post' variant, use light gradients and no border
   const isPostVariant = variant === 'post';
@@ -241,8 +250,8 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
                 height: onlineSize,
                 borderRadius: onlineSize / 2,
                 backgroundColor: isOnline ? Colors.success.main : Colors.gray[400],
-                right: 0,
-                bottom: 0,
+                right: 1,
+                bottom: 1,
               },
             ]}
           />
@@ -251,7 +260,9 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
     );
   }
 
-  // Simple avatar without gradient border
+  // Simple avatar without gradient border.
+  // Clip the image circle, but keep the online dot outside overflow so it
+  // renders as a full badge instead of a clipped green crescent.
   const containerStyle: ViewStyle = {
     width: dimension,
     height: dimension,
@@ -263,31 +274,33 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
   };
 
   return (
-    <View style={[styles.container, containerStyle, style]}>
-      {imageSource ? (
-        <Image
-          source={imageSource}
-          style={styles.image}
-          contentFit="cover"
-          placeholder={imageSource}
-          placeholderContentFit="cover"
-          allowDownscaling
-          transition={IMAGE_TRANSITION_MS}
-          cachePolicy="memory-disk"
-          priority="high"
-        />
-      ) : (
-        <LinearGradient
-          colors={backgroundGradient}
-          style={styles.fallback}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Text style={[styles.initials, { fontSize, color: initialsColor }]}>
-            {getInitials(name)}
-          </Text>
-        </LinearGradient>
-      )}
+    <View style={[{ position: 'relative', width: dimension, height: dimension }, style]}>
+      <View style={[styles.container, containerStyle]}>
+        {imageSource ? (
+          <Image
+            source={imageSource}
+            style={styles.image}
+            contentFit="cover"
+            placeholder={imageSource}
+            placeholderContentFit="cover"
+            allowDownscaling
+            transition={IMAGE_TRANSITION_MS}
+            cachePolicy="memory-disk"
+            priority="high"
+          />
+        ) : (
+          <LinearGradient
+            colors={backgroundGradient}
+            style={styles.fallback}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={[styles.initials, { fontSize, color: initialsColor }]}>
+              {getInitials(name)}
+            </Text>
+          </LinearGradient>
+        )}
+      </View>
 
       {showOnline && (
         <View
@@ -298,8 +311,8 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
               height: onlineSize,
               borderRadius: onlineSize / 2,
               backgroundColor: isOnline ? Colors.success.main : Colors.gray[400],
-              right: effectiveShowBorder ? -1 : 0,
-              bottom: effectiveShowBorder ? -1 : 0,
+              right: 1,
+              bottom: 1,
             },
           ]}
         />
@@ -311,7 +324,6 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    overflow: 'hidden',
   },
   gradientBorder: {
     alignItems: 'center',
@@ -324,6 +336,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+    borderRadius: 9999,
   },
   fallback: {
     width: '100%',
@@ -339,6 +352,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderWidth: 2,
     borderColor: Colors.white,
+    zIndex: 2,
   },
 });
 

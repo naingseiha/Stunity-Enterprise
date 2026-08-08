@@ -12,6 +12,9 @@ export interface LoginCredentials {
 export interface LoginResponse {
   success: boolean;
   message?: string;
+  requires2FA?: boolean;
+  challengeToken?: string;
+  email?: string;
   accessScope?: 'FULL' | 'PENDING_REVIEW';
   reviewState?: {
     canUseHighRiskFeatures: boolean;
@@ -96,6 +99,9 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
     return {
       success: result.success,
       message: result.message,
+      requires2FA: result.data.requires2FA,
+      challengeToken: result.data.challengeToken,
+      email: result.data.email,
       user: result.data.user,
       school: result.data.school,
       tokens: result.data.tokens,
@@ -416,20 +422,30 @@ export async function changePassword(
 // ─── Two-Factor Authentication ───────────────────────────────────────
 
 export async function verify2FA(
-  tempToken: string,
+  challengeToken: string,
   code: string,
   isBackupCode = false
 ): Promise<LoginResponse> {
   const response = await fetch(`${AUTH_SERVICE_URL}/auth/2fa/verify`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tempToken, code, isBackupCode }),
+    body: JSON.stringify({ challengeToken, code, isBackupCode }),
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({ error: 'Verification failed' }));
     throw new Error(err.error || 'Invalid 2FA code');
   }
-  return response.json();
+  const result = await response.json();
+  if (result.data) {
+    return {
+      success: result.success,
+      message: result.message,
+      user: result.data.user,
+      school: result.data.school,
+      tokens: result.data.tokens,
+    };
+  }
+  return result;
 }
 
 export async function setup2FA(token: string): Promise<{ success: boolean; qrCode: string; secret: string }> {

@@ -39,6 +39,12 @@ import {
   issueRefreshCredential,
 } from './security/refreshCredential';
 import {
+  signAccessToken,
+  signTwoFactorChallenge,
+  verifyAccessToken,
+  verifyLegacyRefreshToken,
+} from './security/tokenClaims';
+import {
   AuthSessionError,
   rotateAuthSession,
   revokeAuthSession,
@@ -72,7 +78,7 @@ for (const warning of passwordlessConfig.warnings) {
 const JWT_SECRET = getJwtSecret();
 // Remember-me UX comes from the rotating device session, not a long-lived
 // bearer token. Short access tokens limit exposure without logging users out.
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '15m';
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d'; // Refresh: 1 year
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
 const parentDirectoryCache = new Map<string, { data: any; timestamp: number }>();
@@ -352,7 +358,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = verifyAccessToken(token, JWT_SECRET);
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -774,7 +780,6 @@ app.get(
       res.status(500).json({
         success: false,
         error: 'Failed to fetch parents',
-        details: error.message,
       });
     }
   }
@@ -1007,9 +1012,24 @@ app.post(
         });
       }
 
+      const twoFactor = await prisma.twoFactorSecret.findUnique({
+        where: { userId: user.id },
+        select: { isEnabled: true },
+      });
+      if (twoFactor?.isEnabled) {
+        return res.json({
+          success: true,
+          data: {
+            requires2FA: true,
+            challengeToken: signTwoFactorChallenge(user.id, JWT_SECRET),
+            email: user.email,
+          },
+        });
+      }
+
       console.log('✅ Login successful for user:', user.id);
 
-      // Reset failed attempts + update last login
+      // Full authentication is complete only after any required second factor.
       await recordSuccessfulLogin(user.id);
       if (user.accountType === 'SOCIAL_ONLY') {
         await prisma.user.update({
@@ -1035,7 +1055,7 @@ app.post(
         }
       : null;
 
-      const accessToken = jwt.sign(
+      const accessToken = signAccessToken(
         {
           userId: user.id,
           email: user.email,
@@ -1047,7 +1067,7 @@ app.post(
           school: schoolPayload,
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+        JWT_EXPIRATION,
       );
 
       const refreshToken = await issueRefreshCredential({
@@ -1101,7 +1121,6 @@ app.post(
       res.status(500).json({
         success: false,
         error: 'Failed to login',
-        details: error.message,
       });
     }
   }
@@ -1219,7 +1238,7 @@ app.post(
       console.log('✅ User created:', user.email || user.phone);
 
       // Generate tokens
-      const accessToken = jwt.sign(
+      const accessToken = signAccessToken(
         {
           userId: user.id,
           email: user.email,
@@ -1228,7 +1247,7 @@ app.post(
           schoolAccessVersion: user.schoolAccessVersion,
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+        JWT_EXPIRATION,
       );
 
       const refreshToken = await issueRefreshCredential({
@@ -1260,7 +1279,6 @@ app.post(
       res.status(500).json({
         success: false,
         error: 'Failed to create account',
-        details: error.message,
       });
     }
   }
@@ -1294,7 +1312,6 @@ app.post('/auth/logout', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to logout',
-      details: error.message,
     });
   }
 });
@@ -1388,14 +1405,11 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
         }
         throw error;
       }
-    } else {
-      // Compatibility path: existing JWT refresh tokens are accepted once and
-      // upgraded to an opaque database session without logging the user out.
+    } else if (!authDbSessionsEnabled() || process.env.AUTH_LEGACY_JWT_REFRESH_ENABLED === 'true') {
+      // Legacy JWT refresh credentials have a dedicated type, issuer, and
+      // audience. Access and 2FA tokens must never pass this validation path.
       try {
-        decoded = jwt.verify(refreshToken, JWT_SECRET);
-        if (!decoded || typeof decoded.userId !== 'string') {
-          return res.status(401).json({ success: false, error: 'Invalid refresh token' });
-        }
+        decoded = verifyLegacyRefreshToken(refreshToken, JWT_SECRET);
         refreshUserId = decoded.userId;
       } catch {
         return res.status(401).json({
@@ -1403,6 +1417,12 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
           error: 'Invalid or expired refresh token',
         });
       }
+    } else {
+      return res.status(401).json({
+        success: false,
+        code: 'LEGACY_REFRESH_DISABLED',
+        error: 'Invalid refresh token',
+      });
     }
 
     // Find user
@@ -1489,7 +1509,7 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
     : null;
 
     // Generate new tokens
-    const newAccessToken = jwt.sign(
+    const newAccessToken = signAccessToken(
       {
         userId: user.id,
         email: user.email,
@@ -1501,7 +1521,7 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
         school: schoolPayload,
       },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+      JWT_EXPIRATION,
     );
 
     const newRefreshToken = rotatedSession?.refreshToken || await issueRefreshCredential({
@@ -1533,7 +1553,6 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to refresh token',
-      details: error.message,
     });
   }
 });
@@ -1631,7 +1650,6 @@ app.get('/auth/parent/find-student', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to find student',
-      details: error.message,
     });
   }
 });
@@ -1762,7 +1780,6 @@ app.post(
       res.status(500).json({
         success: false,
         error: 'Failed to register',
-        details: error.message,
       });
     }
   }
@@ -1881,6 +1898,21 @@ app.post(
         });
       }
 
+      const twoFactor = await prisma.twoFactorSecret.findUnique({
+        where: { userId: user.id },
+        select: { isEnabled: true },
+      });
+      if (twoFactor?.isEnabled) {
+        return res.json({
+          success: true,
+          data: {
+            requires2FA: true,
+            challengeToken: signTwoFactorChallenge(user.id, JWT_SECRET),
+            email: user.email,
+          },
+        });
+      }
+
       console.log('✅ Parent login successful:', phone);
 
       // Reset failed attempts + update last login
@@ -1898,7 +1930,7 @@ app.post(
       })) || [];
 
       // Generate tokens
-      const accessToken = jwt.sign(
+      const accessToken = signAccessToken(
         {
           userId: user.id,
           phone: user.phone,
@@ -1909,7 +1941,7 @@ app.post(
           children: children.map(c => c.id),
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+        JWT_EXPIRATION,
       );
 
       const refreshToken = await issueRefreshCredential({
@@ -1945,7 +1977,6 @@ app.post(
       res.status(500).json({
         success: false,
         error: 'Failed to login',
-        details: error.message,
       });
     }
   }
@@ -2010,7 +2041,6 @@ app.get('/auth/notifications', authenticateToken, async (req: AuthRequest, res: 
     res.status(500).json({
       success: false,
       error: 'Failed to get notifications',
-      details: error.message,
     });
   }
 });
@@ -2096,7 +2126,6 @@ app.post('/auth/notifications', requireInternalServiceToken, async (req: Request
     res.status(500).json({
       success: false,
       error: 'Failed to create notification',
-      details: error.message,
     });
   }
 });
@@ -2159,7 +2188,6 @@ app.post('/auth/notifications/parent', requireInternalServiceToken, async (req: 
     res.status(500).json({
       success: false,
       error: 'Failed to send parent notification',
-      details: error.message,
     });
   }
 });
@@ -2425,7 +2453,6 @@ app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) 
     res.status(500).json({
       success: false,
       error: 'Failed to get user',
-      details: error.message,
     });
   }
 });
@@ -3145,7 +3172,6 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
     res.status(500).json({
       success: false,
       error: 'Failed to verify token',
-      details: error.message,
     });
   }
 });
@@ -3269,7 +3295,6 @@ async function handleClaimCodePreview(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       error: 'Failed to validate claim code',
-      details: error.message,
     });
   }
 }
@@ -3320,7 +3345,6 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
     res.status(500).json({
       success: false,
       error: 'Failed to link claim code',
-      details: error.message,
     });
   }
 });
@@ -3853,7 +3877,7 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
     authOperationalMetrics.increment('school_link_submitted_total');
 
     // Generate tokens using the same claim shape as normal login.
-    const token = jwt.sign(
+    const token = signAccessToken(
       {
         userId: result.id,
         email: result.email,
@@ -3862,7 +3886,7 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
         schoolAccessVersion: result.schoolAccessVersion,
       },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+      JWT_EXPIRATION,
     );
     const refreshToken = await issueRefreshCredential({
       prisma, userId: result.id, schoolAccessVersion: result.schoolAccessVersion,
@@ -3910,7 +3934,6 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
     res.status(500).json({
       success: false,
       error: 'Failed to register with claim code',
-      details: error.message,
     });
   }
 });
@@ -4072,7 +4095,6 @@ app.post('/auth/login/claim-code', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to login with claim code',
-      details: error.message,
     });
   }
   */

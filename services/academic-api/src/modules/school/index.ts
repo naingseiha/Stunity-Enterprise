@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../../../../lib/auth-tokens';
 import { PrismaClient, Prisma, SubscriptionTier, SchoolType, RegistrationStatus, EducationModel } from '@prisma/client';
 import slugify from 'slugify';
 import { v4 as uuidv4 } from 'uuid';
@@ -54,7 +54,7 @@ const requireSchoolAdminMutation = async (req: Request, res: Response, next: Nex
   }
 
   try {
-    const decoded = jwt.verify(token, getJwtSecret()) as { userId?: string; role?: string; schoolId?: string };
+    const decoded = verifyAccessToken(token, getJwtSecret());
     const schoolId = req.params.schoolId;
     const actor = decoded.userId
       ? await prisma.user.findUnique({
@@ -1370,7 +1370,7 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = verifyAccessToken(token, JWT_SECRET);
     req.user = {
       id: decoded.userId,
       email: decoded.email || '',

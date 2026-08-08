@@ -3,7 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { PrismaClient, Gender } from "@prisma/client";
-import jwt from "jsonwebtoken";
+import { verifyAccessToken } from "../../../../lib/auth-tokens";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -218,7 +218,7 @@ async function authenticateToken(
       });
     }
 
-    const decoded = jwt.verify(token, getJwtSecret()) as any;
+    const decoded = verifyAccessToken(token, getJwtSecret());
 
     // OPTIMIZED: Use data from JWT token instead of database query
     // This reduces response time from ~200ms to <5ms

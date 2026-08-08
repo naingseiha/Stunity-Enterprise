@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import jwt from "jsonwebtoken";
+import { signAccessToken, signLegacyRefreshToken, signTwoFactorChallenge } from "../../../lib/auth-tokens";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { generateUniqueUsername } from "../utils/username";
 import { buildAccessTokenClaims } from "../utils/accessToken";
@@ -63,15 +64,15 @@ function issueTokens(user: {
   parentId?: string | null;
   studentId?: string | null;
 }, options: PasswordlessRouteOptions) {
-  const accessToken = jwt.sign(
+  const accessToken = signAccessToken(
     buildAccessTokenClaims(user, { accountType: user.accountType }),
     options.jwtSecret,
-    { expiresIn: options.accessTokenExpiration } as jwt.SignOptions,
+    options.accessTokenExpiration,
   );
-  const refreshToken = jwt.sign(
-    { userId: user.id },
+  const refreshToken = signLegacyRefreshToken(
+    user.id,
     options.jwtSecret,
-    { expiresIn: options.refreshTokenExpiration } as jwt.SignOptions,
+    options.refreshTokenExpiration,
   );
   return { accessToken, refreshToken, expiresIn: options.accessTokenExpiration };
 }
@@ -339,6 +340,22 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
     metrics.increment("auth_otp_verified_total", { channel: challenge.channel });
 
     if (usableContact) {
+      const twoFactor = await prisma.twoFactorSecret.findUnique({
+        where: { userId: usableContact.userId },
+        select: { isEnabled: true },
+      });
+      if (twoFactor?.isEnabled) {
+        return res.json({
+          success: true,
+          data: {
+            status: "TWO_FACTOR_REQUIRED",
+            challengeToken: signTwoFactorChallenge(usableContact.userId, options.jwtSecret),
+            email: usableContact.user.email,
+          },
+          error: null,
+          requestId: apiRequestId,
+        });
+      }
       const tokens = issueTokens(usableContact.user, options);
       await prisma.user.update({
         where: { id: usableContact.userId },

@@ -419,10 +419,9 @@ export const LearningStreakCard = React.memo(function LearningStreakCard({
 
 const styles = StyleSheet.create({
   outer: {
-    borderRadius: 18,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
-    marginBottom: 14,
   },
   gradient: {
     padding: 16,

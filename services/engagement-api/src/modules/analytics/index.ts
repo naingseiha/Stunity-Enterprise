@@ -14,7 +14,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../auth/security/tokenClaims';
 import currencyRoutes from './gamification/routes/currency.routes';
 import achievementRoutes from './gamification/routes/achievements.routes';
 import challengeRoutes from './gamification/routes/challenges.routes';
@@ -49,7 +49,7 @@ const authenticateToken = (req: Request, res: Response, next: NextFunction): voi
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as {
+    const decoded = verifyAccessToken(token, JWT_SECRET) as unknown as typeof req.user & {
       id?: string;
       userId?: string;
       email?: string;

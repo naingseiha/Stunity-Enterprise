@@ -9,11 +9,10 @@ import { createClient } from '@supabase/supabase-js';
  *   The Supabase client is intentionally anonymous (anon key only) — we never set a Supabase
  *   Auth session because users authenticate against our own backend, not Supabase Auth.
  *
- *   ⚠️  IMPORTANT: Because of this, RLS must be DISABLED on any table that Realtime subscribes to.
- *   If you enable RLS on `posts`, `comments`, etc., Realtime events will be silently dropped
- *   for this anonymous client. Run:
- *     ALTER TABLE public.posts DISABLE ROW LEVEL SECURITY;
- *     ALTER TABLE public.comments DISABLE ROW LEVEL SECURITY;
+ *   SECURITY: The anonymous client must not have SELECT grants and RLS must remain enabled.
+ *   Anonymous postgres_changes subscriptions are expected to receive no protected rows.
+ *   Authorized realtime delivery must use a backend-issued Supabase-compatible session or
+ *   a backend event channel that applies the same tenant/object authorization as the APIs.
  *
  *   ENV NOTE: These vars are prefixed with EXPO_PUBLIC_ so Metro bakes them into the JS bundle
  *   at build time. This works reliably in EAS builds (unlike react-native-dotenv @env imports).

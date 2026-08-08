@@ -1,8 +1,12 @@
 import { getJwtSecret } from '../../../../../lib/jwt-secret';
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
 import { issueRefreshCredential } from '../security/refreshCredential';
+import {
+  signAccessToken,
+  verifyAccessToken,
+  verifyTwoFactorChallenge,
+} from '../security/tokenClaims';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
@@ -10,7 +14,7 @@ import rateLimit from 'express-rate-limit';
 const router = Router();
 
 const JWT_SECRET = getJwtSecret();
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '15m';
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d';
 
 const twoFactorLimiter = rateLimit({
@@ -24,7 +28,7 @@ function decodeAuthToken(req: Request): any {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) throw new Error('Access token required');
-  return jwt.verify(token, JWT_SECRET);
+  return verifyAccessToken(token, JWT_SECRET);
 }
 
 export default function twoFactorRoutes(prisma: PrismaClient) {
@@ -67,8 +71,11 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
       });
     } catch (error: any) {
       console.error('2FA setup error:', error.message);
-      res.status(error.message === 'Access token required' ? 401 : 500).json({
-        success: false, error: error.message || 'Failed to setup 2FA',
+      const unauthorized = error.message === 'Access token required'
+        || ['JsonWebTokenError', 'TokenExpiredError', 'NotBeforeError'].includes(error.name);
+      res.status(unauthorized ? 401 : 500).json({
+        success: false,
+        error: unauthorized ? 'Invalid or missing access token' : 'Failed to setup 2FA',
       });
     }
   });
@@ -126,7 +133,12 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
       });
     } catch (error: any) {
       console.error('2FA verify-setup error:', error.message);
-      res.status(500).json({ success: false, error: error.message || 'Failed to verify 2FA setup' });
+      const unauthorized = error.message === 'Access token required'
+        || ['JsonWebTokenError', 'TokenExpiredError', 'NotBeforeError'].includes(error.name);
+      res.status(unauthorized ? 401 : 500).json({
+        success: false,
+        error: unauthorized ? 'Invalid or missing access token' : 'Failed to verify 2FA setup',
+      });
     }
   });
 
@@ -138,10 +150,7 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
         return res.status(400).json({ success: false, error: 'challengeToken and code are required' });
       }
 
-      const decoded = jwt.verify(challengeToken, JWT_SECRET) as any;
-      if (decoded.purpose !== '2fa_challenge') {
-        return res.status(400).json({ success: false, error: 'Invalid challenge token' });
-      }
+      const decoded = verifyTwoFactorChallenge(challengeToken, JWT_SECRET);
 
       const record = await prisma.twoFactorSecret.findUnique({
         where: { userId: decoded.userId },
@@ -189,9 +198,11 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
         include: { school: true },
       });
 
-      if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+      if (!user || !user.isActive) {
+        return res.status(401).json({ success: false, error: 'User not found or inactive' });
+      }
 
-      const accessToken = jwt.sign(
+      const accessToken = signAccessToken(
         {
           userId: user.id,
           email: user.email,
@@ -205,7 +216,7 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
           } : null,
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+        JWT_EXPIRATION,
       );
 
       const refreshToken = await issueRefreshCredential({
@@ -215,7 +226,12 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
 
       await prisma.user.update({
         where: { id: user.id },
-        data: { lastLogin: new Date(), loginCount: { increment: 1 } },
+        data: {
+          failedAttempts: 0,
+          lockedUntil: null,
+          lastLogin: new Date(),
+          loginCount: { increment: 1 },
+        },
       });
 
       res.json({
@@ -235,7 +251,7 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
       });
     } catch (error: any) {
       console.error('2FA verify error:', error.message);
-      res.status(400).json({ success: false, error: error.message || '2FA verification failed' });
+      res.status(400).json({ success: false, error: 'Invalid or expired 2FA challenge' });
     }
   });
 
@@ -272,7 +288,7 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
       res.json({ success: true, message: 'Two-factor authentication disabled.' });
     } catch (error: any) {
       console.error('2FA disable error:', error.message);
-      res.status(500).json({ success: false, error: error.message || 'Failed to disable 2FA' });
+      res.status(500).json({ success: false, error: 'Failed to disable 2FA' });
     }
   });
 
@@ -325,7 +341,7 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
       });
     } catch (error: any) {
       console.error('2FA backup-codes error:', error.message);
-      res.status(500).json({ success: false, error: error.message || 'Failed to regenerate backup codes' });
+      res.status(500).json({ success: false, error: 'Failed to regenerate backup codes' });
     }
   });
 

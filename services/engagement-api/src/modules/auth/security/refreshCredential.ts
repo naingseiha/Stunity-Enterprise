@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import type { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
 import { createAuthSession } from './authSessionService';
+import { signLegacyRefreshToken } from './tokenClaims';
 
 const DURATION_PATTERN = /^(\d+)([smhd])$/;
 const DURATION_MULTIPLIERS: Record<string, number> = {
@@ -36,10 +36,10 @@ export async function issueRefreshCredential(input: {
   req?: Request;
 }): Promise<string> {
   if (!authDbSessionsEnabled()) {
-    return jwt.sign(
-      { userId: input.userId },
+    return signLegacyRefreshToken(
+      input.userId,
       input.jwtSecret,
-      { expiresIn: input.refreshTokenExpiration } as jwt.SignOptions,
+      input.refreshTokenExpiration,
     );
   }
 

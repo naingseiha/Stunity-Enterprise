@@ -1,7 +1,7 @@
 import { getJwtSecret } from '../../../../../lib/jwt-secret';
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import { prisma } from '../context';
+import { verifyAccessToken } from '../../auth/security/tokenClaims';
 
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
@@ -31,7 +31,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
 
         // console.log('🔐 [AUTH] Verifying token for:', req.method, req.path);
 
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        const decoded = verifyAccessToken(token, JWT_SECRET);
 
         const user = await prisma.user.findUnique({
             where: { id: decoded.userId },

@@ -55,15 +55,23 @@ export default function ParentLoginScreen() {
     }
 
     clearError();
-    const success = await parentLogin({
+    const result = await parentLogin({
       phone: phone.trim(),
       password,
     });
 
-    if (!success) {
+    if (result.requires2FA && result.challengeToken) {
+      navigation.navigate('TwoFactor', {
+        challengeToken: result.challengeToken,
+        email: result.email || phone.trim(),
+      });
+      return;
+    }
+
+    if (!result.success) {
       Alert.alert(
         t('auth.parentLogin.loginFailed'),
-        useAuthStore.getState().error || t('auth.parentLogin.loginFailed'),
+        result.error || useAuthStore.getState().error || t('auth.parentLogin.loginFailed'),
       );
     }
   };

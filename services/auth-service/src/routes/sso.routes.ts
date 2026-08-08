@@ -3,14 +3,15 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy, Profile as GoogleProfile } from 'passport-google-oauth20';
 import { OIDCStrategy } from 'passport-azure-ad';
 import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
+import { getJwtSecret } from '../../../lib/jwt-secret';
+import { signAccessToken, signLegacyRefreshToken } from '../../../lib/auth-tokens';
 import * as ssoCodeStore from '../utils/ssoCodeStore';
 import { buildAccessTokenClaims } from '../utils/accessToken';
 
 const router = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '24h';
+const JWT_SECRET = getJwtSecret();
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '15m';
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d';
 
 export default function ssoRoutes(prisma: PrismaClient) {
@@ -78,8 +79,17 @@ export default function ssoRoutes(prisma: PrismaClient) {
         return res.status(403).json({ success: false, error: 'Account is deactivated' });
       }
 
+      const twoFactor = await prisma.twoFactorSecret.findUnique({
+        where: { userId: user.id },
+        select: { isEnabled: true },
+      });
+      if (twoFactor?.isEnabled) {
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        return res.redirect(`${frontendUrl}/en/auth/login?error=two_factor_required`);
+      }
+
       // 2. Issue Stunity JWT
-      const accessToken = jwt.sign(
+      const accessToken = signAccessToken(
         buildAccessTokenClaims(user, {
           school: user.school ? {
             id: user.school.id,
@@ -88,13 +98,13 @@ export default function ssoRoutes(prisma: PrismaClient) {
           } : null,
         }),
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+        JWT_EXPIRATION,
       );
 
-      const refreshToken = jwt.sign(
-        { userId: user.id },
+      const refreshToken = signLegacyRefreshToken(
+        user.id,
         JWT_SECRET,
-        { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
+        REFRESH_TOKEN_EXPIRATION,
       );
 
       // 3. Update login metadata

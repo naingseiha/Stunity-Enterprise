@@ -34,6 +34,13 @@ import { requireInternalServiceToken } from './security/internalServiceAuth';
 import { createAdminPermissionRouter } from './security/adminPermissionRoutes';
 import { PERMISSIONS, hasPermission } from '../../lib/admin-permissions';
 import {
+  signAccessToken,
+  signLegacyRefreshToken,
+  signTwoFactorChallenge,
+  verifyAccessToken,
+  verifyLegacyRefreshToken,
+} from '../../lib/auth-tokens';
+import {
   AuthSessionManagementError,
   listActiveAuthSessions,
   revokeOwnedAuthSession,
@@ -66,7 +73,7 @@ for (const warning of passwordlessConfig.warnings) {
 }
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 // Remember-me style: long-lived tokens until explicit logout
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '30d';       // Access token: 30d (reduces refresh calls)
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '15m';
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d'; // Refresh: 1 year
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
 const parentDirectoryCache = new Map<string, { data: any; timestamp: number }>();
@@ -374,7 +381,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = verifyAccessToken(token, JWT_SECRET);
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -1029,9 +1036,22 @@ app.post(
         });
       }
 
-      console.log('✅ Login successful for user:', user.id);
+      const twoFactor = await prisma.twoFactorSecret.findUnique({
+        where: { userId: user.id },
+        select: { isEnabled: true },
+      });
+      if (twoFactor?.isEnabled) {
+        return res.json({
+          success: true,
+          data: {
+            requires2FA: true,
+            challengeToken: signTwoFactorChallenge(user.id, JWT_SECRET),
+            email: user.email,
+          },
+        });
+      }
 
-      // Reset failed attempts + update last login
+      console.log('✅ Login successful for user:', user.id);
       await recordSuccessfulLogin(user.id);
       if (user.accountType === 'SOCIAL_ONLY') {
         await prisma.user.update({
@@ -1057,20 +1077,20 @@ app.post(
         }
       : null;
 
-      const accessToken = jwt.sign(
+      const accessToken = signAccessToken(
         buildAccessTokenClaims(user, {
           isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role for backward compat
           schoolAccessScope: schoolAccess.accessScope,
           school: schoolPayload,
         }),
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+        JWT_EXPIRATION,
       );
 
-      const refreshToken = jwt.sign(
-        { userId: user.id },
+      const refreshToken = signLegacyRefreshToken(
+        user.id,
         JWT_SECRET,
-        { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
+        REFRESH_TOKEN_EXPIRATION,
       );
 
       // Calculate trial days remaining if applicable
@@ -1238,7 +1258,7 @@ app.post(
       console.log('✅ User created:', user.email || user.phone);
 
       // Generate tokens
-      const accessToken = jwt.sign(
+      const accessToken = signAccessToken(
         {
           userId: user.id,
           email: user.email,
@@ -1247,13 +1267,13 @@ app.post(
           schoolAccessVersion: user.schoolAccessVersion,
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+        JWT_EXPIRATION,
       );
 
-      const refreshToken = jwt.sign(
-        { userId: user.id },
+      const refreshToken = signLegacyRefreshToken(
+        user.id,
         JWT_SECRET,
-        { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
+        REFRESH_TOKEN_EXPIRATION,
       );
 
       res.status(201).json({
@@ -1387,7 +1407,7 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
     // Verify token
     let decoded: any;
     try {
-      decoded = jwt.verify(refreshToken, JWT_SECRET);
+      decoded = verifyLegacyRefreshToken(refreshToken, JWT_SECRET);
     } catch (err: any) {
       return res.status(401).json({
         success: false,
@@ -1459,20 +1479,20 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
     : null;
 
     // Generate new tokens
-    const newAccessToken = jwt.sign(
+    const newAccessToken = signAccessToken(
       buildAccessTokenClaims(user, {
         isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role for backward compat
         schoolAccessScope: schoolAccess.accessScope,
         school: schoolPayload,
       }),
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+      JWT_EXPIRATION,
     );
 
-    const newRefreshToken = jwt.sign(
-      { userId: user.id },
+    const newRefreshToken = signLegacyRefreshToken(
+      user.id,
       JWT_SECRET,
-      { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
+      REFRESH_TOKEN_EXPIRATION,
     );
 
     console.log('🔄 Token refreshed successfully for:', user.email);
@@ -1844,6 +1864,21 @@ app.post(
         });
       }
 
+      const twoFactor = await prisma.twoFactorSecret.findUnique({
+        where: { userId: user.id },
+        select: { isEnabled: true },
+      });
+      if (twoFactor?.isEnabled) {
+        return res.json({
+          success: true,
+          data: {
+            requires2FA: true,
+            challengeToken: signTwoFactorChallenge(user.id, JWT_SECRET),
+            email: user.email,
+          },
+        });
+      }
+
       console.log('✅ Parent login successful:', phone);
 
       // Reset failed attempts + update last login
@@ -1861,18 +1896,18 @@ app.post(
       })) || [];
 
       // Generate tokens
-      const accessToken = jwt.sign(
+      const accessToken = signAccessToken(
         buildAccessTokenClaims(user, {
           children: children.map(c => c.id),
         }),
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+        JWT_EXPIRATION,
       );
 
-      const refreshToken = jwt.sign(
-        { userId: user.id },
+      const refreshToken = signLegacyRefreshToken(
+        user.id,
         JWT_SECRET,
-        { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
+        REFRESH_TOKEN_EXPIRATION,
       );
 
       res.json({
@@ -3813,7 +3848,7 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
     authOperationalMetrics.increment('school_link_submitted_total');
 
     // Generate tokens using the same claim shape as normal login.
-    const token = jwt.sign(
+    const token = signAccessToken(
       {
         userId: result.id,
         email: result.email,
@@ -3822,12 +3857,12 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
         schoolAccessVersion: result.schoolAccessVersion,
       },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+      JWT_EXPIRATION,
     );
-    const refreshToken = jwt.sign(
-      { userId: result.id },
+    const refreshToken = signLegacyRefreshToken(
+      result.id,
       JWT_SECRET,
-      { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
+      REFRESH_TOKEN_EXPIRATION,
     );
 
     // Return success with token

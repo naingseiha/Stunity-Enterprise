@@ -119,13 +119,20 @@ export default function LoginScreen() {
     }
     clearError();
     const isEmail = id.includes('@');
-    const success = await login({
+    const result = await login({
       ...(isEmail ? { email: id } : { phone: id }),
       password,
       rememberMe: true,
     });
-    if (!success) {
-      const message = useAuthStore.getState().error || 'Login failed';
+    if (result.requires2FA && result.challengeToken) {
+      navigation.navigate('TwoFactor', {
+        challengeToken: result.challengeToken,
+        email: result.email || (isEmail ? id : ''),
+      });
+      return;
+    }
+    if (!result.success) {
+      const message = result.error || useAuthStore.getState().error || 'Login failed';
       Alert.alert('Login Failed', message);
     }
   };

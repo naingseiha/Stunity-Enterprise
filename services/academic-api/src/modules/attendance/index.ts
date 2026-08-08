@@ -8,7 +8,7 @@ import {
   AttendanceStatus,
   AttendanceSession,
 } from "@prisma/client";
-import jwt from "jsonwebtoken";
+import { verifyAccessToken } from "../../../../lib/auth-tokens";
 import {
   startOfMonth,
   endOfMonth,
@@ -192,7 +192,7 @@ const authenticateToken = async (
       });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = verifyAccessToken(token, JWT_SECRET);
 
     const userId = decoded.userId || decoded.user?.id || decoded.user?.userId;
     const schoolId = decoded.schoolId || decoded.user?.schoolId;

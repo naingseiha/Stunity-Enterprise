@@ -1,7 +1,7 @@
 import { getJwtSecret } from '../../../../lib/jwt-secret';
 import { IncomingMessage, Server } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../auth/security/tokenClaims';
 import { parse as parseUrl } from 'url';
 import { createSubscriber, isRedisConnected, publisher } from './redis';
 import { inMemorySubscribe } from './redis';
@@ -46,7 +46,7 @@ export function initWebSocketServer(server: Server) {
 
     try {
       // Verify JWT token
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const decoded = verifyAccessToken(token, JWT_SECRET);
       if (!decoded || !decoded.userId) {
         socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
         socket.destroy();

@@ -28,8 +28,8 @@ export type AccessTokenExtras = {
 export function buildAccessTokenClaims(
   user: AccessTokenUser,
   extras: AccessTokenExtras = {},
-) {
-  const claims: Record<string, unknown> = {
+): Record<string, unknown> & { userId: string } {
+  const claims: Record<string, unknown> & { userId: string } = {
     userId: user.id,
     role: user.role,
     schoolId: user.schoolId ?? null,

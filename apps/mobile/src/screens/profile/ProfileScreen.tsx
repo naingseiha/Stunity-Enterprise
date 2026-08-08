@@ -27,6 +27,8 @@ import {
   InteractionManager,
   useWindowDimensions,
   Share,
+  Platform,
+  ActionSheetIOS,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StatusBar } from "expo-status-bar";
@@ -64,6 +66,7 @@ import {
   uploadCoverPhoto,
   updateProfile,
   trackProfileView,
+  blockUser,
   type ProfileVisitor,
 } from "@/api/profileApi";
 import {
@@ -921,19 +924,125 @@ export default function ProfileScreen() {
   const handleShareProfile = useCallback(async () => {
     const username = (profile as any)?.username || currentUser?.username;
     if (!username) {
-      Alert.alert("Profile link unavailable", "Set a username first to share your profile.");
+      Alert.alert(
+        t("profile.shareUnavailableTitle", "Profile link unavailable"),
+        t("profile.shareUnavailableBody", "Set a username first to share your profile."),
+      );
       return;
     }
     const url = `https://stunity.app/u/${username}`;
     const name = `${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim();
     try {
       await Share.share({
-        message: name ? `Check out ${name}'s learning profile on Stunity: ${url}` : url,
+        message: name
+          ? t("profile.shareMessage", {
+              name,
+              url,
+              defaultValue: `Check out ${name}'s learning profile on Stunity: ${url}`,
+            })
+          : url,
         url,
-        title: "My Stunity profile",
+        title: t("profile.shareTitle", "Stunity profile"),
       });
-    } catch (_) {/* user cancelled */}
-  }, [profile, currentUser?.username]);
+    } catch (_) {
+      /* user cancelled */
+    }
+  }, [profile, currentUser?.username, t]);
+
+  const handleOpenConnections = useCallback(
+    (type: "followers" | "following") => {
+      navigation.navigate("Connections", { type });
+    },
+    [navigation],
+  );
+
+  const handleBlockUser = useCallback(async () => {
+    if (!profile?.id || isOwnProfile) return;
+    const displayName =
+      `${profile.lastName || ""} ${profile.firstName || ""}`.trim() ||
+      t("common.user", "User");
+    Alert.alert(
+      t("profile.blockConfirmTitle", { name: displayName, defaultValue: `Block ${displayName}?` }),
+      t(
+        "profile.blockConfirmBody",
+        "They won't be able to follow you or see your posts. You can unblock them later in Settings.",
+      ),
+      [
+        { text: t("common.cancel", "Cancel"), style: "cancel" },
+        {
+          text: t("profile.blockUser", "Block"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await blockUser(profile.id);
+              Alert.alert(
+                t("common.success", "Success"),
+                t("profile.blockSuccess", "User blocked."),
+              );
+              navigation.goBack();
+            } catch {
+              Alert.alert(
+                t("common.error", "Error"),
+                t("profile.blockFailed", "Could not block this user."),
+              );
+            }
+          },
+        },
+      ],
+    );
+  }, [profile, isOwnProfile, navigation, t]);
+
+  const presentActionSheet = useCallback(
+    (
+      title: string,
+      options: { label: string; onPress: () => void; destructive?: boolean }[],
+    ) => {
+      const labels = [...options.map((o) => o.label), t("common.cancel", "Cancel")];
+      const cancelIndex = labels.length - 1;
+      const destructiveIndex = options.findIndex((o) => o.destructive);
+
+      if (Platform.OS === "ios") {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            title,
+            options: labels,
+            cancelButtonIndex: cancelIndex,
+            destructiveButtonIndex:
+              destructiveIndex >= 0 ? destructiveIndex : undefined,
+          },
+          (buttonIndex) => {
+            if (buttonIndex == null || buttonIndex === cancelIndex) return;
+            options[buttonIndex]?.onPress();
+          },
+        );
+        return;
+      }
+
+      Alert.alert(title, undefined, [
+        ...options.map((o) => ({
+          text: o.label,
+          style: o.destructive ? ("destructive" as const) : ("default" as const),
+          onPress: o.onPress,
+        })),
+        { text: t("common.cancel", "Cancel"), style: "cancel" as const },
+      ]);
+    },
+    [t],
+  );
+
+  const handleOtherProfileMore = useCallback(() => {
+    presentActionSheet(t("profile.moreOptions", "More options"), [
+      {
+        label: t("profile.shareProfile", "Share Profile"),
+        onPress: () => void handleShareProfile(),
+      },
+      {
+        label: t("profile.blockUser", "Block User"),
+        onPress: () => void handleBlockUser(),
+        destructive: true,
+      },
+    ]);
+  }, [presentActionSheet, t, handleShareProfile, handleBlockUser]);
 
   // ── Photo Upload Handlers ───────────────────────────────────
 
@@ -1027,6 +1136,29 @@ export default function ProfileScreen() {
       }
     }
   }, [updateUser, isOwnProfile, currentUser]);
+
+  const handleOwnHeaderMore = useCallback(() => {
+    presentActionSheet(t("profile.moreOptions", "More options"), [
+      {
+        label: t("profile.myQR", "My QR Card"),
+        onPress: () => navigation.navigate("MyQRCard" as any),
+      },
+      {
+        label: t("profile.shareProfile", "Share Profile"),
+        onPress: () => void handleShareProfile(),
+      },
+      {
+        label: t("profile.changeCover", "Change cover photo"),
+        onPress: () => void handlePickCoverPhoto(),
+      },
+    ]);
+  }, [
+    presentActionSheet,
+    t,
+    navigation,
+    handleShareProfile,
+    handlePickCoverPhoto,
+  ]);
 
   const openProfileMedia = useCallback(
     (target: "cover" | "avatar") => {
@@ -1306,6 +1438,27 @@ export default function ProfileScreen() {
     following: profileStats?.following ?? 0,
   };
 
+  const academicLine = useMemo(() => {
+    const schoolName = profile.school?.name?.trim();
+    const classInfo = profile.student?.class;
+    const teacherPos =
+      profile.teacher?.position?.trim() ||
+      profile.teacher?.degree?.trim() ||
+      profile.professionalTitle?.trim();
+
+    const parts: string[] = [];
+    if (profile.role === "STUDENT" && classInfo) {
+      const classLabel = [classInfo.grade, classInfo.name]
+        .filter(Boolean)
+        .join(" · ");
+      if (classLabel) parts.push(classLabel);
+    } else if (profile.role === "TEACHER" && teacherPos) {
+      parts.push(teacherPos);
+    }
+    if (schoolName) parts.push(schoolName);
+    return parts.length > 0 ? parts.join(" · ") : null;
+  }, [profile]);
+
   return (
     <SafeAreaView
       edges={["top"]}
@@ -1383,8 +1536,7 @@ export default function ProfileScreen() {
                     uri={(profile as any).profilePhotoUrl || (profile as any).avatar}
                     name={fullName}
                     size="xl"
-                    showOnline={!!profile.isOnline}
-                    isOnline={!!profile.isOnline}
+                    showOnline={false}
                   />
                   <View style={styles.profileRailIdentityText}>
                     <Text numberOfLines={1} style={[styles.profileRailName, { color: colors.text }]}>{fullName}</Text>
@@ -1517,6 +1669,7 @@ export default function ProfileScreen() {
                           },
                         ]}
                         onPress={() => navigation.goBack()}
+                        accessibilityLabel={t("common.back", "Back")}
                       >
                         <Ionicons
                           name="chevron-back"
@@ -1530,22 +1683,6 @@ export default function ProfileScreen() {
 
                     {isOwnProfile && (
                       <View style={{ flexDirection: "row", gap: 8 }}>
-                        <TouchableOpacity
-                          style={[
-                            styles.headerCircleBtnDark,
-                            {
-                              backgroundColor: colors.surfaceVariant,
-                              borderColor: colors.border,
-                            },
-                          ]}
-                          onPress={() => navigation.navigate("MyQRCard" as any)}
-                        >
-                          <Ionicons
-                            name="qr-code-outline"
-                            size={20}
-                            color={colors.text}
-                          />
-                        </TouchableOpacity>
                         {FEATURE_FLAGS.MESSAGING_ENABLED ? (
                           <TouchableOpacity
                             style={[
@@ -1556,6 +1693,7 @@ export default function ProfileScreen() {
                               },
                             ]}
                             onPress={handleOpenOwnMessages}
+                            accessibilityLabel={t("profile.message", "Messages")}
                           >
                             <Ionicons
                               name="chatbubbles-outline"
@@ -1565,7 +1703,9 @@ export default function ProfileScreen() {
                             {messagingUnreadCount > 0 ? (
                               <View style={styles.messagingBadge}>
                                 <Text style={styles.messagingBadgeText}>
-                                  {messagingUnreadCount > 99 ? "99+" : messagingUnreadCount}
+                                  {messagingUnreadCount > 99
+                                    ? "99+"
+                                    : messagingUnreadCount}
                                 </Text>
                               </View>
                             ) : null}
@@ -1579,23 +1719,8 @@ export default function ProfileScreen() {
                               borderColor: colors.border,
                             },
                           ]}
-                          onPress={handleShareProfile}
-                        >
-                          <Ionicons
-                            name="share-social-outline"
-                            size={20}
-                            color={colors.text}
-                          />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.headerCircleBtnDark,
-                            {
-                              backgroundColor: colors.surfaceVariant,
-                              borderColor: colors.border,
-                            },
-                          ]}
                           onPress={() => navigation.navigate("Settings" as any)}
+                          accessibilityLabel={t("common.settings", "Settings")}
                         >
                           <Ionicons
                             name="settings-outline"
@@ -1611,10 +1736,11 @@ export default function ProfileScreen() {
                               borderColor: colors.border,
                             },
                           ]}
-                          onPress={handlePickCoverPhoto}
+                          onPress={handleOwnHeaderMore}
+                          accessibilityLabel={t("profile.moreOptions", "More options")}
                         >
                           <Ionicons
-                            name="camera-outline"
+                            name="ellipsis-horizontal"
                             size={20}
                             color={colors.text}
                           />
@@ -1631,6 +1757,8 @@ export default function ProfileScreen() {
                             borderColor: colors.border,
                           },
                         ]}
+                        onPress={handleOtherProfileMore}
+                        accessibilityLabel={t("profile.moreOptions", "More options")}
                       >
                         <Ionicons
                           name="ellipsis-horizontal"
@@ -1687,9 +1815,8 @@ export default function ProfileScreen() {
                         size="3xl"
                         showBorder={false}
                         gradientBorder="none"
-                        showOnline={!!profile.isOnline}
-                        isOnline={!!profile.isOnline}
-                        style={{ width: avatarSize, height: avatarSize }}
+                        showOnline={false}
+                        style={{ width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }}
                       />
                       {uploadingPhoto && (
                         <View
@@ -1712,6 +1839,7 @@ export default function ProfileScreen() {
                       <TouchableOpacity
                         style={styles.editAvatarButton}
                         onPress={handlePickProfilePhoto}
+                        hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
                       >
                         <View
                           style={[
@@ -1824,14 +1952,6 @@ export default function ProfileScreen() {
                     </Animated.View>
                   )}
 
-                  {profile.headline ? (
-                    <Text
-                      style={[styles.headline, { color: colors.textSecondary }]}
-                    >
-                      {profile.headline || profile.professionalTitle}
-                    </Text>
-                  ) : null}
-
                   {/* Open to Opportunities Banner */}
                   {(profile as any).isOpenToOpportunities && (
                     <Animated.View style={styles.openToWorkBanner}>
@@ -1848,6 +1968,39 @@ export default function ProfileScreen() {
                       </LinearGradient>
                     </Animated.View>
                   )}
+
+                  {/* School / class identity — primary academic signal */}
+                  {academicLine ? (
+                    <View
+                      style={[
+                        styles.academicChip,
+                        { backgroundColor: colors.surfaceVariant },
+                      ]}
+                    >
+                      <Ionicons
+                        name="school-outline"
+                        size={14}
+                        color={BRAND_TEAL_DARK}
+                      />
+                      <Text
+                        style={[
+                          styles.academicChipText,
+                          { color: colors.textSecondary },
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {academicLine}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {profile.headline ? (
+                    <Text
+                      style={[styles.headline, { color: colors.textSecondary }]}
+                    >
+                      {profile.headline || profile.professionalTitle}
+                    </Text>
+                  ) : null}
 
                   {profile.bio ? (
                     <Text style={[styles.bio, { color: colors.textSecondary }]}>
@@ -1933,7 +2086,11 @@ export default function ProfileScreen() {
 
                 {/* Stats Row — pill card style */}
                 <Animated.View style={styles.textStatsRow}>
-                  <TouchableOpacity style={styles.textStat} activeOpacity={0.7}>
+                  <TouchableOpacity
+                    style={styles.textStat}
+                    activeOpacity={0.7}
+                    onPress={() => setActiveTab("posts")}
+                  >
                     <Text
                       style={[styles.textStatValue, { color: colors.text }]}
                     >
@@ -1956,7 +2113,11 @@ export default function ProfileScreen() {
                     ]}
                   />
 
-                  <TouchableOpacity style={styles.textStat} activeOpacity={0.7}>
+                  <TouchableOpacity
+                    style={styles.textStat}
+                    activeOpacity={0.7}
+                    onPress={() => handleOpenConnections("followers")}
+                  >
                     <Text
                       style={[styles.textStatValue, { color: colors.text }]}
                     >
@@ -1979,7 +2140,11 @@ export default function ProfileScreen() {
                     ]}
                   />
 
-                  <TouchableOpacity style={styles.textStat} activeOpacity={0.7}>
+                  <TouchableOpacity
+                    style={styles.textStat}
+                    activeOpacity={0.7}
+                    onPress={() => handleOpenConnections("following")}
+                  >
                     <Text
                       style={[styles.textStatValue, { color: colors.text }]}
                     >
@@ -1999,8 +2164,7 @@ export default function ProfileScreen() {
                 {/* Action Buttons */}
                 <Animated.View style={styles.capsuleRow}>
                   {isOwnProfile ? (
-                    <View style={{ flex: 1, gap: 10 }}>
-                      {/* Main Edit Profile Action */}
+                    <View style={styles.ownActionsRow}>
                       <TouchableOpacity
                         style={styles.capsuleBtnFilled}
                         onPress={handleEditProfile}
@@ -2040,7 +2204,7 @@ export default function ProfileScreen() {
                           style={{ marginRight: 5 }}
                         />
                         <Text style={styles.userCardActionText}>
-                          {t("profile.userCard.cta", "Open My Education Card")}
+                          {t("profile.userCard.ctaShort", "My Card")}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -2217,6 +2381,7 @@ export default function ProfileScreen() {
                       quizStats?.totalPoints ?? profile.totalPoints ?? 0
                     }
                     profile={profile}
+                    isOwnProfile={isOwnProfile}
                     recentVisitors={recentProfileVisitors}
                     visitorsLoading={visitorsLoading}
                     onViewProfileVisitors={() =>
@@ -2651,14 +2816,22 @@ export default function ProfileScreen() {
               <View style={[styles.profileRailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.profileRailTitle, { color: colors.text }]}>{t("profile.insights", "Profile Insights")}</Text>
                 <View style={styles.profileRailStatsGrid}>
-                  <View style={[styles.profileRailStatTile, { backgroundColor: colors.surfaceVariant }]}>
+                  <TouchableOpacity
+                    style={[styles.profileRailStatTile, { backgroundColor: colors.surfaceVariant }]}
+                    onPress={() => setActiveTab("posts")}
+                    activeOpacity={0.75}
+                  >
                     <Text style={[styles.profileRailStatValue, { color: colors.text }]}>{stats.posts}</Text>
                     <Text style={[styles.profileRailStatLabel, { color: colors.textSecondary }]}>{t("profile.posts")}</Text>
-                  </View>
-                  <View style={[styles.profileRailStatTile, { backgroundColor: colors.surfaceVariant }]}>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.profileRailStatTile, { backgroundColor: colors.surfaceVariant }]}
+                    onPress={() => handleOpenConnections("followers")}
+                    activeOpacity={0.75}
+                  >
                     <Text style={[styles.profileRailStatValue, { color: colors.text }]}>{stats.followers}</Text>
                     <Text style={[styles.profileRailStatLabel, { color: colors.textSecondary }]}>{t("profile.followers")}</Text>
-                  </View>
+                  </TouchableOpacity>
                   <View style={[styles.profileRailStatTile, { backgroundColor: colors.surfaceVariant }]}>
                     <Text style={[styles.profileRailStatValue, { color: colors.text }]}>{quizStats?.level ?? profile.level ?? 1}</Text>
                     <Text style={[styles.profileRailStatLabel, { color: colors.textSecondary }]}>Level</Text>
@@ -3054,18 +3227,20 @@ const styles = StyleSheet.create({
   },
   editAvatarButton: {
     position: "absolute",
-    bottom: 2,
-    right: 2,
+    bottom: 4,
+    right: 4,
+    zIndex: 20,
+    elevation: 8,
   },
   editAvatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#FFF",
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
     ...Shadows.sm,
   },
   nameSection: {
@@ -3204,6 +3379,11 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 16,
   },
+  ownActionsRow: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 10,
+  },
   capsuleBtn: {
     flex: 1,
     alignItems: "center",
@@ -3253,6 +3433,7 @@ const styles = StyleSheet.create({
     color: "#78350F",
   },
   userCardActionBtn: {
+    flex: 1,
     borderRadius: 50,
     overflow: "hidden",
     alignItems: "center",
@@ -3265,6 +3446,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: "#78350F",
+  },
+  academicChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "center",
+    gap: 6,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    maxWidth: "92%",
+  },
+  academicChipText: {
+    flexShrink: 1,
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 18,
+    textAlign: "center",
   },
   // ── Legacy (kept for followPill if needed elsewhere) ──
   editPill: {

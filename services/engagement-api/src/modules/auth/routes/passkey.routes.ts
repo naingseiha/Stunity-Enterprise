@@ -24,6 +24,7 @@ import {
   type AuthOperationalMetrics,
 } from "../observability/authOperationalMetrics";
 import { issueRefreshCredential } from "../security/refreshCredential";
+import { signAccessToken } from "../security/tokenClaims";
 
 const REGISTRATION_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 const AUTHENTICATION_CHALLENGE_TTL_MS = 2 * 60 * 1000;
@@ -69,14 +70,14 @@ async function issueTokens(user: {
   accountType: string;
   schoolAccessVersion: number;
 }, options: PasskeyRouteOptions, prisma: PrismaClient, req: Request) {
-  const accessToken = jwt.sign({
+  const accessToken = signAccessToken({
     userId: user.id,
     email: user.email,
     role: user.role,
     schoolId: user.schoolId,
     accountType: user.accountType,
     schoolAccessVersion: user.schoolAccessVersion,
-  }, options.jwtSecret, { expiresIn: options.accessTokenExpiration } as jwt.SignOptions);
+  }, options.jwtSecret, options.accessTokenExpiration);
   const refreshToken = await issueRefreshCredential({
     prisma,
     userId: user.id,

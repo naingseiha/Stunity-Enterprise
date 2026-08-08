@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { LogIn, School, UserPlus } from 'lucide-react';
-import { login, TokenManager } from '@/lib/api/auth';
+import { login, TokenManager, verify2FA } from '@/lib/api/auth';
 import PasswordlessAuthCard from '@/components/auth/PasswordlessAuthCard';
 import { getAuthRedirectPath } from '@/lib/auth/redirect';
 
@@ -23,6 +23,8 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [challengeToken, setChallengeToken] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -36,6 +38,12 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
     };
     checkAuth();
   }, [locale, router]);
+
+  useEffect(() => {
+    if (searchParams?.get('error') === 'two_factor_required') {
+      setError('This account requires two-factor authentication. Use password sign-in to continue.');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const code = searchParams?.get('code');
@@ -80,6 +88,22 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
     setError('');
     setLoading(true);
     try {
+      if (challengeToken) {
+        if (!/^\d{6}$/.test(twoFactorCode) && !/^[A-Fa-f0-9]{8}$/.test(twoFactorCode)) {
+          setError('Enter a valid authenticator or backup code');
+          return;
+        }
+        const response = await verify2FA(challengeToken, twoFactorCode);
+        if (response.success && response.tokens && response.user) {
+          TokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
+          TokenManager.setUserData(response.user, response.school);
+          window.location.href = getAuthRedirectPath(locale, response.user, response.school as any);
+          return;
+        }
+        setError(response.message || 'Two-factor verification failed');
+        return;
+      }
+
       const id = identifier.trim();
       if (!id || !password) {
         setError('Please enter your email or phone and password');
@@ -89,6 +113,11 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
       const isEmail = id.includes('@');
       const credentials = isEmail ? { email: id, password } : { phone: id, password };
       const response = await login(credentials);
+      if (response.requires2FA && response.challengeToken) {
+        setChallengeToken(response.challengeToken);
+        setTwoFactorCode('');
+        return;
+      }
       if (response.success && response.tokens && response.user) {
         TokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
         TokenManager.setUserData(response.user, response.school);
@@ -129,6 +158,23 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-3">
               {/* Floating Pill Inputs */}
+              {challengeToken ? (
+                <input
+                  id="two-factor-code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.trim())}
+                  required
+                  autoFocus
+                  maxLength={8}
+                  className="w-full px-6 py-3.5 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-full text-slate-900 dark:text-gray-100 placeholder-slate-400 dark:placeholder-gray-500 text-sm shadow-sm focus:shadow-md focus:border-stunity-primary-400 dark:focus:border-stunity-primary-500 transition-all outline-none"
+                  placeholder="Authenticator or backup code"
+                  disabled={loading}
+                />
+              ) : (
+                <>
               <input
                 id="identifier"
                 type="text"
@@ -149,11 +195,13 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
                 placeholder={autoT("auto.web.locale_auth_login_page.k_2ce350cf")}
                 disabled={loading}
               />
+                </>
+              )}
             </div>
 
-            <div className="flex justify-center mt-2">
+            {!challengeToken && <div className="flex justify-center mt-2">
               <Link href={`/${locale}/auth/forgot-password`} className="text-[10px] font-bold text-slate-300 dark:text-gray-500 hover:text-stunity-primary-600 dark:hover:text-stunity-primary-400 uppercase tracking-widest transition-colors">{t('password')}</Link>
-            </div>
+            </div>}
 
             {/* Stacked Primary Action Buttons - Brand Aligned Orange */}
             <div className="space-y-3 pt-2">
@@ -163,9 +211,10 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
                 className="w-full py-4 bg-stunity-primary-600 text-white rounded-full font-bold shadow-md hover:shadow-lg hover:bg-stunity-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm active:scale-[0.98] border border-stunity-primary-500"
               >
                 <LogIn className="w-4 h-4" />
-                <span>{loading ? t('submitting') : t('submit')}</span>
+                <span>{loading ? t('submitting') : challengeToken ? 'Verify' : t('submit')}</span>
               </button>
 
+              {!challengeToken && (
               <Link
                 href={`/${locale}/auth/register`}
                 className="w-full py-4 bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300 rounded-full font-bold shadow-sm hover:shadow-md hover:bg-slate-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2 text-sm active:scale-[0.98] border border-slate-200 dark:border-gray-700"
@@ -173,6 +222,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
                 <UserPlus className="w-4 h-4 text-stunity-primary-600 dark:text-stunity-primary-400" />
                 <span><AutoI18nText i18nKey="auto.web.locale_auth_login_page.k_7404d1f9" /></span>
               </Link>
+              )}
             </div>
           </form>
 

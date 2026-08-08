@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../../../../lib/auth-tokens';
 import { PrismaClient, DayOfWeek } from '@prisma/client';
 import { withPrismaPoolParams } from '../../../../lib/prisma-pool-url';
 import { getSharedPrisma } from '../../core/prisma';
@@ -360,7 +360,7 @@ const authenticate = (req: express.Request, res: express.Response, next: express
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthUser;
+    const decoded = verifyAccessToken(token, JWT_SECRET) as unknown as AuthUser;
     (req as any).user = decoded;
     next();
   } catch (error) {

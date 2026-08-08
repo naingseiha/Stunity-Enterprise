@@ -30,7 +30,9 @@ test('legacy mode still issues a signed refresh token for rollout compatibility'
       jwtSecret: 'test-secret',
       refreshTokenExpiration: '365d',
     });
-    assert.equal((jwt.verify(token, 'test-secret') as any).userId, 'user-1');
+    const decoded = jwt.verify(token, 'test-secret') as any;
+    assert.equal(decoded.userId, 'user-1');
+    assert.equal(decoded.tokenUse, 'refresh');
   } finally {
     if (previous === undefined) delete process.env.AUTH_DB_SESSIONS_ENABLED;
     else process.env.AUTH_DB_SESSIONS_ENABLED = previous;

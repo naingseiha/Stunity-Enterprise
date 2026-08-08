@@ -1,17 +1,21 @@
 import { getJwtSecret } from '../../../../../lib/jwt-secret';
 import { Router, Request, Response } from 'express';
 import { PrismaClient, SocialProvider } from '@prisma/client';
-import jwt from 'jsonwebtoken';
 import { generateUniqueUsername } from '../utils/username';
 import { normalizeEmail } from '../security/identifiers';
 import { resolveUnlinkedSocialAccount } from '../security/authPolicy';
 import { SchoolLinkError, submitSchoolLinkRequest } from '../domain/schoolLinkService';
 import { issueRefreshCredential } from '../security/refreshCredential';
+import {
+  signAccessToken,
+  signTwoFactorChallenge,
+  verifyAccessToken,
+} from '../security/tokenClaims';
 
 const router = Router();
 
 const JWT_SECRET = getJwtSecret();
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '15m';
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d';
 
 // ─── Provider Token Verification ─────────────────────────────────────
@@ -243,16 +247,12 @@ export async function handleSocialLogin(
   });
 
   if (twoFactor?.isEnabled) {
-    const challengeToken = jwt.sign(
-      { userId: user.id, purpose: '2fa_challenge' },
-      JWT_SECRET,
-      { expiresIn: '5m' }
-    );
+    const challengeToken = signTwoFactorChallenge(user.id, JWT_SECRET);
     return { requires2FA: true, challengeToken, isNewUser };
   }
 
   // 5. Issue Stunity JWT
-  const accessToken = jwt.sign(
+  const accessToken = signAccessToken(
     {
       userId: user.id,
       email: user.email,
@@ -266,7 +266,7 @@ export async function handleSocialLogin(
       } : null,
     },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+    JWT_EXPIRATION,
   );
 
   const refreshToken = await issueRefreshCredential({
@@ -397,7 +397,7 @@ export default function socialAuthRoutes(prisma: PrismaClient) {
       const token = authHeader && authHeader.split(' ')[1];
       if (!token) return res.status(401).json({ success: false, error: 'Access token required' });
 
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const decoded = verifyAccessToken(token, JWT_SECRET);
       const { provider, idToken, accessToken: fbToken, identityToken, authorizationCode, redirectUri } = req.body;
 
       let profile: ProviderProfile;
@@ -456,7 +456,7 @@ export default function socialAuthRoutes(prisma: PrismaClient) {
       const token = authHeader && authHeader.split(' ')[1];
       if (!token) return res.status(401).json({ success: false, error: 'Access token required' });
 
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const decoded = verifyAccessToken(token, JWT_SECRET);
       const provider = req.params.provider.toUpperCase() as SocialProvider;
 
       // Check user has at least one other login method

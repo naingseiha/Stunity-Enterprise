@@ -302,13 +302,18 @@ export default function ClaimCodeSetupScreen() {
         password,
       });
       if (response.data.success) {
-        const loggedIn = await login({
+        const loginResult = await login({
           ...(isEmail ? { email: identifier } : { phone: identifier }),
           password,
           rememberMe: true,
         });
 
-        if (loggedIn) {
+        if (loginResult.requires2FA && loginResult.challengeToken) {
+          navigation.navigate('TwoFactor', {
+            challengeToken: loginResult.challengeToken,
+            email: loginResult.email || identifier,
+          });
+        } else if (loginResult.success) {
           Alert.alert(t('common.success'), t('auth.claimCodeSetup.alerts.accountCreated'));
         } else {
           Alert.alert(

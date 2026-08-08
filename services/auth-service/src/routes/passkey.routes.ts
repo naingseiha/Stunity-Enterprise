@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import type { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
+import { signAccessToken, signLegacyRefreshToken } from "../../../lib/auth-tokens";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -72,15 +73,15 @@ function issueTokens(user: {
   parentId?: string | null;
   studentId?: string | null;
 }, options: PasskeyRouteOptions) {
-  const accessToken = jwt.sign(
+  const accessToken = signAccessToken(
     buildAccessTokenClaims(user, { accountType: user.accountType }),
     options.jwtSecret,
-    { expiresIn: options.accessTokenExpiration } as jwt.SignOptions,
+    options.accessTokenExpiration,
   );
-  const refreshToken = jwt.sign(
-    { userId: user.id },
+  const refreshToken = signLegacyRefreshToken(
+    user.id,
     options.jwtSecret,
-    { expiresIn: options.refreshTokenExpiration } as jwt.SignOptions,
+    options.refreshTokenExpiration,
   );
   return { accessToken, refreshToken, expiresIn: options.accessTokenExpiration };
 }

@@ -18,6 +18,12 @@ const KEYS = {
   REMEMBER_ME: 'stunity_remember_me',
 } as const;
 
+// Prevent iCloud/iTunes migration of credentials to another device. Android
+// credentials remain protected by the app-scoped Keystore implementation.
+const DEVICE_ONLY_SECURE_STORE_OPTIONS = {
+  keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+};
+
 class TokenService {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
@@ -222,9 +228,9 @@ class TokenService {
     const expiryTime = Date.now() + expiresInSeconds * 1000;
 
     await Promise.all([
-      SecureStore.setItemAsync(KEYS.ACCESS_TOKEN, tokens.accessToken),
-      SecureStore.setItemAsync(KEYS.REFRESH_TOKEN, tokens.refreshToken),
-      SecureStore.setItemAsync(KEYS.TOKEN_EXPIRY, expiryTime.toString()),
+      SecureStore.setItemAsync(KEYS.ACCESS_TOKEN, tokens.accessToken, DEVICE_ONLY_SECURE_STORE_OPTIONS),
+      SecureStore.setItemAsync(KEYS.REFRESH_TOKEN, tokens.refreshToken, DEVICE_ONLY_SECURE_STORE_OPTIONS),
+      SecureStore.setItemAsync(KEYS.TOKEN_EXPIRY, expiryTime.toString(), DEVICE_ONLY_SECURE_STORE_OPTIONS),
     ]);
 
     this.accessToken = tokens.accessToken;
@@ -252,7 +258,7 @@ class TokenService {
    * Set user ID
    */
   async setUserId(userId: string): Promise<void> {
-    await SecureStore.setItemAsync(KEYS.USER_ID, userId);
+    await SecureStore.setItemAsync(KEYS.USER_ID, userId, DEVICE_ONLY_SECURE_STORE_OPTIONS);
   }
 
   /**
@@ -274,7 +280,7 @@ class TokenService {
    * Set biometric auth preference
    */
   async setBiometricEnabled(enabled: boolean): Promise<void> {
-    await SecureStore.setItemAsync(KEYS.BIOMETRIC_ENABLED, enabled.toString());
+    await SecureStore.setItemAsync(KEYS.BIOMETRIC_ENABLED, enabled.toString(), DEVICE_ONLY_SECURE_STORE_OPTIONS);
   }
 
   /**
@@ -289,7 +295,7 @@ class TokenService {
    * Set remember me preference
    */
   async setRememberMe(enabled: boolean): Promise<void> {
-    await SecureStore.setItemAsync(KEYS.REMEMBER_ME, enabled.toString());
+    await SecureStore.setItemAsync(KEYS.REMEMBER_ME, enabled.toString(), DEVICE_ONLY_SECURE_STORE_OPTIONS);
   }
 
   /**

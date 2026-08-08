@@ -1,10 +1,18 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
-import { fetchMasteryTree, type MasterySubject } from '@/api/recall';
+import { fetchMasteryTree, type MasterySubject, type MasteryTopic } from '@/api/recall';
 import { useFeatureFlag } from '@/config/featureFlags';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -12,29 +20,112 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 interface SubjectMasteryTreeProps {
-  /** The profile being viewed. The tree is the signed-in user's own data, so it
-   *  only renders on your own profile. */
   profileUserId?: string;
 }
 
-function masteryColor(pct: number): string {
-  if (pct >= 80) return '#16A34A'; // mastered
-  if (pct >= 50) return '#F59E0B'; // progressing
-  return '#EF4444'; // needs work
+const INITIAL_VISIBLE = 5;
+const ACCENT = '#0EA5E9';
+
+function normalizeKey(raw: string) {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/[_/]+/g, '-')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
 }
 
-function MasteryBar({ pct }: { pct: number }) {
-  const { isDark } = useThemeContext();
+function prettyLabel(raw: string) {
+  const cleaned = raw.trim().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
+  if (!cleaned) return raw;
+  return cleaned
+    .split(' ')
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w))
+    .join(' ');
+}
+
+function mergeSubjects(list: MasterySubject[]): MasterySubject[] {
+  const map = new Map<string, MasterySubject>();
+  for (const item of list) {
+    const key = normalizeKey(item.subject || item.label);
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, {
+        ...item,
+        subject: key,
+        label: prettyLabel(item.label || item.subject),
+        topics: [...(item.topics || [])],
+      });
+      continue;
+    }
+    const cardCount = existing.cardCount + item.cardCount;
+    const dueCount = existing.dueCount + item.dueCount;
+    const weighted =
+      cardCount > 0
+        ? Math.round(
+            (existing.mastery * existing.cardCount + item.mastery * item.cardCount) /
+              cardCount,
+          )
+        : Math.round((existing.mastery + item.mastery) / 2);
+
+    const topicMap = new Map<string, MasteryTopic>();
+    for (const tp of [...existing.topics, ...(item.topics || [])]) {
+      const tKey = normalizeKey(tp.label);
+      const prev = topicMap.get(tKey);
+      if (!prev) {
+        topicMap.set(tKey, { ...tp, label: prettyLabel(tp.label) });
+      } else {
+        const tc = prev.cardCount + tp.cardCount;
+        topicMap.set(tKey, {
+          label: prettyLabel(tp.label),
+          cardCount: tc,
+          dueCount: prev.dueCount + tp.dueCount,
+          mastery:
+            tc > 0
+              ? Math.round((prev.mastery * prev.cardCount + tp.mastery * tp.cardCount) / tc)
+              : Math.round((prev.mastery + tp.mastery) / 2),
+        });
+      }
+    }
+
+    map.set(key, {
+      subject: key,
+      label: prettyLabel(existing.label || item.label || key),
+      mastery: weighted,
+      cardCount,
+      dueCount,
+      topics: Array.from(topicMap.values()),
+    });
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    if (b.dueCount !== a.dueCount) return b.dueCount - a.dueCount;
+    return a.label.localeCompare(b.label);
+  });
+}
+
+function ProgressBar({
+  pct,
+  trackColor,
+}: {
+  pct: number;
+  trackColor: string;
+}) {
   return (
-    <View style={[styles.track, { backgroundColor: isDark ? '#ffffff14' : '#0000000d' }]}>
-      <View style={[styles.fill, { width: `${Math.max(2, pct)}%`, backgroundColor: masteryColor(pct) }]} />
+    <View style={[styles.track, { backgroundColor: trackColor }]}>
+      <View
+        style={[
+          styles.fill,
+          { width: `${Math.max(2, Math.min(100, pct))}%`, backgroundColor: ACCENT },
+        ]}
+      />
     </View>
   );
 }
 
 export function SubjectMasteryTree({ profileUserId }: SubjectMasteryTreeProps) {
   const { t } = useTranslation();
-  const { colors } = useThemeContext();
+  const { colors, isDark } = useThemeContext();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const flagOn = useFeatureFlag('mastery_tree');
   const isOwn = !!currentUserId && (!profileUserId || profileUserId === currentUserId);
@@ -42,15 +133,25 @@ export function SubjectMasteryTree({ profileUserId }: SubjectMasteryTreeProps) {
   const [subjects, setSubjects] = useState<MasterySubject[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
-    if (!isOwn || !flagOn) { setLoading(false); return; }
+    if (!isOwn || !flagOn) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     fetchMasteryTree()
-      .then((s) => { if (!cancelled) setSubjects(s); })
-      .catch(() => { /* optional section */ })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .then((s) => {
+        if (!cancelled) setSubjects(mergeSubjects(s));
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [isOwn, flagOn]);
 
   const toggle = useCallback((subject: string) => {
@@ -58,84 +159,245 @@ export function SubjectMasteryTree({ profileUserId }: SubjectMasteryTreeProps) {
     setExpanded((prev) => ({ ...prev, [subject]: !prev[subject] }));
   }, []);
 
+  const summary = useMemo(() => {
+    if (subjects.length === 0) return null;
+    const due = subjects.reduce((n, s) => n + (s.dueCount || 0), 0);
+    const avg = Math.round(
+      subjects.reduce((n, s) => n + s.mastery, 0) / subjects.length,
+    );
+    return { due, avg, count: subjects.length };
+  }, [subjects]);
+
   if (!isOwn || !flagOn || loading || subjects.length === 0) return null;
+
+  const visible = showAll ? subjects : subjects.slice(0, INITIAL_VISIBLE);
+  const hiddenCount = Math.max(0, subjects.length - INITIAL_VISIBLE);
+  const divider = isDark ? colors.border : '#EEF2F6';
+  const track = isDark ? '#ffffff12' : '#F1F5F9';
+  const muted = colors.textSecondary;
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.header}>
-        <View style={[styles.headerIcon, { backgroundColor: '#EFF6FF' }]}>
-          <Ionicons name="git-branch" size={18} color="#0EA5E9" />
-        </View>
-        <Text style={[styles.title, { color: colors.text }]}>{t('profile.performance.subjectMastery')}</Text>
+      <View style={[styles.header, { borderBottomColor: divider }]}>
+        <Text style={[styles.title, { color: colors.text }]}>
+          {t('profile.performance.subjectMastery')}
+        </Text>
+        {summary ? (
+          <Text style={[styles.meta, { color: muted }]}>
+            {t('profile.performance.masterySummary', {
+              count: summary.count,
+              avg: summary.avg,
+              defaultValue: `${summary.count} subjects · ${summary.avg}% avg`,
+            })}
+            {summary.due > 0
+              ? ` · ${t('profile.performance.masteryDue', { count: summary.due })}`
+              : ''}
+          </Text>
+        ) : null}
       </View>
 
-      {subjects.map((subj) => {
-        const open = !!expanded[subj.subject];
-        return (
-          <View key={subj.subject} style={styles.subjectBlock}>
-            <Pressable onPress={() => toggle(subj.subject)} style={styles.subjectRow}>
-              <View style={styles.subjectTop}>
-                <Text style={[styles.subjectLabel, { color: colors.text }]} numberOfLines={1}>
-                  {subj.label}
-                </Text>
-                <View style={styles.subjectRight}>
-                  {subj.dueCount > 0 ? (
-                    <View style={styles.duePill}>
-                      <Ionicons name="time-outline" size={11} color="#B45309" />
-                      <Text style={styles.dueText}>{t('profile.performance.masteryDue', { count: subj.dueCount })}</Text>
-                    </View>
-                  ) : null}
-                  <Text style={[styles.pct, { color: masteryColor(subj.mastery) }]}>{subj.mastery}%</Text>
-                  <Ionicons
-                    name={open ? 'chevron-up' : 'chevron-down'}
-                    size={16}
-                    color={colors.textTertiary}
-                  />
-                </View>
-              </View>
-              <MasteryBar pct={subj.mastery} />
-            </Pressable>
+      <View>
+        {visible.map((subj, index) => {
+          const open = !!expanded[subj.subject];
+          const isLast = index === visible.length - 1 && hiddenCount === 0;
 
-            {open ? (
-              <View style={styles.topics}>
-                {subj.topics.map((tp) => (
-                  <View key={tp.label} style={styles.topicRow}>
-                    <View style={styles.topicLeft}>
-                      <Text style={[styles.topicLabel, { color: colors.textSecondary }]} numberOfLines={1}>
-                        {tp.label}
-                      </Text>
-                      <MasteryBar pct={tp.mastery} />
-                    </View>
-                    <Text style={[styles.topicPct, { color: masteryColor(tp.mastery) }]}>{tp.mastery}%</Text>
+          return (
+            <View
+              key={subj.subject}
+              style={!isLast ? [styles.rowWrap, { borderBottomColor: divider }] : styles.rowWrapLast}
+            >
+              <Pressable
+                onPress={() => toggle(subj.subject)}
+                style={styles.row}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: open }}
+              >
+                <View style={styles.rowMain}>
+                  <View style={styles.rowTop}>
+                    <Text style={[styles.label, { color: colors.text }]} numberOfLines={1}>
+                      {prettyLabel(subj.label || subj.subject)}
+                    </Text>
+                    <Text style={[styles.pct, { color: colors.text }]}>{subj.mastery}%</Text>
                   </View>
-                ))}
-              </View>
-            ) : null}
-          </View>
-        );
-      })}
+                  <ProgressBar pct={subj.mastery} trackColor={track} />
+                  {subj.dueCount > 0 ? (
+                    <Text style={[styles.due, { color: muted }]}>
+                      {t('profile.performance.masteryDue', { count: subj.dueCount })}
+                    </Text>
+                  ) : null}
+                </View>
+                <Ionicons
+                  name={open ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={muted}
+                  style={styles.chevron}
+                />
+              </Pressable>
+
+              {open ? (
+                <View style={[styles.topics, { borderLeftColor: divider }]}>
+                  {subj.topics.length === 0 ? (
+                    <Text style={[styles.topicEmpty, { color: muted }]}>
+                      {t('profile.performance.noTopics', 'No topics yet')}
+                    </Text>
+                  ) : (
+                    subj.topics.map((tp) => (
+                      <View key={tp.label} style={styles.topicRow}>
+                        <Text style={[styles.topicLabel, { color: muted }]} numberOfLines={1}>
+                          {prettyLabel(tp.label)}
+                        </Text>
+                        <View style={styles.topicBarWrap}>
+                          <ProgressBar pct={tp.mastery} trackColor={track} />
+                        </View>
+                        <Text style={[styles.topicPct, { color: colors.text }]}>{tp.mastery}%</Text>
+                      </View>
+                    ))
+                  )}
+                </View>
+              ) : null}
+            </View>
+          );
+        })}
+      </View>
+
+      {hiddenCount > 0 ? (
+        <Pressable
+          onPress={() => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setShowAll((v) => !v);
+          }}
+          style={styles.moreBtn}
+          hitSlop={8}
+        >
+          <Text style={styles.moreText}>
+            {showAll
+              ? t('profile.performance.showLess', 'Show less')
+              : t('profile.performance.showMoreSubjects', {
+                  count: hiddenCount,
+                  defaultValue: `Show ${hiddenCount} more`,
+                })}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 18, borderWidth: 1, padding: 16, marginBottom: 14 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
-  headerIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 15, fontWeight: '800' },
-  subjectBlock: { marginBottom: 14 },
-  subjectRow: { gap: 7 },
-  subjectTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  subjectLabel: { fontSize: 14, fontWeight: '700', flex: 1 },
-  subjectRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  duePill: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FEF3C7', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 9999 },
-  dueText: { fontSize: 10, fontWeight: '700', color: '#B45309' },
-  pct: { fontSize: 14, fontWeight: '800' },
-  track: { height: 7, borderRadius: 4, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 4 },
-  topics: { marginTop: 12, paddingLeft: 10, gap: 10, borderLeftWidth: 2, borderLeftColor: '#E2E8F0' },
-  topicRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  topicLeft: { flex: 1, gap: 5 },
-  topicLabel: { fontSize: 12, fontWeight: '600' },
-  topicPct: { fontSize: 12, fontWeight: '700', minWidth: 36, textAlign: 'right' },
+  card: {
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  header: {
+    marginBottom: 4,
+    paddingBottom: 12,
+    gap: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#EEF2F6',
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  meta: {
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 16,
+  },
+  rowWrap: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 12,
+  },
+  rowWrapLast: {
+    paddingVertical: 12,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rowMain: {
+    flex: 1,
+    minWidth: 0,
+    gap: 8,
+  },
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  label: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+  pct: {
+    fontSize: 13,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+    minWidth: 40,
+    textAlign: 'right',
+  },
+  due: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  chevron: {
+    marginTop: -2,
+  },
+  track: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  topics: {
+    marginTop: 12,
+    marginLeft: 2,
+    paddingLeft: 12,
+    borderLeftWidth: 2,
+    gap: 10,
+  },
+  topicEmpty: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  topicRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  topicLabel: {
+    width: '34%',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  topicBarWrap: {
+    flex: 1,
+  },
+  topicPct: {
+    width: 36,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+  },
+  moreBtn: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  moreText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: ACCENT,
+  },
 });

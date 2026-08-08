@@ -12,7 +12,7 @@
  * (same pattern as `grade/index.ts`'s `getSubjectCoefficientMap`).
  */
 import express, { Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import { verifyAccessToken } from "../../../../lib/auth-tokens";
 import { getSharedPrisma } from "../../core/prisma";
 import { getJwtSecret } from "../../../../lib/jwt-secret";
 import {
@@ -61,7 +61,7 @@ const authenticateToken = (
       .json({ success: false, message: "Access token required" });
 
   try {
-    req.user = jwt.verify(token, JWT_SECRET) as AuthRequest["user"];
+    req.user = verifyAccessToken(token, JWT_SECRET) as unknown as AuthRequest["user"];
     next();
   } catch {
     return res

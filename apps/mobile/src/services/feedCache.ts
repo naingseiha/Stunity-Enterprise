@@ -151,10 +151,9 @@ export async function clearFeedCache(userId?: string): Promise<void> {
         if (userId) {
             const { cacheKey, cacheTsKey } = resolveScopedKeys(userId);
             await AsyncStorage.multiRemove([cacheKey, cacheTsKey]);
-            return;
+        } else {
+            await AsyncStorage.multiRemove([LEGACY_CACHE_KEY, LEGACY_CACHE_TS_KEY]);
         }
-
-        await AsyncStorage.multiRemove([LEGACY_CACHE_KEY, LEGACY_CACHE_TS_KEY]);
     } catch {
         // Ignore
     }

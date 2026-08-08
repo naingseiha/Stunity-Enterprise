@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import jwt from "jsonwebtoken";
+import { verifyAccessToken } from "../../../../lib/auth-tokens";
 import { PrismaClient } from "@prisma/client";
 import {
   shouldRunDbStartupWarmup,
@@ -68,7 +68,7 @@ async function authMiddleware(
       });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = verifyAccessToken(token, JWT_SECRET);
 
     // OPTIMIZED: Use data from JWT token instead of database query
     // This reduces response time from ~200ms to <5ms

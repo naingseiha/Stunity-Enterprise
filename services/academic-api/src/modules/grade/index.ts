@@ -3,7 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { MonthlyGradeSheetStatus, PrismaClient } from "@prisma/client";
-import jwt from "jsonwebtoken";
+import { verifyAccessToken } from "../../../../lib/auth-tokens";
 import ExcelJS from "exceljs";
 import { resolveReportAcademicStartYear as resolveAcademicYearForReport } from "./reports/report-utils";
 import {
@@ -92,8 +92,8 @@ const authenticateToken = (req: AuthRequest, res: Response, next: Function) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    req.user = decoded;
+    const decoded = verifyAccessToken(token, JWT_SECRET);
+    req.user = decoded as unknown as AuthRequest['user'];
     next();
   } catch (error) {
     return res.status(403).json({ message: "Invalid or expired token" });

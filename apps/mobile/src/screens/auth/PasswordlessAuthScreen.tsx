@@ -122,6 +122,13 @@ export default function PasswordlessAuthScreen({ entry }: { entry: 'login' | 're
       Alert.alert('Error', result.error || t('auth.passwordless.verificationErrorBody', 'Invalid verification code'));
       return;
     }
+    if (result.data.status === 'TWO_FACTOR_REQUIRED') {
+      navigation.navigate('TwoFactor', {
+        challengeToken: result.data.challengeToken,
+        email: result.data.email || '',
+      });
+      return;
+    }
     if (result.data.status === 'ENROLLMENT_REQUIRED') {
       setEnrollmentToken(result.data.enrollmentToken);
       setStep('PROFILE');

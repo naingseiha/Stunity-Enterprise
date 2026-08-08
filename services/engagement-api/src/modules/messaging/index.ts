@@ -5,7 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../auth/security/tokenClaims';
 import path from 'path';
 import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../../../lib/prisma-pool-url';
 import { compareSchoolAuthorizationProjection } from './security/schoolAuthorizationProjection';
@@ -272,7 +272,7 @@ const authenticateToken = async (req: Request, res: Response, next: NextFunction
       return res.status(401).json({ success: false, error: 'Access token required' });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = verifyAccessToken(token, JWT_SECRET);
     let teacherId = decoded.teacherId;
     let parentId = decoded.parentId;
     let schoolId = decoded.schoolId;

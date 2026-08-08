@@ -4,14 +4,14 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy, Profile as GoogleProfile } from 'passport-google-oauth20';
 import { OIDCStrategy } from 'passport-azure-ad';
 import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
 import { issueRefreshCredential } from '../security/refreshCredential';
+import { signAccessToken } from '../security/tokenClaims';
 import * as ssoCodeStore from '../utils/ssoCodeStore';
 
 const router = Router();
 
 const JWT_SECRET = getJwtSecret();
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '15m';
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d';
 
 export default function ssoRoutes(prisma: PrismaClient) {
@@ -79,8 +79,19 @@ export default function ssoRoutes(prisma: PrismaClient) {
         return res.status(403).json({ success: false, error: 'Account is deactivated' });
       }
 
+      // The redirect-based SSO flow cannot safely complete the TOTP challenge
+      // yet. Fail closed instead of issuing tokens that bypass enabled 2FA.
+      const twoFactor = await prisma.twoFactorSecret.findUnique({
+        where: { userId: user.id },
+        select: { isEnabled: true },
+      });
+      if (twoFactor?.isEnabled) {
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        return res.redirect(`${frontendUrl}/en/auth/login?error=two_factor_required`);
+      }
+
       // 2. Issue Stunity JWT
-      const accessToken = jwt.sign(
+      const accessToken = signAccessToken(
         {
           userId: user.id,
           email: user.email,
@@ -94,7 +105,7 @@ export default function ssoRoutes(prisma: PrismaClient) {
           } : null,
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+        JWT_EXPIRATION,
       );
 
       const refreshToken = await issueRefreshCredential({

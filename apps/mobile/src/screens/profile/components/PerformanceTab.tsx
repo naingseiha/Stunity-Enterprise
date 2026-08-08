@@ -39,6 +39,8 @@ import type { ProfileVisitor } from "@/api/profileApi";
 import { LearningStreakCard } from "@/components/streak";
 import { SubjectMasteryTree } from "./SubjectMasteryTree";
 import { StreakLeaderboard } from "./StreakLeaderboard";
+import { NextActionCard } from "./NextActionCard";
+import { RoleOverviewCard } from "./RoleOverviewCard";
 import type { UserStats as ProfileUserStats } from "@/types";
 import {
   Colors,
@@ -62,6 +64,7 @@ interface PerformanceTabProps {
   level: number;
   totalPoints: number;
   profile: any;
+  isOwnProfile?: boolean;
   recentVisitors?: ProfileVisitor[];
   visitorsLoading?: boolean;
   onViewProfileVisitors?: () => void;
@@ -461,6 +464,7 @@ export default function PerformanceTab({
   level,
   totalPoints,
   profile,
+  isOwnProfile = false,
   recentVisitors = [],
   visitorsLoading = false,
   onViewProfileVisitors,
@@ -494,6 +498,19 @@ export default function PerformanceTab({
     borderColor: colors.border,
   };
 
+  const role = String(profile?.role || "STUDENT").toUpperCase();
+  const isParentRole = role === "PARENT";
+  const isTeacherLikeRole = [
+    "TEACHER",
+    "STAFF",
+    "SCHOOL_ADMIN",
+    "ADMIN",
+    "SUPER_ADMIN",
+  ].includes(role);
+  // Teachers/admins can learn like students — keep the full learner dashboard.
+  // Only parents get a non-learner Performance layout.
+  const showLearnerDashboard = !isParentRole;
+
   useEffect(() => {
     Animated.spring(cardScale, {
       toValue: 1,
@@ -516,7 +533,33 @@ export default function PerformanceTab({
 
   return (
     <View style={s.container}>
-      {/* XP & Level Card */}
+      {/* Role-aware overview for teachers / parents */}
+      {(isTeacherLikeRole || isParentRole) && (
+        <RoleOverviewCard
+          role={role as any}
+          profile={profile}
+          profileStats={profileStats}
+          isOwnProfile={isOwnProfile}
+          recentVisitors={recentVisitors}
+          onViewProfileVisitors={
+            isOwnProfile ? onViewProfileVisitors : undefined
+          }
+        />
+      )}
+
+      {/* Next learning action — own student profiles */}
+      {isOwnProfile && showLearnerDashboard && (
+        <NextActionCard
+          streak={streak}
+          quizStats={quizStats}
+          level={level}
+          onUseStreakFreeze={onUseStreakFreeze}
+          isFreezingStreak={isFreezingStreak}
+        />
+      )}
+
+      {/* XP & Level Card — learners only */}
+      {showLearnerDashboard && (
       <Animated.View
         style={[s.card, cardStyle, { transform: [{ scale: cardScale }] }]}
       >
@@ -638,8 +681,9 @@ export default function PerformanceTab({
           </View>
         </LinearGradient>
       </Animated.View>
+      )}
 
-      {/* Profile Discovery Card */}
+      {/* Profile Discovery — all roles */}
       <View style={[s.card, cardStyle]}>
         <LinearGradient
           colors={
@@ -860,7 +904,8 @@ export default function PerformanceTab({
         </LinearGradient>
       </View>
 
-      {/* Quiz Performance Card */}
+      {/* Quiz Performance Card — learners */}
+      {showLearnerDashboard && (
       <View style={[s.card, cardStyle]}>
         <View style={s.cardHeader}>
           <View
@@ -950,20 +995,24 @@ export default function PerformanceTab({
           </View>
         )}
       </View>
+      )}
 
+      {showLearnerDashboard && (
       <LearningStreakCard
         streak={streak}
         onUseFreeze={onUseStreakFreeze}
         isFreezing={isFreezingStreak}
       />
+      )}
 
-      {/* Subject mastery tree — own profile only (self-guarded) */}
-      <SubjectMasteryTree profileUserId={profile?.id} />
+      {/* Subject mastery tree — own learner profile only (self-guarded) */}
+      {showLearnerDashboard && <SubjectMasteryTree profileUserId={profile?.id} />}
 
-      {/* Scoped streak leaderboard — own profile only (self-guarded) */}
-      <StreakLeaderboard profileUserId={profile?.id} />
+      {/* Scoped streak leaderboard — own learner profile only (self-guarded) */}
+      {showLearnerDashboard && <StreakLeaderboard profileUserId={profile?.id} />}
 
-      {/* Core Stats Overview */}
+      {/* Core Stats Overview — learners */}
+      {showLearnerDashboard && (
       <View style={[s.card, cardStyle]}>
         <View style={s.cardHeader}>
           <View
@@ -1032,6 +1081,7 @@ export default function PerformanceTab({
           </View>
         </View>
       </View>
+      )}
 
       {/* Achievement Showcase */}
       <View style={[s.card, cardStyle]}>
@@ -1109,7 +1159,8 @@ export default function PerformanceTab({
         )}
       </View>
 
-      {/* Leaderboard Position */}
+      {/* Leaderboard Position — learners */}
+      {showLearnerDashboard && (
       <TouchableOpacity
         style={s.leaderboardCard}
         onPress={onViewLeaderboard}
@@ -1145,16 +1196,17 @@ export default function PerformanceTab({
           />
         </LinearGradient>
       </TouchableOpacity>
+      )}
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  container: { gap: Spacing[3], paddingTop: Spacing[3] },
+  container: { gap: 12, paddingTop: 4, paddingBottom: 8 },
   card: {
     backgroundColor: Colors.white,
-    borderRadius: BorderRadius.xl,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: ColorScale.gray[200],
     overflow: "hidden",
   },
@@ -1498,7 +1550,7 @@ const s = StyleSheet.create({
   },
 
   // Leaderboard
-  leaderboardCard: { borderRadius: BorderRadius.xl, overflow: "hidden" },
+  leaderboardCard: { borderRadius: 16, overflow: "hidden" },
   leaderboardGradient: {
     flexDirection: "row",
     alignItems: "center",

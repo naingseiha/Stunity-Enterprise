@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../../../../lib/auth-tokens';
 import { prisma } from './lib/prisma';
 import { shouldRunDbStartupWarmup } from '../../../../lib/prisma-pool-url';
 import { getJwtSecret } from '../../../../lib/jwt-secret';
@@ -46,7 +46,7 @@ const authMiddleware = async (
       });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = verifyAccessToken(token, JWT_SECRET);
 
     if (!decoded.userId) {
       return res.status(401).json({
@@ -81,7 +81,7 @@ const optionalAuthMiddleware = async (
     const token = req.headers.authorization?.replace('Bearer ', '');
 
     if (token) {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const decoded = verifyAccessToken(token, JWT_SECRET);
       if (decoded.userId) {
         req.user = {
           userId: decoded.userId,

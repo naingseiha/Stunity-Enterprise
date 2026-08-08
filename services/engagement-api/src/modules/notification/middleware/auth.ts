@@ -1,7 +1,7 @@
 import { getJwtSecret } from '../../../../../lib/jwt-secret';
 
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../../auth/security/tokenClaims';
 
 const JWT_SECRET = getJwtSecret();
 
@@ -25,7 +25,7 @@ export const authenticateToken: RequestHandler = (req: Request, res: Response, n
             return;
         }
 
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        const decoded = verifyAccessToken(token, JWT_SECRET);
 
         authReq.user = {
             id: decoded.userId,

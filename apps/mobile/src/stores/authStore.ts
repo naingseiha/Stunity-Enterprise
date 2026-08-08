@@ -19,6 +19,16 @@ import * as passkeysApi from '@/api/passkeys';
 import { Config } from '@/config';
 import { eventEmitter } from '@/utils/eventEmitter';
 import { tokenService } from '@/services/token';
+import { clearFeedCache } from '@/services/feedCache';
+import { clearUserScopedSessionCache } from '@/services/sessionCache';
+
+export interface PasswordLoginResult {
+  success: boolean;
+  error?: string;
+  requires2FA?: boolean;
+  challengeToken?: string;
+  email?: string;
+}
 
 interface AuthState {
   // State
@@ -31,7 +41,7 @@ interface AuthState {
 
   // Actions
   initialize: (options?: { skipBiometric?: boolean }) => Promise<void>;
-  login: (credentials: LoginCredentials) => Promise<boolean>;
+  login: (credentials: LoginCredentials) => Promise<PasswordLoginResult>;
   register: (data: RegisterData) => Promise<boolean>;
   startPhoneOtp: (phone: string, preferredChannel?: 'AUTO' | 'TELEGRAM' | 'SMS') => Promise<{ success: boolean; data?: OtpChallengeResponse; error?: string }>;
   verifyPhoneOtp: (challengeId: string, code: string) => Promise<{ success: boolean; data?: OtpVerifyResult; error?: string }>;
@@ -71,7 +81,7 @@ interface AuthState {
   linkClaimCode: (code: string, verificationData?: any) => Promise<{ success: boolean; error?: string; data?: any }>;
   cancelSchoolLink: () => Promise<{ success: boolean; error?: string }>;
   validateClaimCode: (code: string) => Promise<{ success: boolean; error?: string; data?: any }>;
-  parentLogin: (credentials: { phone: string; password: string }) => Promise<boolean>;
+  parentLogin: (credentials: { phone: string; password: string }) => Promise<PasswordLoginResult>;
   parentRegister: (data: { firstName: string; lastName: string; phone: string; password: string; claimCode?: string }) => Promise<boolean>;
 }
 
@@ -182,9 +192,9 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true });
 
-          const restorePersistedSession = () => {
+          const restorePersistedSession = (hasSecureCredential: boolean) => {
             const state = get();
-            if (!state.user) return false;
+            if (!hasSecureCredential || !state.user) return false;
 
             set({
               isAuthenticated: true,
@@ -219,11 +229,6 @@ export const useAuthStore = create<AuthState>()(
 
           if (!hasTokens) {
             console.warn('Auth: No secure tokens loaded on init');
-            if (restorePersistedSession()) {
-              console.warn('Auth: Keeping persisted session until explicit logout');
-              return;
-            }
-
             set({
               user: null,
               isAuthenticated: false,
@@ -283,7 +288,7 @@ export const useAuthStore = create<AuthState>()(
                   }
                 }
 
-                if (restorePersistedSession()) {
+                if (restorePersistedSession(hasTokens)) {
                   console.warn('Auth: Refresh temporarily unavailable, keeping persisted session');
                   return;
                 }
@@ -292,14 +297,14 @@ export const useAuthStore = create<AuthState>()(
                 if (refreshStatus === 401 || refreshStatus === 403) {
                   console.warn('Auth: Refresh token rejected by server, clearing session');
                   await tokenService.clearTokens();
-                } else if (restorePersistedSession()) {
+                } else if (restorePersistedSession(hasTokens)) {
                   console.warn('Auth: Refresh failed due to network/server issue, keeping persisted session');
                   return;
                 }
               }
             } else {
               console.warn('Auth: Network/Server error during verification, keeping session active');
-              if (restorePersistedSession()) {
+              if (restorePersistedSession(hasTokens)) {
                 return;
               }
             }
@@ -341,7 +346,18 @@ export const useAuthStore = create<AuthState>()(
             throw new Error(response.data.error || 'Login failed');
           }
 
-          const { user: apiUser, tokens } = response.data.data;
+          const responseData = response.data.data;
+          if (responseData?.requires2FA && responseData?.challengeToken) {
+            set({ isLoading: false, error: null });
+            return {
+              success: false,
+              requires2FA: true,
+              challengeToken: responseData.challengeToken,
+              email: responseData.email || credentials.email || '',
+            };
+          }
+
+          const { user: apiUser, tokens } = responseData;
 
           const { useFeedStore } = await import('./feedStore');
           useFeedStore.getState().reset();
@@ -363,7 +379,7 @@ export const useAuthStore = create<AuthState>()(
           });
           prewarmFeedAfterAuth(user.role);
 
-          return true;
+          return { success: true };
         } catch (error: any) {
           console.error('Login error:', error);
           const message = error?.response?.data?.error || error?.message || 'Login failed';
@@ -371,7 +387,7 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: message,
           });
-          return false;
+          return { success: false, error: message };
         }
       },
 
@@ -451,6 +467,17 @@ export const useAuthStore = create<AuthState>()(
             set({ user, isAuthenticated: true, isLoading: false });
             prewarmFeedAfterAuth(user.role);
             return { success: true, data: { status: 'AUTHENTICATED' } as OtpVerifyResult };
+          }
+          if (data.status === 'TWO_FACTOR_REQUIRED' && data.challengeToken) {
+            set({ isLoading: false, error: null });
+            return {
+              success: true,
+              data: {
+                status: 'TWO_FACTOR_REQUIRED',
+                challengeToken: data.challengeToken,
+                email: data.email || '',
+              } as OtpVerifyResult,
+            };
           }
           set({ isLoading: false });
           return {
@@ -692,7 +719,18 @@ export const useAuthStore = create<AuthState>()(
             throw new Error(response.data.error || 'Login failed');
           }
 
-          const { user: apiUser, tokens } = response.data.data;
+          const responseData = response.data.data;
+          if (responseData?.requires2FA && responseData?.challengeToken) {
+            set({ isLoading: false, error: null });
+            return {
+              success: false,
+              requires2FA: true,
+              challengeToken: responseData.challengeToken,
+              email: responseData.email || '',
+            };
+          }
+
+          const { user: apiUser, tokens } = responseData;
 
           await tokenService.setTokens(tokens as AuthTokens);
           await tokenService.setUserId(apiUser.id);
@@ -706,7 +744,7 @@ export const useAuthStore = create<AuthState>()(
           });
           prewarmFeedAfterAuth(user.role);
 
-          return true;
+          return { success: true };
         } catch (error: any) {
           console.error('Parent login error:', error);
           const message = error?.response?.data?.error || error?.message || 'Login failed';
@@ -714,7 +752,7 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: message,
           });
-          return false;
+          return { success: false, error: message };
         }
       },
 
@@ -764,6 +802,7 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         try {
           set({ isLoading: true, isLoggingOut: true });
+          const userId = get().user?.id || await tokenService.getUserId();
 
           // Revoke refresh token on server (best-effort)
           try {
@@ -776,9 +815,17 @@ export const useAuthStore = create<AuthState>()(
 
           await tokenService.clearTokens();
 
+          await Promise.allSettled([
+            clearFeedCache(userId || undefined),
+            clearUserScopedSessionCache(userId),
+          ]);
+
           // Reset feed store state
           const { useFeedStore } = await import('./feedStore');
           useFeedStore.getState().reset();
+          const classesApi = await import('@/api/classes');
+          classesApi.invalidateMyClassesCache();
+          classesApi.invalidateClassDetailBundleCache();
 
           set({
             user: null,
@@ -789,7 +836,15 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error) {
           console.error('Logout error:', error);
-          set({ isLoading: false, isLoggingOut: false });
+          // Local authorization state must still fail closed if cleanup fails.
+          await tokenService.clearTokens().catch(() => undefined);
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            isLoggingOut: false,
+            error: null,
+          });
         }
       },
 
@@ -916,9 +971,13 @@ export const useAuthStore = create<AuthState>()(
       name: 'stunity-auth',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
-        // Only persist user data, not loading/error states
+        // Authentication is always re-derived from SecureStore credentials.
         user: state.user,
-        isAuthenticated: state.isAuthenticated,
+      }),
+      version: 2,
+      migrate: (persistedState: any) => ({
+        ...persistedState,
+        isAuthenticated: false,
       }),
     }
   )

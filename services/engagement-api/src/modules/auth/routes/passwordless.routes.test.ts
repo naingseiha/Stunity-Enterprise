@@ -140,6 +140,7 @@ test("existing-user OTP response redacts plaintext legacy claim data", async (t)
   const prisma = {
     otpAuthAuditEvent: { create: async () => ({ id: "audit" }) },
     verifiedContact: { findUnique: async () => ({ userId: user.id, disabledAt: null, user }) },
+    twoFactorSecret: { findUnique: async () => null },
     user: { update: async () => user },
   };
   const app = express();

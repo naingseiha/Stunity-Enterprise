@@ -228,6 +228,7 @@ export interface OtpChallengeResponse {
 
 export type OtpVerifyResult =
   | { status: 'AUTHENTICATED' }
+  | { status: 'TWO_FACTOR_REQUIRED'; challengeToken: string; email?: string }
   | { status: 'ENROLLMENT_REQUIRED'; enrollmentToken: string };
 
 // Post Types

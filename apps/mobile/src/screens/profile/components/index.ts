@@ -3,3 +3,5 @@ export { default as ActivityTab } from './ActivityTab';
 export { CertificationsSection, SkillsSection, ProfileCompletenessCard, CareerGoalsCard, ProjectShowcase } from './AboutEnhancements';
 export { EndorsableSkills } from './EndorsableSkills';
 export { LinkSchoolCard } from './LinkSchoolCard';
+export { NextActionCard } from './NextActionCard';
+export { RoleOverviewCard } from './RoleOverviewCard';

@@ -28,6 +28,7 @@ import {
 } from "../observability/authOperationalMetrics";
 import { publicPendingLinkData } from "../security/publicAuthResponse";
 import { issueRefreshCredential } from "../security/refreshCredential";
+import { signAccessToken, signTwoFactorChallenge } from "../security/tokenClaims";
 
 type PasswordlessRouteOptions = {
   jwtSecret: string;
@@ -60,14 +61,14 @@ async function issueTokens(user: {
   accountType: string;
   schoolAccessVersion: number;
 }, options: PasswordlessRouteOptions, prisma: PrismaClient, req: Request) {
-  const accessToken = jwt.sign({
+  const accessToken = signAccessToken({
     userId: user.id,
     email: user.email,
     role: user.role,
     schoolId: user.schoolId,
     accountType: user.accountType,
     schoolAccessVersion: user.schoolAccessVersion,
-  }, options.jwtSecret, { expiresIn: options.accessTokenExpiration } as jwt.SignOptions);
+  }, options.jwtSecret, options.accessTokenExpiration);
   const refreshToken = await issueRefreshCredential({
     prisma,
     userId: user.id,
@@ -342,6 +343,23 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
     metrics.increment("auth_otp_verified_total", { channel: challenge.channel });
 
     if (usableContact) {
+      const twoFactor = await prisma.twoFactorSecret.findUnique({
+        where: { userId: usableContact.userId },
+        select: { isEnabled: true },
+      });
+      if (twoFactor?.isEnabled) {
+        return res.json({
+          success: true,
+          data: {
+            status: "TWO_FACTOR_REQUIRED",
+            challengeToken: signTwoFactorChallenge(usableContact.userId, options.jwtSecret),
+            email: usableContact.user.email,
+          },
+          error: null,
+          requestId: apiRequestId,
+        });
+      }
+
       const tokens = await issueTokens(usableContact.user, options, prisma, req);
       await prisma.user.update({
         where: { id: usableContact.userId },
