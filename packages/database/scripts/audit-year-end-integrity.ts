@@ -31,13 +31,13 @@ async function main() {
         JOIN "academic_years" source_year ON source_year."id" = progression."fromAcademicYearId"
         JOIN "academic_years" target_year ON target_year."id" = progression."toAcademicYearId"
         JOIN "classes" source_class ON source_class."id" = progression."fromClassId"
-        JOIN "classes" target_class ON target_class."id" = progression."toClassId"
+        LEFT JOIN "classes" target_class ON target_class."id" = progression."toClassId"
         WHERE student_record."schoolId" <> source_year."schoolId"
            OR student_record."schoolId" <> target_year."schoolId"
            OR student_record."schoolId" <> source_class."schoolId"
-           OR student_record."schoolId" <> target_class."schoolId"
+           OR (target_class."id" IS NOT NULL AND student_record."schoolId" <> target_class."schoolId")
            OR source_class."academicYearId" <> progression."fromAcademicYearId"
-           OR target_class."academicYearId" <> progression."toAcademicYearId") AS "progressionOwnershipMismatches"
+           OR (target_class."id" IS NOT NULL AND target_class."academicYearId" <> progression."toAcademicYearId")) AS "progressionOwnershipMismatches"
   `;
   const blockingTotal = Object.values(counts).reduce((sum, count) => sum + count, 0);
   console.table({ ...counts, blockingTotal });

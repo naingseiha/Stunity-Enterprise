@@ -37,7 +37,6 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import { TokenManager } from '@/lib/api/auth';
 import { useAcademicYearsList } from '@/hooks/useAcademicYears';
-import { useClasses } from '@/hooks/useClasses';
 import {
   yearEndApi,
   type PromotionPolicy,
@@ -54,6 +53,8 @@ type TransitionAction = 'recalculate' | 'accept-recommendations' | 'submit' | 'a
 const DEFAULT_POLICY: PromotionPolicy = {
   passAverage: 50,
   minAttendanceRate: 75,
+  enforceMinimumAttendanceRate: false,
+  maxTotalAbsences: 44,
   terminalGrade: 12,
   maxUnexcusedAbsences: null,
   maxDisciplineIncidents: null,
@@ -72,6 +73,7 @@ const REASONS = [
   'SUPPLEMENTARY_EXAM_PASSED',
   'REMEDIAL_PROGRAM_COMPLETED',
   'ATTENDANCE_BELOW_THRESHOLD',
+  'EXCESSIVE_TOTAL_ABSENCE',
   'EXCESSIVE_UNEXCUSED_ABSENCE',
   'DISCIPLINE_REVIEW_REQUIRED',
   'SPECIAL_COMMITTEE_DECISION',
@@ -125,6 +127,7 @@ function reasonLabel(reason: string, tx: Translate) {
     SUPPLEMENTARY_EXAM_PASSED: ['ប្រឡងបំពេញបន្ថែមជាប់', 'Passed supplementary exam'],
     REMEDIAL_PROGRAM_COMPLETED: ['បានបញ្ចប់កម្មវិធីបំប៉ន', 'Completed remedial program'],
     ATTENDANCE_BELOW_THRESHOLD: ['វត្តមានក្រោមកម្រិតកំណត់', 'Attendance below threshold'],
+    EXCESSIVE_TOTAL_ABSENCE: ['អវត្តមានសរុបចាប់ពី ៤៥ ដងឡើង', 'Total absences reached the review threshold'],
     EXCESSIVE_UNEXCUSED_ABSENCE: ['អវត្តមានឥតច្បាប់ច្រើនពេក', 'Excessive unexcused absence'],
     DISCIPLINE_REVIEW_REQUIRED: ['ត្រូវពិនិត្យបញ្ហាវិន័យ', 'Discipline review required'],
     SPECIAL_COMMITTEE_DECISION: ['សេចក្តីសម្រេចរបស់គណៈកម្មការ', 'Special committee decision'],
@@ -134,7 +137,7 @@ function reasonLabel(reason: string, tx: Translate) {
     SEMESTER_1_RESULT_MISSING: ['ខ្វះលទ្ធផលឆមាសទី១', 'Semester 1 result missing'],
     SEMESTER_2_RESULT_MISSING: ['ខ្វះលទ្ធផលឆមាសទី២', 'Semester 2 result missing'],
     ANNUAL_RESULT_INCOMPLETE: ['លទ្ធផលប្រចាំឆ្នាំមិនទាន់គ្រប់', 'Annual result incomplete'],
-    TARGET_CLASS_REQUIRED: ['ត្រូវកំណត់ថ្នាក់គោលដៅ', 'Target class required'],
+    TARGET_GRADE_REQUIRED: ['មិនអាចកំណត់កម្រិតថ្នាក់បន្ទាប់', 'Target grade could not be resolved'],
     TERMINAL_GRADE_COMPLETED: ['ជាប់លទ្ធផលថ្នាក់ចុងក្រោយ', 'Passed terminal-grade requirements'],
     OTHER: ['មូលហេតុផ្សេងទៀត', 'Other reason'],
   };
@@ -157,11 +160,11 @@ function flagLabel(flag: string, tx: Translate) {
   const labels: Record<string, [string, string]> = {
     ACADEMIC_BELOW_THRESHOLD: ['ពិន្ទុក្រោមកម្រិត', 'Low academic average'],
     ATTENDANCE_BELOW_THRESHOLD: ['វត្តមានទាប', 'Low attendance'],
+    EXCESSIVE_TOTAL_ABSENCE: ['អវត្តមានសរុបចាប់ពី ៤៥ ដងឡើង', '45+ total absences'],
     EXCESSIVE_UNEXCUSED_ABSENCE: ['អវត្តមានច្រើន', 'Excessive absence'],
     DISCIPLINE_REVIEW_REQUIRED: ['ត្រូវពិនិត្យវិន័យ', 'Discipline review'],
     INCOMPLETE_GRADE_EVIDENCE: ['ពិន្ទុមិនទាន់គ្រប់', 'Incomplete grades'],
-    TARGET_CLASS_UNAVAILABLE: ['មិនមានថ្នាក់គោលដៅ', 'No target class'],
-    TARGET_CLASS_REQUIRED: ['ត្រូវកំណត់ថ្នាក់គោលដៅ', 'Target class required'],
+    TARGET_GRADE_REQUIRED: ['មិនអាចកំណត់កម្រិតថ្នាក់បន្ទាប់', 'Target grade could not be resolved'],
     SEMESTER_1_RESULT_MISSING: ['ខ្វះលទ្ធផលឆមាសទី១', 'Semester 1 result missing'],
     SEMESTER_2_RESULT_MISSING: ['ខ្វះលទ្ធផលឆមាសទី២', 'Semester 2 result missing'],
     ANNUAL_RESULT_INCOMPLETE: ['លទ្ធផលប្រចាំឆ្នាំមិនទាន់គ្រប់', 'Annual result incomplete'],
@@ -258,12 +261,17 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
   const user = userData?.user;
   const school = userData?.school;
   const schoolId = user?.schoolId || school?.id;
+  const usesMoeysScale = !school?.educationModel || school.educationModel === 'KHM_MOEYS';
+  const academicDisplay = (value: number | null | undefined) => {
+    if (value == null) return '—';
+    const percentage = `${value}%`;
+    return usesMoeysScale ? `${percentage} · ${Number((value / 2).toFixed(2))}/50` : percentage;
+  };
 
   const { years, isLoading: yearsLoading, mutate: mutateYears } = useAcademicYearsList(schoolId);
   const sortedYears = useMemo(() => [...years].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()), [years]);
   const [fromYearId, setFromYearId] = useState(searchParams.get('yearId') || '');
   const [toYearId, setToYearId] = useState('');
-  const { classes: targetClasses } = useClasses({ academicYearId: toYearId || undefined, limit: 500 });
 
   const [cycle, setCycle] = useState<YearEndCycle | null>(null);
   const [policy, setPolicy] = useState<PromotionPolicy>(DEFAULT_POLICY);
@@ -286,7 +294,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
   const [finalizeAcknowledged, setFinalizeAcknowledged] = useState(false);
   const [editForm, setEditForm] = useState({
     finalOutcome: 'PENDING' as YearEndOutcome,
-    targetClassId: '',
+    targetGrade: '',
     reasonCode: '',
     reasonDetails: '',
     interventions: [] as string[],
@@ -361,13 +369,13 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
     classFilter === 'ALL' || decision.fromClassId === classFilter,
   ), [classFilter, cycle]);
   const attentionCount = classScopedDecisions.filter(decisionNeedsAttention).length;
-  const academicPassCount = classScopedDecisions.filter(isAcademicPass).length;
+  const autoEligibleCount = classScopedDecisions.filter((decision) => decision.recommendedOutcome === 'PROMOTE').length;
   const scopedRepeatCount = classScopedDecisions.filter((decision) => decision.finalOutcome === 'REPEAT').length;
   const graduationCandidateCount = classScopedDecisions.filter(isGraduationCandidate).length;
   const confirmableRecommendationCount = (cycle?.decisions || []).filter((decision) =>
     decision.finalOutcome === 'PENDING'
       && (decision.recommendedOutcome === 'GRADUATE'
-        || (decision.recommendedOutcome === 'PROMOTE' && Boolean(decision.targetClassId))),
+        || (decision.recommendedOutcome === 'PROMOTE' && Boolean(decision.targetGrade))),
   ).length;
   const legacyCalculationCount = (cycle?.decisions || []).filter((decision) =>
     decision.evidence?.academicCalculationMethod !== 'TWO_SEMESTER_AVERAGE',
@@ -380,7 +388,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
       return counts;
     }, {});
   const missingTargetCount = useMemo(() => (cycle?.decisions || []).filter((decision) =>
-    ['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT'].includes(decision.finalOutcome) && !decision.targetClassId,
+    ['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT'].includes(decision.finalOutcome) && !decision.targetGrade,
   ).length, [cycle]);
   const pendingCount = cycle?.summary.PENDING || 0;
   const reviewedCount = cycle?.summary.reviewed || 0;
@@ -398,7 +406,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
     ].filter(Boolean).join(' ').toLowerCase();
     const matchesView = reviewView === 'ALL'
       || (reviewView === 'AUTO_ELIGIBLE'
-        ? isAcademicPass(decision)
+        ? decision.recommendedOutcome === 'PROMOTE'
         : reviewView === 'GRADUATION_CANDIDATES'
           ? isGraduationCandidate(decision)
           : reviewView === 'ATTENTION' ? decisionNeedsAttention(decision) : decision.finalOutcome === reviewView);
@@ -428,7 +436,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
       const generated = await yearEndApi.generate(schoolId, fromYearId, toYearId);
       setCycle(generated);
       setReviewView('AUTO_ELIGIBLE');
-      setSuccess(tx('ប្រព័ន្ធបានវិភាគលទ្ធផលសិក្សា។ ពណ៌បៃតងមានន័យថា «ជាប់តាមលទ្ធផល» ប៉ុន្តែមិនទាន់ជាសេចក្តីសម្រេចឡើងថ្នាក់ទេ។', 'Academic results were evaluated. Green means academically passed, not yet a final promotion decision.'));
+      setSuccess(tx('ប្រព័ន្ធបានគណនាមធ្យមភាគ និងអវត្តមានរួច។ ពណ៌បៃតងមានន័យថា «មានសិទ្ធិឡើងថ្នាក់ស្វ័យប្រវត្តិ» ប៉ុន្តែមិនទាន់ជាការអនុម័តចុងក្រោយទេ។', 'Academic averages and absences were evaluated. Green means eligible for auto-promotion, not yet final approval.'));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -455,7 +463,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
     setEditing(decision);
     setEditForm({
       finalOutcome: decision.finalOutcome,
-      targetClassId: decision.targetClassId || '',
+      targetGrade: decision.targetGrade || '',
       reasonCode: decision.reasonCode || '',
       reasonDetails: decision.reasonDetails || '',
       interventions: Array.isArray(decision.interventions) ? decision.interventions : [],
@@ -464,26 +472,14 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
     });
   };
 
-  const eligibleTargetClasses = useMemo(() => {
-    if (!editing) return targetClasses;
-    const sourceGrade = parseGrade(editing.fromClass.grade);
-    if (editForm.finalOutcome === 'REPEAT') return targetClasses.filter((target) => parseGrade(target.grade) === sourceGrade);
-    if (['PROMOTE', 'CONDITIONAL_PROMOTE'].includes(editForm.finalOutcome)) {
-      return targetClasses.filter((target) => parseGrade(target.grade) === (sourceGrade ?? -2) + 1);
-    }
-    return [];
-  }, [editForm.finalOutcome, editing, targetClasses]);
-
-  useEffect(() => {
-    if (!editing || !['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT'].includes(editForm.finalOutcome)) return;
-    if (!eligibleTargetClasses.some((target) => target.id === editForm.targetClassId)) {
-      setEditForm((current) => ({ ...current, targetClassId: eligibleTargetClasses[0]?.id || '' }));
-    }
-  }, [editForm.finalOutcome, editForm.targetClassId, editing, eligibleTargetClasses]);
-
   const editIsOverride = Boolean(editing && editForm.finalOutcome !== editing.recommendedOutcome);
   const editNeedsTarget = ['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT'].includes(editForm.finalOutcome);
-  const editIsValid = (!editNeedsTarget || Boolean(editForm.targetClassId))
+  const editTargetGrade = editing && editNeedsTarget
+    ? String(editForm.finalOutcome === 'REPEAT'
+      ? parseGrade(editing.fromClass.grade) ?? ''
+      : (parseGrade(editing.fromClass.grade) ?? -1) + 1)
+    : '';
+  const editIsValid = (!editNeedsTarget || Boolean(editTargetGrade))
     && (!editIsOverride || !effectivePolicy.requireReasonForOverride || (Boolean(editForm.reasonCode) && editForm.reasonDetails.trim().length >= 3));
 
   const saveDecision = async () => {
@@ -494,7 +490,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
       await yearEndApi.updateDecision(schoolId, fromYearId, editing.id, {
         version: editing.version,
         finalOutcome: editForm.finalOutcome,
-        targetClassId: editForm.targetClassId || null,
+        targetGrade: editTargetGrade || null,
         reasonCode: editForm.reasonCode || null,
         reasonDetails: editForm.reasonDetails || null,
         interventions: editForm.interventions,
@@ -530,8 +526,8 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
         setReviewView('AUTO_ELIGIBLE');
         setTransitionIntent(null);
         setSuccess(tx(
-          'បានគណនាបញ្ជីឡើងវិញតាមលទ្ធផលឆមាសទី១ និងទី២។ មិនមាន enrollment ណាត្រូវបានផ្ទេរ ឬលុបទេ។',
-          'The register was recalculated from Semester 1 and Semester 2 results. No enrollment was moved or deleted.',
+          'បានគណនាបញ្ជីឡើងវិញតាមលទ្ធផលឆមាសទី១ និងទី២។ សេចក្តីសម្រេចចុងក្រោយទាំងអស់នៅតែ «មិនទាន់សម្រេច» ហើយមិនមាន enrollment ណាត្រូវបានផ្ទេរ ឬលុបទេ។',
+          'The register was recalculated from Semester 1 and Semester 2. Final decisions remain pending, and no enrollment was moved or deleted.',
         ));
         return;
       }
@@ -549,7 +545,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
       setTransitionIntent(null);
       await Promise.all([reloadCycle(), mutateYears()]);
       setSuccess(action === 'finalize'
-        ? tx('បានផ្ទេរសិស្សទៅឆ្នាំថ្មី និងបិទ enrollment ឆ្នាំចាស់ដោយជោគជ័យ។', 'Students were enrolled into the new year and source enrollments were safely closed.')
+        ? tx('បានផ្ទេរសិស្សទៅឆ្នាំថ្មីតាមកម្រិតថ្នាក់ និងបិទ enrollment ឆ្នាំចាស់។ ការចាត់ចូលថ្នាក់ ក/ខ/... អាចធ្វើពេលក្រោយ។', 'Students moved into the new year at grade level and source enrollments were closed. Section placement remains available as a later step.')
         : action === 'approve'
           ? tx('បញ្ជីត្រូវបានអនុម័ត និងត្រៀមសម្រាប់ finalize។', 'The register is approved and ready for finalization.')
           : tx('បញ្ជីត្រូវបានបញ្ជូនទៅអ្នកអនុម័ត។', 'The register was submitted for approval.'));
@@ -597,7 +593,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
                       {tx('វាយតម្លៃ និងឡើងថ្នាក់ចុងឆ្នាំ', 'Year-end progression review')}
                     </h1>
                     <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-slate-600 dark:text-gray-300">
-                      {tx('ដំណើរការជាជំហាន ដើម្បីពិនិត្យករណីពិសេស អនុម័តសេចក្តីសម្រេច និងផ្ទេរសិស្សទៅឆ្នាំថ្មីដោយរក្សាប្រវត្តិទាំងអស់។', 'A guided process to review exceptions, approve decisions, and safely enroll students into the next academic year with a complete audit trail.')}
+                      {tx('ដំណើរការជាជំហាន ដើម្បីពិនិត្យករណីពិសេស អនុម័តសេចក្តីសម្រេច និងកត់ត្រាកម្រិតថ្នាក់ក្នុងឆ្នាំថ្មី មុនចាត់ចូលថ្នាក់ ក/ខ/...។', 'A guided process to review exceptions, approve decisions, and record next-year grade levels before section placement.')}
                     </p>
                   </div>
                 </div>
@@ -704,8 +700,9 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
                 <button onClick={() => setShowPolicy(true)} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:border-blue-300 hover:text-blue-600 dark:border-gray-700 dark:text-gray-300"><PencilLine className="h-4 w-4" /></button>
               </div>
               <dl className="mt-4 space-y-3 text-xs">
-                <div className="flex items-center justify-between gap-4"><dt className="text-slate-500 dark:text-gray-400">{tx('មធ្យមភាគជាប់', 'Passing average')}</dt><dd className="font-black">≥ {effectivePolicy.passAverage}%</dd></div>
-                <div className="flex items-center justify-between gap-4"><dt className="text-slate-500 dark:text-gray-400">{tx('វត្តមានអប្បបរមា', 'Minimum attendance')}</dt><dd className="font-black">≥ {effectivePolicy.minAttendanceRate}%</dd></div>
+                <div className="flex items-center justify-between gap-4"><dt className="text-slate-500 dark:text-gray-400">{tx('មធ្យមភាគជាប់', 'Passing average')}</dt><dd className="text-right font-black">≥ {effectivePolicy.passAverage}%{usesMoeysScale && <span className="block text-[10px] font-bold text-slate-500">= {effectivePolicy.passAverage / 2}/50 MoEYS</span>}</dd></div>
+                <div className="flex items-center justify-between gap-4"><dt className="text-slate-500 dark:text-gray-400">{tx('អវត្តមានសរុបសម្រាប់ជាប់ស្វ័យប្រវត្តិ', 'Auto-promotion total absences')}</dt><dd className="font-black">≤ {effectivePolicy.maxTotalAbsences}</dd></div>
+                {effectivePolicy.enforceMinimumAttendanceRate && <div className="flex items-center justify-between gap-4"><dt className="text-slate-500 dark:text-gray-400">{tx('វត្តមានអប្បបរមា', 'Minimum attendance')}</dt><dd className="font-black">≥ {effectivePolicy.minAttendanceRate}%</dd></div>}
                 <div className="flex items-center justify-between gap-4"><dt className="text-slate-500 dark:text-gray-400">{tx('ថ្នាក់បញ្ចប់', 'Terminal grade')}</dt><dd className="font-black">{effectivePolicy.terminalGrade}</dd></div>
                 <div className="flex items-center justify-between gap-4"><dt className="text-slate-500 dark:text-gray-400">{tx('ឡើងថ្នាក់មានលក្ខខណ្ឌ', 'Conditional promotion')}</dt><dd className={`font-black ${effectivePolicy.allowConditionalPromotion ? 'text-emerald-600' : 'text-slate-400'}`}>{effectivePolicy.allowConditionalPromotion ? tx('អនុញ្ញាត', 'Allowed') : tx('មិនអនុញ្ញាត', 'Disabled')}</dd></div>
               </dl>
@@ -736,12 +733,12 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
               )}
               <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <MetricCard icon={Users} label={tx('សិស្សសរុប', 'Total students')} value={classScopedDecisions.length} helper={classFilter === 'ALL' ? tx('ក្នុងបញ្ជីចុងឆ្នាំ', 'In this year-end register') : tx('ក្នុងថ្នាក់ដែលបានជ្រើស', 'In the selected class')} tone="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200" onClick={() => setReviewView('ALL')} active={reviewView === 'ALL'} />
-                <MetricCard icon={UserRoundCheck} label={tx('ជាប់តាមលទ្ធផល', 'Academic result passed')} value={academicPassCount} helper={tx('ពណ៌បៃតង · មិនទាន់ជាសេចក្តីសម្រេចឡើងថ្នាក់', 'Green status · not a promotion decision yet')} tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" onClick={() => setReviewView('AUTO_ELIGIBLE')} active={reviewView === 'AUTO_ELIGIBLE'} />
-                <MetricCard icon={AlertTriangle} label={tx('ត្រូវវាយតម្លៃបន្ថែម', 'Needs further evaluation')} value={attentionCount} helper={tx('ពិន្ទុ វត្តមាន វិន័យ ឬថ្នាក់គោលដៅ', 'Academic, attendance, discipline, or placement issue')} tone="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300" onClick={() => setReviewView('ATTENTION')} active={reviewView === 'ATTENTION'} />
+                <MetricCard icon={UserRoundCheck} label={tx('មានសិទ្ធិឡើងថ្នាក់ស្វ័យប្រវត្តិ', 'Auto-promotion eligible')} value={autoEligibleCount} helper={tx('ជាប់មធ្យមភាគ និងអវត្តមានតិចជាង ៤៥ ដង', 'Passing annual average and fewer than 45 absences')} tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" onClick={() => setReviewView('AUTO_ELIGIBLE')} active={reviewView === 'AUTO_ELIGIBLE'} />
+                <MetricCard icon={AlertTriangle} label={tx('ត្រូវវាយតម្លៃបន្ថែម', 'Needs further evaluation')} value={attentionCount} helper={tx('ពិន្ទុ អវត្តមាន ឬវិន័យ', 'Academic, absence, or discipline review')} tone="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300" onClick={() => setReviewView('ATTENTION')} active={reviewView === 'ATTENTION'} />
                 <MetricCard icon={UserRoundX} label={tx('សម្រេចត្រួតថ្នាក់', 'Final repeat decision')} value={scopedRepeatCount} helper={tx('បានសម្រេច និងមានមូលហេតុរួច', 'Confirmed with a documented reason')} tone="bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300" onClick={() => setReviewView('REPEAT')} active={reviewView === 'REPEAT'} />
                 <MetricCard icon={GraduationCap} label={tx('បេក្ខភាពបញ្ចប់ការសិក្សា', 'Graduation candidates')} value={graduationCandidateCount} helper={tx('សិស្សថ្នាក់ចុងក្រោយ · មិនទាន់អនុម័ត', 'Terminal-grade students · not yet approved')} tone="bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300" onClick={() => setReviewView('GRADUATION_CANDIDATES')} active={reviewView === 'GRADUATION_CANDIDATES'} />
               </section>
-              <p className="mt-2 px-1 text-[11px] leading-5 text-slate-500 dark:text-gray-400">{tx('ចំណាំ៖ កាតទាំងនេះជា Filter មិនមែនចំនួនដែលត្រូវបូកបញ្ចូលគ្នាទេ។ ឧទាហរណ៍ សិស្សអាចជាប់តាមលទ្ធផល ប៉ុន្តែនៅតែត្រូវវាយតម្លៃវត្តមាន ហើយបេក្ខភាពបញ្ចប់ការសិក្សាក៏ជាផ្នែកមួយនៃសិស្សជាប់ដែរ។', 'Note: these cards are filters, not additive totals. A student may pass academically but still need an attendance review, and graduation candidates are also included among academic passes.')}</p>
+              <p className="mt-2 px-1 text-[11px] leading-5 text-slate-500 dark:text-gray-400">{tx('ចំណាំ៖ កាតទាំងនេះជា Filter។ «ឡើងថ្នាក់ស្វ័យប្រវត្តិ» រាប់តែអ្នកដែលជាប់ទាំងមធ្យមភាគ និងលក្ខខណ្ឌអវត្តមាន; អ្នកជាប់មធ្យមភាគប៉ុន្តែអវត្តមានច្រើនត្រូវបង្ហាញក្នុង «វាយតម្លៃបន្ថែម»។', 'Note: these cards are filters. Auto-promotion includes only students who pass both the annual-average and absence rules; academic passes with excessive absence appear under further evaluation.')}</p>
 
               <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
@@ -749,12 +746,12 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
                         <div className="flex items-center gap-2 text-blue-600 dark:text-blue-300"><LayoutList className="h-4 w-4" /><p className="text-[10px] font-black uppercase tracking-[0.2em]">{tx('បញ្ជីសម្រេច', 'Decision register')}</p></div>
-                        <h2 className="mt-2 text-xl font-black text-slate-950 dark:text-white">{reviewView === 'AUTO_ELIGIBLE' ? tx('សិស្សជាប់តាមលទ្ធផលសិក្សា', 'Students who passed academically') : reviewView === 'GRADUATION_CANDIDATES' ? tx('បេក្ខភាពបញ្ចប់ការសិក្សា', 'Graduation candidates') : reviewView === 'ATTENTION' ? tx('សិស្សរង់ចាំវាយតម្លៃបន្ថែម', 'Students awaiting further evaluation') : reviewView === 'ALL' ? tx('សិស្សទាំងអស់', 'All students') : outcomeLabel(reviewView, tx)}</h2>
+                        <h2 className="mt-2 text-xl font-black text-slate-950 dark:text-white">{reviewView === 'AUTO_ELIGIBLE' ? tx('សិស្សមានសិទ្ធិឡើងថ្នាក់ស្វ័យប្រវត្តិ', 'Students eligible for auto-promotion') : reviewView === 'GRADUATION_CANDIDATES' ? tx('បេក្ខភាពបញ្ចប់ការសិក្សា', 'Graduation candidates') : reviewView === 'ATTENTION' ? tx('សិស្សរង់ចាំវាយតម្លៃបន្ថែម', 'Students awaiting further evaluation') : reviewView === 'ALL' ? tx('សិស្សទាំងអស់', 'All students') : outcomeLabel(reviewView, tx)}</h2>
                         <p className="mt-1 text-xs font-medium text-slate-500 dark:text-gray-400">{tx(`បង្ហាញ ${visibleDecisions.length} នាក់`, `Showing ${visibleDecisions.length} students`)}</p>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {(['AUTO_ELIGIBLE', 'ATTENTION', 'ALL', 'CONDITIONAL_PROMOTE'] as ReviewView[]).map((view) => {
-                          const label = view === 'AUTO_ELIGIBLE' ? tx('ជាប់តាមលទ្ធផល', 'Academic pass') : view === 'ATTENTION' ? tx('រង់ចាំវាយតម្លៃ', 'Later evaluation') : view === 'ALL' ? tx('ទាំងអស់', 'All') : outcomeLabel(view as YearEndOutcome, tx);
+                          const label = view === 'AUTO_ELIGIBLE' ? tx('ជាប់ស្វ័យប្រវត្តិ', 'Auto-promotion') : view === 'ATTENTION' ? tx('រង់ចាំវាយតម្លៃ', 'Later evaluation') : view === 'ALL' ? tx('ទាំងអស់', 'All') : outcomeLabel(view as YearEndOutcome, tx);
                           return <button key={view} onClick={() => setReviewView(view)} className={`rounded-lg px-3 py-2 text-xs font-bold transition ${reviewView === view ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`}>{label}</button>;
                         })}
                       </div>
@@ -775,7 +772,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
                     {classFilter !== 'ALL' && reviewView === 'AUTO_ELIGIBLE' && (
                       <div className="mt-3 flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs leading-5 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/5 dark:text-emerald-200">
                         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                        {tx('កំពុងបង្ហាញសិស្សដែលមានលទ្ធផលឆមាសទី១ និងទី២គ្រប់ ហើយមធ្យមភាគប្រចាំឆ្នាំជាប់។ ពណ៌បៃតងបញ្ជាក់តែលទ្ធផលសិក្សា—សេចក្តីសម្រេចឡើងថ្នាក់នៅតែត្រូវបញ្ជាក់ពេលក្រោយ។', 'Showing students with complete Semester 1 and Semester 2 results and a passing annual average. Green confirms only the academic result—the promotion decision still requires later confirmation.')}
+                        {tx('កំពុងបង្ហាញសិស្សដែលជាប់មធ្យមភាគប្រចាំឆ្នាំ មានអវត្តមានសរុបតិចជាង ៤៥ ដង និងបំពេញគោលការណ៍សាលា។ សិស្សទាំងនេះត្រូវបានប្រព័ន្ធណែនាំឱ្យឡើងកម្រិតថ្នាក់ដោយស្វ័យប្រវត្តិ ខណៈការអនុម័តចុងក្រោយនៅតែជាសិទ្ធិរបស់ Admin។', 'Showing students who passed the annual average, have fewer than 45 total absences, and meet school policy. The system recommends automatic grade progression; final approval remains with an administrator.')}
                       </div>
                     )}
                     {classFilter !== 'ALL' && reviewView === 'ATTENTION' && (
@@ -804,14 +801,14 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
                           <th className="px-4 py-3">{tx('ភស្តុតាង', 'Evidence')}</th>
                           <th className="px-4 py-3">{tx('សំណើប្រព័ន្ធ', 'Recommendation')}</th>
                           <th className="px-4 py-3">{tx('សេចក្តីសម្រេច', 'Final decision')}</th>
-                          <th className="px-4 py-3">{tx('ថ្នាក់ថ្មី', 'Target class')}</th>
+                          <th className="px-4 py-3">{tx('កម្រិតឆ្នាំថ្មី', 'Next-year grade')}</th>
                           <th className="px-5 py-3 text-right">{tx('សកម្មភាព', 'Action')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
                         {visibleDecisions.map((decision) => {
                           const flags = decision.evidence?.flags || [];
-                          const academicPassed = isAcademicPass(decision);
+                          const academicPassed = decision.recommendedOutcome === 'PROMOTE';
                           return (
                             <tr key={decision.id} className={`transition ${academicPassed ? 'bg-emerald-50/40 hover:bg-emerald-50/70 dark:bg-emerald-500/[0.04] dark:hover:bg-emerald-500/[0.07]' : 'hover:bg-blue-50/40 dark:hover:bg-blue-500/5'}`}>
                               <td className="px-5 py-4">
@@ -827,9 +824,9 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
                               </td>
                               <td className="px-4 py-4">
                                 <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-                                  <span><span className="text-slate-400">{tx('ឆមាស១', 'S1')}</span> <strong>{decision.evidence?.semester1Average == null ? '—' : `${decision.evidence.semester1Average}%`}</strong></span>
-                                  <span><span className="text-slate-400">{tx('ឆមាស២', 'S2')}</span> <strong>{decision.evidence?.semester2Average == null ? '—' : `${decision.evidence.semester2Average}%`}</strong></span>
-                                  <span><span className="text-slate-400">{tx('ប្រចាំឆ្នាំ', 'Annual')}</span> <strong>{decision.academicAverage === null ? '—' : `${decision.academicAverage}%`}</strong></span>
+                                  <span><span className="text-slate-400">{tx('ឆមាស១', 'S1')}</span> <strong>{academicDisplay(decision.evidence?.semester1Average)}</strong></span>
+                                  <span><span className="text-slate-400">{tx('ឆមាស២', 'S2')}</span> <strong>{academicDisplay(decision.evidence?.semester2Average)}</strong></span>
+                                  <span><span className="text-slate-400">{tx('ប្រចាំឆ្នាំ', 'Annual')}</span> <strong>{academicDisplay(decision.academicAverage)}</strong></span>
                                   <span><span className="text-slate-400">{tx('វត្តមាន', 'Att')}</span> <strong>{decision.attendanceRate === null ? '—' : `${decision.attendanceRate}%`}</strong></span>
                                 </div>
                                 {academicPassed && <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"><Check className="h-3 w-3" />{tx('លទ្ធផលសិក្សា៖ ជាប់', 'Academic result: Passed')}</span>}
@@ -840,7 +837,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
                                 <OutcomeBadge outcome={decision.finalOutcome} tx={tx} compact />
                                 {decision.decisionSource === 'OVERRIDE' && <p className="mt-1 text-[10px] font-black text-blue-600 dark:text-blue-300">{tx('បានកែដោយអ្នកគ្រប់គ្រង', 'Administrator override')}</p>}
                               </td>
-                              <td className="px-4 py-4 text-xs font-bold text-slate-700 dark:text-gray-200">{decision.targetClass?.name || (['GRADUATE', 'WITHDRAWN'].includes(decision.finalOutcome) ? '—' : <span className="text-amber-600">{tx('មិនទាន់កំណត់', 'Not assigned')}</span>)}</td>
+                              <td className="px-4 py-4 text-xs font-bold text-slate-700 dark:text-gray-200">{decision.targetGrade ? <><span>{tx('ថ្នាក់ទី', 'Grade')} {decision.targetGrade}</span><span className="mt-1 block text-[10px] font-semibold text-amber-600">{tx('មិនទាន់ចាត់ ក/ខ/...', 'Section pending')}</span></> : '—'}</td>
                               <td className="px-5 py-4 text-right">
                                 <button onClick={() => openEdit(decision)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-blue-500/10">
                                   {canEdit ? <PencilLine className="h-3.5 w-3.5" /> : <FileCheck2 className="h-3.5 w-3.5" />}
@@ -861,7 +858,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
                           <div><p className="text-sm font-black">{studentName(decision)}</p><p className="mt-1 text-[11px] text-slate-500">{decision.student.studentId || '—'} · {decision.fromClass.name}</p></div>
                           <OutcomeBadge outcome={decision.finalOutcome} tx={tx} compact />
                         </div>
-                        <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]"><span className="text-slate-500">S1 <strong className="text-slate-900 dark:text-white">{decision.evidence?.semester1Average == null ? '—' : `${decision.evidence.semester1Average}%`}</strong></span><span className="text-slate-500">S2 <strong className="text-slate-900 dark:text-white">{decision.evidence?.semester2Average == null ? '—' : `${decision.evidence.semester2Average}%`}</strong></span><span className="text-slate-500">{tx('ប្រចាំឆ្នាំ', 'Annual')} <strong className="text-slate-900 dark:text-white">{decision.academicAverage === null ? '—' : `${decision.academicAverage}%`}</strong></span></div>
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]"><span className="text-slate-500">S1 <strong className="text-slate-900 dark:text-white">{academicDisplay(decision.evidence?.semester1Average)}</strong></span><span className="text-slate-500">S2 <strong className="text-slate-900 dark:text-white">{academicDisplay(decision.evidence?.semester2Average)}</strong></span><span className="text-slate-500">{tx('ប្រចាំឆ្នាំ', 'Annual')} <strong className="text-slate-900 dark:text-white">{academicDisplay(decision.academicAverage)}</strong></span></div>
                         {isAcademicPass(decision) && <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"><Check className="h-3 w-3" />{tx('លទ្ធផលសិក្សា៖ ជាប់', 'Academic result: Passed')}</span>}
                       </button>
                     ))}
@@ -883,7 +880,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
                     <div className="mt-3 divide-y divide-slate-100 dark:divide-gray-800">
                       <ReadinessItem ready={cycle.summary.total > 0} label={tx('មានសិស្សក្នុងបញ្ជី', 'Register contains students')} detail={tx(`${cycle.summary.total} នាក់`, `${cycle.summary.total} students`)} />
                       <ReadinessItem ready={pendingCount === 0} label={tx('គ្មានសេចក្តីសម្រេចរង់ចាំ', 'No pending decisions')} detail={pendingCount ? tx(`នៅសល់ ${pendingCount} នាក់`, `${pendingCount} still unresolved`) : tx('បានសម្រេចគ្រប់ករណី', 'Every case has an outcome')} />
-                      <ReadinessItem ready={missingTargetCount === 0} label={tx('ថ្នាក់គោលដៅបានកំណត់', 'Target classes assigned')} detail={missingTargetCount ? tx(`ខ្វះ ${missingTargetCount} នាក់`, `${missingTargetCount} assignments missing`) : tx('ការឡើង/ត្រួតថ្នាក់មានថ្នាក់ថ្មី', 'All applicable students have a class')} />
+                      <ReadinessItem ready={missingTargetCount === 0} label={tx('កម្រិតថ្នាក់ឆ្នាំថ្មីបានកំណត់', 'Next-year grades resolved')} detail={missingTargetCount ? tx(`ខ្វះ ${missingTargetCount} នាក់`, `${missingTargetCount} grade levels missing`) : tx('មិនទាន់ចាំបាច់ចាត់ ក/ខ/...', 'Section placement is intentionally deferred')} />
                       <ReadinessItem ready label={tx('រក្សាប្រវត្តិសម្រេច', 'Audit trail enabled')} detail={tx(`បានពិនិត្យដោយដៃ ${reviewedCount} ករណី`, `${reviewedCount} manually reviewed decisions`)} />
                     </div>
                   </div>
@@ -899,29 +896,29 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
                             <button onClick={() => requestTransition('accept-recommendations')} disabled={saving} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50"><UserRoundCheck className="h-4 w-4" />{tx('បញ្ជាក់សំណើច្បាស់លាស់', 'Confirm clear recommendations')}</button>
                           </div>
                         )}
-                        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-gray-400">{canSubmit ? tx('បញ្ជីបានត្រៀមរួចរាល់។ អ្នកអនុម័តអាចធ្វើការត្រួតពិនិត្យមុន finalize។', 'The register is ready for an approver to verify before finalization.') : tx('សូមដោះស្រាយសេចក្តីសម្រេច និងថ្នាក់គោលដៅដែលនៅសល់។', 'Resolve pending decisions and missing target classes first.')}</p>
+                        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-gray-400">{canSubmit ? tx('បញ្ជីបានត្រៀមរួចរាល់។ អ្នកអនុម័តអាចធ្វើការត្រួតពិនិត្យមុន finalize។', 'The register is ready for an approver to verify before finalization.') : tx('សូមដោះស្រាយសេចក្តីសម្រេច និងកម្រិតថ្នាក់ដែលនៅសល់។', 'Resolve pending decisions and missing grade levels first.')}</p>
                         <button onClick={() => requestTransition('submit')} disabled={!canSubmit || saving} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"><ClipboardCheck className="h-4 w-4" />{tx('បញ្ជូនទៅអនុម័ត', 'Submit for approval')}</button>
                       </>
                     )}
                     {cycle.status === 'IN_REVIEW' && (
                       <>
                         <h3 className="text-sm font-black">{tx('ជំហានបន្ទាប់៖ អនុម័តបញ្ជី', 'Next: approve the register')}</h3>
-                        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-gray-400">{tx('ផ្ទៀងផ្ទាត់ចំនួនសិស្ស ករណី override និងថ្នាក់គោលដៅ មុនអនុម័ត។', 'Verify totals, overrides, and target classes before approval.')}</p>
+                        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-gray-400">{tx('ផ្ទៀងផ្ទាត់ចំនួនសិស្ស ករណី override និងកម្រិតថ្នាក់ឆ្នាំថ្មី មុនអនុម័ត។', 'Verify totals, overrides, and next-year grade levels before approval.')}</p>
                         <button onClick={() => requestTransition('approve')} disabled={saving} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-black text-white hover:bg-indigo-700 disabled:opacity-50"><ShieldCheck className="h-4 w-4" />{tx('អនុម័តបញ្ជី', 'Approve register')}</button>
                       </>
                     )}
                     {cycle.status === 'APPROVED' && (
                       <>
-                        <h3 className="text-sm font-black">{tx('ជំហានចុងក្រោយ៖ ផ្ទេរសិស្ស', 'Final step: enroll students')}</h3>
-                        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-gray-400">{tx('ប្រព័ន្ធនឹងបិទ enrollment ឆ្នាំចាស់ បង្កើត enrollment ឆ្នាំថ្មី និងរក្សា progression history។', 'The system will close source enrollments, create next-year enrollments, and preserve progression history.')}</p>
-                        <button onClick={() => requestTransition('finalize')} disabled={saving} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-50"><LockKeyhole className="h-4 w-4" />{tx('Finalize និងផ្ទេរសិស្ស', 'Finalize and enroll')}</button>
+                        <h3 className="text-sm font-black">{tx('ជំហានចុងក្រោយ៖ ផ្ទេរទៅឆ្នាំថ្មី', 'Final step: advance the academic year')}</h3>
+                        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-gray-400">{tx('ប្រព័ន្ធនឹងបិទ enrollment ឆ្នាំចាស់ កត់ត្រាឆ្នាំ/កម្រិតថ្មី និងរង់ចាំការចាត់ចូលថ្នាក់។', 'The system closes source enrollments, records the new year/grade, and leaves section placement pending.')}</p>
+                        <button onClick={() => requestTransition('finalize')} disabled={saving} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-50"><LockKeyhole className="h-4 w-4" />{tx('Finalize និងឡើងឆ្នាំថ្មី', 'Finalize year progression')}</button>
                       </>
                     )}
                     {cycle.status === 'FINALIZED' && (
                       <div className="text-center">
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"><BadgeCheck className="h-6 w-6" /></div>
                         <h3 className="mt-3 text-sm font-black">{tx('បានបញ្ចប់ដោយជោគជ័យ', 'Year-end cycle completed')}</h3>
-                        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-gray-400">{tx('សិស្សត្រូវបានផ្ទេរ ហើយបញ្ជីនេះត្រូវបានចាក់សោសម្រាប់ audit។', 'Students were enrolled and this register is locked for audit.')}</p>
+                        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-gray-400">{tx('សិស្សត្រូវបានកត់ត្រាក្នុងឆ្នាំ/កម្រិតថ្មី ហើយបញ្ជីនេះត្រូវបានចាក់សោសម្រាប់ audit។', 'Students were advanced to the new year/grade and this register is locked for audit.')}</p>
                       </div>
                     )}
                   </div>
@@ -947,7 +944,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
               <section>
                 <div className="flex items-center gap-2"><BookOpenCheck className="h-4 w-4 text-blue-600" /><h3 className="text-sm font-black">{tx('លទ្ធផលសិក្សា', 'Academic requirements')}</h3></div>
                 <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                  <label><span className="text-xs font-bold text-slate-700 dark:text-gray-200">{tx('មធ្យមភាគជាប់ (%)', 'Passing average (%)')}</span><input type="number" min={0} max={100} value={policy.passAverage} onChange={(event) => setPolicy({ ...policy, passAverage: Number(event.target.value) })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-950" /></label>
+                  <label><span className="text-xs font-bold text-slate-700 dark:text-gray-200">{tx('មធ្យមភាគជាប់ (%)', 'Passing average (%)')}</span><input type="number" min={0} max={100} value={policy.passAverage} onChange={(event) => setPolicy({ ...policy, passAverage: Number(event.target.value) })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-950" />{usesMoeysScale && <span className="mt-1 block text-[10px] leading-4 text-slate-500">{tx('50% ស្មើនឹងមធ្យមភាគ 25/50 ក្នុងរបាយការណ៍ MoEYS។ ប្រព័ន្ធរក្សា percentage ដើម្បីប្រៀបធៀបមុខវិជ្ជាដែលមានពិន្ទុពេញខុសគ្នា។', '50% equals 25/50 in the MoEYS report. Percentage normalization keeps subjects with different maximum scores comparable.')}</span>}</label>
                   <label><span className="text-xs font-bold text-slate-700 dark:text-gray-200">{tx('ថ្នាក់បញ្ចប់ការសិក្សា', 'Terminal grade')}</span><input data-testid="terminal-grade-policy" type="number" min={1} max={20} value={policy.terminalGrade} onChange={(event) => setPolicy({ ...policy, terminalGrade: Number(event.target.value) })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-950" /></label>
                 </div>
                 <label className="mt-3 flex items-start gap-3 rounded-xl border border-slate-200 p-4 dark:border-gray-700"><input type="checkbox" checked={policy.requireCompleteGrades} onChange={(event) => setPolicy({ ...policy, requireCompleteGrades: event.target.checked })} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600" /><span><span className="block text-sm font-bold">{tx('តម្រូវឱ្យមានពិន្ទុគ្រប់គ្រាន់', 'Require complete grade evidence')}</span><span className="mt-1 block text-xs text-slate-500">{tx('ករណីខ្វះពិន្ទុនឹងត្រូវបញ្ជូនទៅពិនិត្យដោយដៃ។', 'Students with incomplete grades will require manual review.')}</span></span></label>
@@ -956,10 +953,11 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
               <section className="border-t border-slate-100 pt-5 dark:border-gray-800">
                 <div className="flex items-center gap-2"><Users className="h-4 w-4 text-blue-600" /><h3 className="text-sm font-black">{tx('វត្តមាន និងវិន័យ', 'Attendance and discipline')}</h3></div>
                 <div className="mt-3 grid gap-4 sm:grid-cols-3">
-                  <label><span className="text-xs font-bold text-slate-700 dark:text-gray-200">{tx('វត្តមានអប្បបរមា (%)', 'Minimum attendance (%)')}</span><input type="number" min={0} max={100} value={policy.minAttendanceRate} onChange={(event) => setPolicy({ ...policy, minAttendanceRate: Number(event.target.value) })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-950" /></label>
+                  <label><span className="text-xs font-bold text-slate-700 dark:text-gray-200">{tx('អវត្តមានសរុបអតិបរមា (មានច្បាប់ + ឥតច្បាប់)', 'Max total absences (excused + unexcused)')}</span><input type="number" min={0} value={policy.maxTotalAbsences} onChange={(event) => setPolicy({ ...policy, maxTotalAbsences: Number(event.target.value) })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-950" /><span className="mt-1 block text-[10px] text-slate-500">{tx('តម្លៃ 44 មានន័យថា តិចជាង 45 ដង', '44 means fewer than 45 absences')}</span></label>
                   <label><span className="text-xs font-bold text-slate-700 dark:text-gray-200">{tx('អវត្តមានឥតច្បាប់អតិបរមា', 'Max unexcused absences')}</span><input type="number" min={0} value={policy.maxUnexcusedAbsences ?? ''} placeholder={tx('មិនកំណត់', 'Not enforced')} onChange={(event) => setPolicy({ ...policy, maxUnexcusedAbsences: event.target.value === '' ? null : Number(event.target.value) })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-950" /></label>
                   <label><span className="text-xs font-bold text-slate-700 dark:text-gray-200">{tx('ករណីវិន័យអតិបរមា', 'Max discipline incidents')}</span><input type="number" min={0} value={policy.maxDisciplineIncidents ?? ''} placeholder={tx('មិនកំណត់', 'Not enforced')} onChange={(event) => setPolicy({ ...policy, maxDisciplineIncidents: event.target.value === '' ? null : Number(event.target.value) })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-950" /></label>
                 </div>
+                <label className="mt-3 flex items-start gap-3 rounded-xl border border-slate-200 p-4 dark:border-gray-700"><input type="checkbox" checked={policy.enforceMinimumAttendanceRate} onChange={(event) => setPolicy({ ...policy, enforceMinimumAttendanceRate: event.target.checked })} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600" /><span><span className="block text-sm font-bold">{tx('អនុវត្តភាគរយវត្តមានបន្ថែម', 'Also enforce minimum attendance rate')}</span>{policy.enforceMinimumAttendanceRate && <input type="number" min={0} max={100} value={policy.minAttendanceRate} onChange={(event) => setPolicy({ ...policy, minAttendanceRate: Number(event.target.value) })} className="mt-2 w-32 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950" />}</span></label>
               </section>
 
               <section className="border-t border-slate-100 pt-5 dark:border-gray-800">
@@ -1002,10 +1000,10 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
 
             <div className="flex-1 overflow-y-auto p-5 sm:p-6">
               <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-gray-700 dark:bg-gray-950"><p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{tx('ឆមាសទី១', 'Semester 1')}</p><p className="mt-2 text-xl font-black">{editing.evidence?.semester1Average == null ? '—' : `${editing.evidence.semester1Average}%`}</p></div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-gray-700 dark:bg-gray-950"><p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{tx('ឆមាសទី២', 'Semester 2')}</p><p className="mt-2 text-xl font-black">{editing.evidence?.semester2Average == null ? '—' : `${editing.evidence.semester2Average}%`}</p></div>
-                <div className={`rounded-xl border p-3 ${isAcademicPass(editing) ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/5' : 'border-blue-200 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-500/5'}`}><p className={`text-[9px] font-black uppercase tracking-wider ${isAcademicPass(editing) ? 'text-emerald-600 dark:text-emerald-300' : 'text-blue-500'}`}>{tx('ប្រចាំឆ្នាំ', 'Annual')}</p><p className={`mt-2 text-xl font-black ${isAcademicPass(editing) ? 'text-emerald-900 dark:text-emerald-100' : 'text-blue-900 dark:text-blue-100'}`}>{editing.academicAverage === null ? '—' : `${editing.academicAverage}%`}</p><p className={`mt-1 text-[10px] ${isAcademicPass(editing) ? 'text-emerald-700 dark:text-emerald-300' : 'text-blue-600 dark:text-blue-300'}`}>{isAcademicPass(editing) ? tx('ជាប់តាមលទ្ធផល · មិនទាន់សម្រេចឡើងថ្នាក់', 'Academic pass · promotion not decided') : `${tx('ជាប់ពី', 'Pass at')} ${effectivePolicy.passAverage}%`}</p></div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-gray-700 dark:bg-gray-950"><p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{tx('វត្តមាន', 'Attendance')}</p><p className="mt-2 text-xl font-black">{editing.attendanceRate === null ? '—' : `${editing.attendanceRate}%`}</p><p className="mt-1 text-[10px] text-slate-500">{tx('អវត្តមាន', 'Absent')} {editing.absentCount}</p></div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-gray-700 dark:bg-gray-950"><p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{tx('ឆមាសទី១', 'Semester 1')}</p><p className="mt-2 text-lg font-black">{academicDisplay(editing.evidence?.semester1Average)}</p></div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-gray-700 dark:bg-gray-950"><p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{tx('ឆមាសទី២', 'Semester 2')}</p><p className="mt-2 text-lg font-black">{academicDisplay(editing.evidence?.semester2Average)}</p></div>
+                <div className={`rounded-xl border p-3 ${isAcademicPass(editing) ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/5' : 'border-blue-200 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-500/5'}`}><p className={`text-[9px] font-black uppercase tracking-wider ${isAcademicPass(editing) ? 'text-emerald-600 dark:text-emerald-300' : 'text-blue-500'}`}>{tx('ប្រចាំឆ្នាំ', 'Annual')}</p><p className={`mt-2 text-lg font-black ${isAcademicPass(editing) ? 'text-emerald-900 dark:text-emerald-100' : 'text-blue-900 dark:text-blue-100'}`}>{academicDisplay(editing.academicAverage)}</p><p className={`mt-1 text-[10px] ${isAcademicPass(editing) ? 'text-emerald-700 dark:text-emerald-300' : 'text-blue-600 dark:text-blue-300'}`}>{isAcademicPass(editing) ? tx('ជាប់តាមលទ្ធផល · មិនទាន់សម្រេចឡើងថ្នាក់', 'Academic pass · promotion not decided') : `${tx('ជាប់ពី', 'Pass at')} ${effectivePolicy.passAverage}%`}</p></div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-gray-700 dark:bg-gray-950"><p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{tx('អវត្តមានសរុប', 'Total absences')}</p><p className="mt-2 text-xl font-black">{editing.absentCount + editing.excusedCount}</p><p className="mt-1 text-[10px] text-slate-500">{tx('មានច្បាប់', 'Excused')} {editing.excusedCount} · {tx('ឥតច្បាប់', 'Unexcused')} {editing.absentCount}</p></div>
               </section>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 dark:border-gray-700">
                 <div><p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{tx('សំណើប្រព័ន្ធ', 'System recommendation')}</p><p className="mt-1 text-[11px] text-slate-500">{editing.reasonCode ? reasonLabel(editing.reasonCode, tx) : tx('គ្មានមូលហេតុកំណត់', 'No reason recorded')}</p></div>
@@ -1032,13 +1030,8 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
 
               {editNeedsTarget && (
                 <section className="mt-6">
-                  <h3 className="text-sm font-black">{tx('២. កំណត់ថ្នាក់គោលដៅ', '2. Assign the target class')}</h3>
-                  <p className="mt-1 text-xs text-slate-500">{editForm.finalOutcome === 'REPEAT' ? tx('សម្រាប់ត្រួតថ្នាក់ ប្រព័ន្ធបង្ហាញតែថ្នាក់កម្រិតដដែលក្នុងឆ្នាំថ្មី។', 'For repetition, only the same grade in the new year is available.') : tx('ប្រព័ន្ធបង្ហាញតែថ្នាក់កម្រិតបន្ទាប់ក្នុងឆ្នាំថ្មី។', 'Only the next grade in the target year is available.')}</p>
-                  <select disabled={!canEdit} value={editForm.targetClassId} onChange={(event) => setEditForm({ ...editForm, targetClassId: event.target.value })} className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold outline-none focus:border-blue-500 disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950">
-                    <option value="">{tx('ជ្រើសរើសថ្នាក់', 'Select a class')}</option>
-                    {eligibleTargetClasses.map((target) => <option key={target.id} value={target.id}>{target.name} · {tx('ថ្នាក់ទី', 'Grade')} {target.grade}{target.capacity ? ` · ${tx('សមត្ថភាព', 'Capacity')} ${target.capacity}` : ''}</option>)}
-                  </select>
-                  {eligibleTargetClasses.length === 0 && <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-300"><AlertCircle className="h-3.5 w-3.5" />{tx('មិនមានថ្នាក់សមស្របក្នុងឆ្នាំគោលដៅទេ។ សូមបង្កើតថ្នាក់ជាមុន។', 'No eligible class exists in the target year. Create the class first.')}</p>}
+                  <h3 className="text-sm font-black">{tx('២. កម្រិតថ្នាក់ក្នុងឆ្នាំថ្មី', '2. Next-year grade level')}</h3>
+                  <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/5"><p className="text-lg font-black text-emerald-900 dark:text-emerald-100">{tx('ថ្នាក់ទី', 'Grade')} {editTargetGrade}</p><p className="mt-1 text-xs leading-5 text-emerald-700 dark:text-emerald-300">{tx('ប្រព័ន្ធនឹងកត់ត្រាកម្រិតនេះក្នុងឆ្នាំសិក្សាថ្មី ប៉ុន្តែមិនទាន់ចាត់ចូលថ្នាក់ ក/ខ/... ទេ។ ការចាត់ថ្នាក់ធ្វើនៅជំហានរៀបចំបញ្ជីសិស្សពេលក្រោយ។', 'This grade is recorded in the new academic year without assigning a section. Placement into A/B/etc. happens later during roster planning.')}</p></div>
                 </section>
               )}
 
@@ -1076,7 +1069,7 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
             <div className={`flex h-12 w-12 items-center justify-center rounded-full ${transitionIntent === 'finalize' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' : transitionIntent === 'accept-recommendations' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300'}`}>
               {transitionIntent === 'finalize' ? <LockKeyhole className="h-6 w-6" /> : transitionIntent === 'approve' ? <ShieldCheck className="h-6 w-6" /> : transitionIntent === 'recalculate' ? <RefreshCw className="h-6 w-6" /> : transitionIntent === 'accept-recommendations' ? <UserRoundCheck className="h-6 w-6" /> : <ClipboardCheck className="h-6 w-6" />}
             </div>
-            <h2 className="mt-4 text-xl font-black text-slate-950 dark:text-white">{transitionIntent === 'finalize' ? tx('បញ្ជាក់ការផ្ទេរសិស្សទៅឆ្នាំថ្មី', 'Confirm next-year enrollment') : transitionIntent === 'approve' ? tx('បញ្ជាក់ការអនុម័តបញ្ជី', 'Confirm register approval') : transitionIntent === 'recalculate' ? tx('គណនាបញ្ជីឡើងវិញតាមឆមាសទាំងពីរ', 'Recalculate from both semesters') : transitionIntent === 'accept-recommendations' ? tx('បញ្ជាក់សំណើដែលគ្មានករណីរារាំង', 'Confirm clear system recommendations') : tx('បញ្ជាក់ការបញ្ជូនទៅអនុម័ត', 'Confirm submission for approval')}</h2>
+            <h2 className="mt-4 text-xl font-black text-slate-950 dark:text-white">{transitionIntent === 'finalize' ? tx('បញ្ជាក់ការឡើងទៅឆ្នាំ និងកម្រិតថ្មី', 'Confirm next-year grade progression') : transitionIntent === 'approve' ? tx('បញ្ជាក់ការអនុម័តបញ្ជី', 'Confirm register approval') : transitionIntent === 'recalculate' ? tx('គណនាបញ្ជីឡើងវិញតាមឆមាសទាំងពីរ', 'Recalculate from both semesters') : transitionIntent === 'accept-recommendations' ? tx('បញ្ជាក់សំណើដែលគ្មានករណីរារាំង', 'Confirm clear system recommendations') : tx('បញ្ជាក់ការបញ្ជូនទៅអនុម័ត', 'Confirm submission for approval')}</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-gray-300">{transitionIntent === 'finalize' ? tx(`សិស្ស ${cycle.summary.total} នាក់នឹងត្រូវបានដំណើរការតាមសេចក្តីសម្រេចចុងក្រោយ។`, `${cycle.summary.total} students will be processed using the approved final decisions.`) : transitionIntent === 'approve' ? tx('ក្រោយអនុម័ត បញ្ជីនឹងត្រូវចាក់សោមិនអាចកែសេចក្តីសម្រេចបានទៀត។', 'After approval, decisions are locked and can no longer be edited.') : transitionIntent === 'recalculate' ? tx('ប្រព័ន្ធនឹងជំនួសតែសេចក្តីសម្រេចស្វ័យប្រវត្តិក្នុង Draft ដែលមិនទាន់បានពិនិត្យ ដោយប្រើមធ្យមភាគឆមាសទី១ និងទី២។ វាមិនផ្ទេរ ឬលុប enrollment ទេ។', 'The system will replace only the unreviewed draft recommendations using the Semester 1 and Semester 2 average. It will not move or delete enrollments.') : transitionIntent === 'accept-recommendations' ? tx(`អ្នកកំពុងបញ្ជាក់សេចក្តីសម្រេចសម្រាប់ ${confirmableRecommendationCount} នាក់ ដែលជាប់តាម policy និងគ្មានករណីរារាំង។ សិស្សដែលត្រូវវាយតម្លៃបន្ថែមនឹងនៅតែ «មិនទាន់សម្រេច»។`, `You are confirming ${confirmableRecommendationCount} students who meet policy with no blockers. Exception cases will remain pending.`) : tx('បញ្ជីនឹងផ្លាស់ទៅស្ថានភាពរង់ចាំអនុម័ត ហើយនៅតែអាចកែបានរហូតដល់ពេលអនុម័ត។', 'The register will move to approval review and remains editable until approved.')}</p>
 
             {transitionIntent === 'finalize' && (
@@ -1084,17 +1077,17 @@ export default function PromotionReviewPage(props: { params: Promise<{ locale: s
                 <p className="text-xs font-black text-amber-900 dark:text-amber-200">{tx('អ្វីដែលប្រព័ន្ធនឹងធ្វើ', 'What the system will do')}</p>
                 <ul className="mt-2 space-y-2 text-xs leading-5 text-amber-800 dark:text-amber-200/90">
                   <li className="flex gap-2"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />{tx('បិទ enrollment ឆ្នាំប្រភពដោយរក្សាប្រវត្តិ', 'Close source-year enrollments without deleting history')}</li>
-                  <li className="flex gap-2"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />{tx('បង្កើត enrollment តែមួយក្នុងឆ្នាំថ្មី', 'Create one protected enrollment in the target year')}</li>
+                  <li className="flex gap-2"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />{tx('កត់ត្រាឆ្នាំថ្មី និងកម្រិតថ្នាក់ ដោយមិនទាន់ចាត់ ក/ខ/...', 'Record the new year and grade without assigning a section')}</li>
                   <li className="flex gap-2"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />{tx('រក្សា progression និង audit trail', 'Preserve progression records and the audit trail')}</li>
                 </ul>
-                <label className="mt-4 flex items-start gap-3 border-t border-amber-200 pt-3 dark:border-amber-500/20"><input type="checkbox" checked={finalizeAcknowledged} onChange={(event) => setFinalizeAcknowledged(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-amber-400 text-emerald-600" /><span className="text-xs font-bold leading-5 text-amber-950 dark:text-amber-100">{tx('ខ្ញុំបានពិនិត្យចំនួនសិស្ស សេចក្តីសម្រេច និងថ្នាក់គោលដៅរួចរាល់។', 'I verified student totals, final decisions, and target-class assignments.')}</span></label>
+                <label className="mt-4 flex items-start gap-3 border-t border-amber-200 pt-3 dark:border-amber-500/20"><input type="checkbox" checked={finalizeAcknowledged} onChange={(event) => setFinalizeAcknowledged(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-amber-400 text-emerald-600" /><span className="text-xs font-bold leading-5 text-amber-950 dark:text-amber-100">{tx('ខ្ញុំបានពិនិត្យចំនួនសិស្ស សេចក្តីសម្រេច និងកម្រិតថ្នាក់ក្នុងឆ្នាំថ្មីរួចរាល់។', 'I verified student totals, final decisions, and next-year grade levels.')}</span></label>
               </div>
             )}
 
             {!['recalculate', 'accept-recommendations'].includes(transitionIntent) && <label className="mt-4 block"><span className="text-xs font-bold text-slate-700 dark:text-gray-200">{tx('កំណត់សម្គាល់ (ជាជម្រើស)', 'Approval note (optional)')}</span><textarea value={transitionNotes} onChange={(event) => setTransitionNotes(event.target.value)} rows={2} placeholder={tx('ឧ. បានពិនិត្យដោយគណៈកម្មការនៅថ្ងៃទី...', 'Example: Reviewed by the committee on...')} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-950" /></label>}
             <div className="mt-5 flex justify-end gap-2">
               <button onClick={() => setTransitionIntent(null)} disabled={saving} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold disabled:opacity-50 dark:border-gray-700">{tx('ត្រឡប់ក្រោយ', 'Go back')}</button>
-              <button onClick={confirmTransition} disabled={saving || (transitionIntent === 'finalize' && !finalizeAcknowledged)} className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40 ${transitionIntent === 'finalize' || transitionIntent === 'accept-recommendations' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'}`}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : transitionIntent === 'finalize' ? <LockKeyhole className="h-4 w-4" /> : transitionIntent === 'recalculate' ? <RefreshCw className="h-4 w-4" /> : transitionIntent === 'accept-recommendations' ? <UserRoundCheck className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}{transitionIntent === 'finalize' ? tx('បញ្ជាក់ និងផ្ទេរសិស្ស', 'Confirm and enroll') : transitionIntent === 'approve' ? tx('បញ្ជាក់ការអនុម័ត', 'Confirm approval') : transitionIntent === 'recalculate' ? tx('គណនាឡើងវិញ', 'Recalculate') : transitionIntent === 'accept-recommendations' ? tx('បញ្ជាក់សេចក្តីសម្រេច', 'Confirm decisions') : tx('បញ្ជូនទៅអនុម័ត', 'Submit for approval')}</button>
+              <button onClick={confirmTransition} disabled={saving || (transitionIntent === 'finalize' && !finalizeAcknowledged)} className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40 ${transitionIntent === 'finalize' || transitionIntent === 'accept-recommendations' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'}`}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : transitionIntent === 'finalize' ? <LockKeyhole className="h-4 w-4" /> : transitionIntent === 'recalculate' ? <RefreshCw className="h-4 w-4" /> : transitionIntent === 'accept-recommendations' ? <UserRoundCheck className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}{transitionIntent === 'finalize' ? tx('បញ្ជាក់ឡើងឆ្នាំថ្មី', 'Confirm year progression') : transitionIntent === 'approve' ? tx('បញ្ជាក់ការអនុម័ត', 'Confirm approval') : transitionIntent === 'recalculate' ? tx('គណនាឡើងវិញ', 'Recalculate') : transitionIntent === 'accept-recommendations' ? tx('បញ្ជាក់សេចក្តីសម្រេច', 'Confirm decisions') : tx('បញ្ជូនទៅអនុម័ត', 'Submit for approval')}</button>
             </div>
           </div>
         </div>

@@ -19,7 +19,7 @@ async function check() {
     
     console.log('\nSample progressions:');
     samples.forEach(p => {
-      console.log(`  ✅ ${p.student.firstName} ${p.student.lastName}: ${p.fromClass.name} → ${p.toClass.name} (${p.promotionType})`);
+      console.log(`  ✅ ${p.student.firstName} ${p.student.lastName}: ${p.fromClass.name} → ${p.toClass?.name || `Grade ${p.toGrade || '?'} · section pending`} (${p.promotionType})`);
     });
   }
   

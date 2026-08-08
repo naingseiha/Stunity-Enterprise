@@ -80,7 +80,8 @@ interface Progression {
     name: string;
     grade: string;
     section: string | null;
-  };
+  } | null;
+  toGrade?: string | null;
   promotionType: string;
   promotionDate: string;
   notes?: string;
@@ -1124,11 +1125,11 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                               <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_27907948" />
                             </p>
                             <p className="mt-2 text-base font-bold text-slate-900 dark:text-white">
-                              {progression.toClass.name}
+                              {progression.toClass?.name || 'Section pending'}
                             </p>
                             <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                              <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6101bf9d" /> {progression.toClass.grade}
-                              {progression.toClass.section ? ` - Section ${progression.toClass.section}` : ''}
+                              <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6101bf9d" /> {progression.toGrade || progression.toClass?.grade || '—'}
+                              {progression.toClass?.section ? ` - Section ${progression.toClass.section}` : ''}
                             </p>
                           </div>
                         </div>

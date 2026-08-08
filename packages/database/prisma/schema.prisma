@@ -132,7 +132,8 @@ model StudentProgression {
   fromAcademicYearId String
   toAcademicYearId   String
   fromClassId        String
-  toClassId          String
+  toClassId          String?
+  toGrade            String?
   promotionType      PromotionType
   promotionDate      DateTime
   promotedBy         String
@@ -142,12 +143,13 @@ model StudentProgression {
   fromClass          Class         @relation("FromClass", fields: [fromClassId], references: [id])
   student            Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
   toAcademicYear     AcademicYear  @relation("ToYear", fields: [toAcademicYearId], references: [id])
-  toClass            Class         @relation("ToClass", fields: [toClassId], references: [id])
+  toClass            Class?        @relation("ToClass", fields: [toClassId], references: [id])
 
   @@unique([studentId, fromAcademicYearId, toAcademicYearId])
   @@index([studentId])
   @@index([fromAcademicYearId])
   @@index([toAcademicYearId])
+  @@index([toAcademicYearId, toGrade])
   @@map("student_progressions")
 }
 
@@ -155,22 +157,24 @@ model StudentProgression {
 /// always reviewed and stored separately so policy changes never rewrite
 /// historical year-end records.
 model PromotionPolicy {
-  id                        String   @id @default(cuid())
-  schoolId                  String   @unique
-  passAverage               Float    @default(50)
-  minAttendanceRate         Float    @default(75)
-  terminalGrade             Int      @default(12)
-  maxUnexcusedAbsences      Int?
-  maxDisciplineIncidents    Int?
-  requireCompleteGrades     Boolean  @default(false)
-  allowConditionalPromotion Boolean  @default(true)
-  allowSupplementaryExam    Boolean  @default(true)
-  requireReasonForOverride  Boolean  @default(true)
-  requireSecondApproval     Boolean  @default(false)
-  additionalRules           Json?    @default("{}")
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
-  school                    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  id                           String   @id @default(cuid())
+  schoolId                     String   @unique
+  passAverage                  Float    @default(50)
+  minAttendanceRate            Float    @default(75)
+  enforceMinimumAttendanceRate Boolean  @default(false)
+  maxTotalAbsences             Int      @default(44)
+  terminalGrade                Int      @default(12)
+  maxUnexcusedAbsences         Int?
+  maxDisciplineIncidents       Int?
+  requireCompleteGrades        Boolean  @default(false)
+  allowConditionalPromotion    Boolean  @default(true)
+  allowSupplementaryExam       Boolean  @default(true)
+  requireReasonForOverride     Boolean  @default(true)
+  requireSecondApproval        Boolean  @default(false)
+  additionalRules              Json?    @default("{}")
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+  school                       School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@map("promotion_policies")
 }
@@ -214,6 +218,7 @@ model YearEndDecision {
   studentId               String
   fromClassId             String
   targetClassId           String?
+  targetGrade             String?
   recommendedOutcome      YearEndDecisionOutcome
   finalOutcome            YearEndDecisionOutcome
   decisionSource          YearEndDecisionSource  @default(SYSTEM)

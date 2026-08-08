@@ -45,10 +45,13 @@ import {
   calculateAnnualAcademicResult,
   canAcceptSystemRecommendation,
   duplicateIds,
+  isExcusedAbsenceStatus,
   normalizePromotionPolicy,
   parseGradeNumber,
   recommendYearEndOutcome,
 } from './year-end-evaluation';
+import { buildKhmMoeysMonthlyReport } from '../grade/reports/monthly/build-khm-moeys-monthly-report';
+import { monthsClosedByCalendarEvents } from '../grade/reports/monthly/resolve-semester-months';
 
 // Load environment variables from root .env in local dev, and keep process env for deployed runtimes
 
@@ -3324,7 +3327,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
       return res.status(400).json({ success: false, error: 'A different target academic year is required' });
     }
 
-    const [fromYear, toYear, storedPolicy, existingCycle] = await Promise.all([
+    const [fromYear, toYear, storedPolicy, existingCycle, schoolRecord] = await Promise.all([
       prisma.academicYear.findFirst({ where: { id: yearId, schoolId }, include: { terms: true } }),
       prisma.academicYear.findFirst({ where: { id: toAcademicYearId, schoolId } }),
       prisma.promotionPolicy.findUnique({ where: { schoolId } }),
@@ -3336,6 +3339,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
           decisions: { include: yearEndDecisionInclude },
         },
       }),
+      prisma.school.findUnique({ where: { id: schoolId }, select: { educationModel: true } }),
     ]);
     if (!fromYear || !toYear) return res.status(404).json({ success: false, error: 'Academic year not found' });
     if (new Date(toYear.startDate) <= new Date(fromYear.startDate)) {
@@ -3386,43 +3390,65 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
     const uniqueEnrollments = enrollments;
     const studentIds = uniqueEnrollments.map((enrollment) => enrollment.studentId);
     const fromClassIds = [...new Set(uniqueEnrollments.map((enrollment) => enrollment.classId))];
-    const [grades, attendance, targetClasses, targetEnrollmentCounts] = await Promise.all([
-      prisma.grade.findMany({
-        where: { studentId: { in: studentIds }, classId: { in: fromClassIds } },
-        select: {
-          studentId: true,
-          classId: true,
-          subjectId: true,
-          score: true,
-          maxScore: true,
-          percentage: true,
-          month: true,
-          monthNumber: true,
-          year: true,
-          subject: { select: { coefficient: true } },
-        },
+    // School-wide registers can contain thousands of students and hundreds of
+    // thousands of grade rows. Keep each database statement bounded so the
+    // pooler's statement timeout cannot abort a legitimate year-end run.
+    const loadBatches = async (
+      batches: string[][],
+      loader: (ids: string[]) => Promise<any[]>,
+      concurrency = 2,
+    ) => {
+      const queue = batches.map((ids, index) => ({ ids, index }));
+      const results: any[][] = [];
+      await Promise.all(Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+        while (queue.length) {
+          const item = queue.shift();
+          if (item) results[item.index] = await loader(item.ids);
+        }
+      }));
+      return results.flat();
+    };
+
+    const classIdBatches = Array.from(
+      { length: Math.ceil(fromClassIds.length / 4) },
+      (_, index) => fromClassIds.slice(index * 4, index * 4 + 4),
+    );
+    const studentIdBatches = Array.from(
+      { length: Math.ceil(studentIds.length / 250) },
+      (_, index) => studentIds.slice(index * 250, index * 250 + 250),
+    );
+
+    const [grades, attendance] = await Promise.all([
+      loadBatches(classIdBatches, async (classIdBatch) => {
+        const studentIdBatch = uniqueEnrollments
+          .filter((enrollment) => classIdBatch.includes(enrollment.classId))
+          .map((enrollment) => enrollment.studentId);
+        return prisma.grade.findMany({
+          where: { studentId: { in: studentIdBatch }, classId: { in: classIdBatch } },
+          select: {
+            studentId: true,
+            classId: true,
+            subjectId: true,
+            score: true,
+            maxScore: true,
+            percentage: true,
+            month: true,
+            monthNumber: true,
+            year: true,
+            subject: { select: { coefficient: true } },
+          },
+        });
       }),
-      prisma.attendance.findMany({
+      // Blank attendance means present, so only persisted exception records
+      // are loaded. Chunking preserves that sparse-data rule.
+      loadBatches(studentIdBatches, (studentIdBatch) => prisma.attendance.findMany({
         where: {
-          studentId: { in: studentIds },
+          studentId: { in: studentIdBatch },
           date: { gte: fromYear.startDate, lte: fromYear.endDate },
           OR: [{ classId: { in: fromClassIds } }, { classId: null }],
         },
         select: { studentId: true, status: true },
-      }),
-      prisma.class.findMany({
-        where: { schoolId, academicYearId: toAcademicYearId },
-        orderBy: [{ grade: 'asc' }, { section: 'asc' }],
-      }),
-      prisma.studentClass.groupBy({
-        by: ['classId'],
-        where: {
-          status: 'ACTIVE',
-          endedAt: null,
-          class: { schoolId, academicYearId: toAcademicYearId },
-        },
-        _count: { _all: true },
-      }),
+      })),
     ]);
 
     const gradesByEnrollment = new Map<string, typeof grades>();
@@ -3438,31 +3464,111 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
       if (records) records.push(record);
       else attendanceByStudent.set(record.studentId, [record]);
     }
-    const activeCountByClass = new Map(targetEnrollmentCounts.map((row) => [row.classId, row._count._all]));
-    const projectedSeats = new Map(targetClasses.map((targetClass) => [targetClass.id, activeCountByClass.get(targetClass.id) || 0]));
+
+    // Merge Academic Calendar VACATION/HOLIDAY months into term.excludedMonths
+    // so generic year-end averages also skip វិសមកាល / holiday months (e.g. April).
+    const calendarBreakEvents = await prisma.calendarEvent.findMany({
+      where: {
+        calendar: { academicYearId: yearId },
+        OR: [
+          { type: { in: ['VACATION', 'HOLIDAY'] } },
+          { isSchoolDay: false },
+        ],
+      },
+      select: { type: true, isSchoolDay: true, startDate: true, endDate: true },
+    });
+    const calendarBreakMonths = monthsClosedByCalendarEvents(calendarBreakEvents);
+    const evaluationTerms = fromYear.terms.map((term) => ({
+      ...term,
+      excludedMonths: [
+        ...new Set([...(term.excludedMonths || []), ...calendarBreakMonths]),
+      ].filter((month) => month !== term.examMonth),
+    }));
+
+    // Use the same official report engine that produced the school's printed
+    // Semester 1 / Semester 2 registers. This prevents promotion results from
+    // drifting because of track subjects, aliases, English rules, or a month
+    // with no grade rows (which the MoEYS report intentionally counts as 0).
+    const moeysAnnualByEnrollment = new Map<string, {
+      semester1Average: number;
+      semester2Average: number;
+      annualAverage: number;
+    }>();
+    if (schoolRecord?.educationModel === 'KHM_MOEYS') {
+      const academicStartYear = Number.parseInt(fromYear.name, 10);
+      // A student's MoEYS average is independent of whether the report ranks
+      // one section or the whole grade. Build once per grade, then map each row
+      // back to its source class. This keeps exact report formulas while
+      // avoiding hundreds of repeated month queries on a school-wide run.
+      const gradeQueue = [...new Set(uniqueEnrollments.map((enrollment) => enrollment.class.grade))];
+      const calculateGrade = async (sourceGrade: string) => {
+        const classGrade = parseGradeNumber(sourceGrade);
+        if (classGrade === null || !Number.isFinite(academicStartYear)) return;
+        const semesterOneTerm = fromYear.terms.find((term) => term.termNumber === 1 && (!term.gradeLevels.length || term.gradeLevels.includes(classGrade)));
+        const semesterTwoTerm = fromYear.terms.find((term) => term.termNumber === 2 && (!term.gradeLevels.length || term.gradeLevels.includes(classGrade)));
+        try {
+          const [semesterOne, semesterTwo] = await Promise.all([
+            buildKhmMoeysMonthlyReport(prisma, schoolId, {
+              scope: 'grade', grade: sourceGrade,
+              year: String(academicStartYear), academicYearId: yearId,
+              format: 'semester-1', monthNumber: String(semesterOneTerm?.examMonth || 2),
+            }),
+            buildKhmMoeysMonthlyReport(prisma, schoolId, {
+              scope: 'grade', grade: sourceGrade,
+              year: String(academicStartYear), academicYearId: yearId,
+              format: 'semester-2', monthNumber: String(semesterTwoTerm?.examMonth || 7),
+            }),
+          ]);
+          const semesterTwoByStudent = new Map<string, number>(
+            semesterTwo.students.map((student: any): [string, number] => [
+              `${student.studentId}:${student.classId || ''}`,
+              Number(student.average),
+            ]),
+          );
+          for (const student of semesterOne.students as any[]) {
+            const key = `${student.studentId}:${student.classId || ''}`;
+            const semesterTwoRaw = semesterTwoByStudent.get(key);
+            if (semesterTwoRaw === undefined) continue;
+            const semester1Average = Math.round(student.average * 200) / 100;
+            const semester2Average = Math.round(semesterTwoRaw * 200) / 100;
+            moeysAnnualByEnrollment.set(key, {
+              semester1Average,
+              semester2Average,
+              annualAverage: Math.round(((semester1Average + semester2Average) / 2) * 100) / 100,
+            });
+          }
+        } catch (error) {
+          console.warn(`MoEYS report calculation unavailable for grade ${sourceGrade}; using the generic year-end calculator`, error);
+        }
+      };
+      // Keep enough parallelism for a school-wide year-end run without
+      // exhausting the database pool as grade reports are built.
+      const workerCount = Math.min(3, gradeQueue.length);
+      await Promise.all(Array.from({ length: workerCount }, async () => {
+        while (gradeQueue.length) {
+          const sourceGrade = gradeQueue.shift();
+          if (sourceGrade) await calculateGrade(sourceGrade);
+        }
+      }));
+    }
     const decisionCreates = uniqueEnrollments.map((enrollment) => {
       const gradeNumber = parseGradeNumber(enrollment.class.grade);
       const terminalGrade = gradeNumber !== null && gradeNumber >= policy.terminalGrade;
-      const desiredGrade = gradeNumber === null ? null : String(gradeNumber + 1);
-      const candidates = desiredGrade ? targetClasses.filter((targetClass) => parseGradeNumber(targetClass.grade) === gradeNumber! + 1) : [];
-      candidates.sort((left, right) => {
-        const leftSection = left.section === enrollment.class.section ? 0 : 1;
-        const rightSection = right.section === enrollment.class.section ? 0 : 1;
-        if (leftSection !== rightSection) return leftSection - rightSection;
-        return (projectedSeats.get(left.id) || 0) - (projectedSeats.get(right.id) || 0);
-      });
-      const targetClass = candidates.find((candidate) => candidate.capacity === null || (projectedSeats.get(candidate.id) || 0) < candidate.capacity) || candidates[0] || null;
-      if (targetClass) projectedSeats.set(targetClass.id, (projectedSeats.get(targetClass.id) || 0) + 1);
+      const desiredGrade = terminalGrade || gradeNumber === null ? null : String(gradeNumber + 1);
 
       const studentGrades = gradesByEnrollment.get(`${enrollment.studentId}:${enrollment.classId}`) || [];
-      const annualResult = calculateAnnualAcademicResult(studentGrades, fromYear.terms, gradeNumber);
+      const moeysResult = moeysAnnualByEnrollment.get(`${enrollment.studentId}:${enrollment.classId}`);
+      const annualResult = moeysResult
+        ? { ...moeysResult, isComplete: true, flags: [] as string[] }
+        : calculateAnnualAcademicResult(studentGrades, evaluationTerms, gradeNumber);
       const academicAverage = annualResult.annualAverage;
       const studentAttendance = attendanceByStudent.get(enrollment.studentId) || [];
       const absentCount = studentAttendance.filter((record) => record.status === 'ABSENT').length;
-      const excusedCount = studentAttendance.filter((record) => record.status === 'EXCUSED').length;
+      const excusedCount = studentAttendance.filter((record) => isExcusedAbsenceStatus(record.status)).length;
+      const totalAbsenceCount = absentCount + excusedCount;
       const lateCount = studentAttendance.filter((record) => record.status === 'LATE').length;
       const attendanceRate = studentAttendance.length
-        ? Math.round(((studentAttendance.length - absentCount) / studentAttendance.length) * 10000) / 100
+        ? Math.round(((studentAttendance.length - totalAbsenceCount) / studentAttendance.length) * 10000) / 100
         : null;
       const recommendation = recommendYearEndOutcome(
         {
@@ -3470,8 +3576,9 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
           academicEvidenceFlags: annualResult.flags,
           attendanceRate,
           absentCount,
+          totalAbsenceCount,
           disciplineIncidentCount: null,
-          hasTargetGrade: Boolean(targetClass),
+          hasTargetGrade: terminalGrade || Boolean(desiredGrade),
           isTerminalGrade: terminalGrade,
         },
         policy,
@@ -3480,7 +3587,8 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
       return {
         studentId: enrollment.studentId,
         fromClassId: enrollment.classId,
-        targetClassId: recommendation.outcome === 'GRADUATE' ? null : targetClass?.id || null,
+        targetClassId: null,
+        targetGrade: recommendation.outcome === 'GRADUATE' ? null : desiredGrade,
         recommendedOutcome: recommendation.outcome,
         // A system recommendation is evidence, not the school's final
         // decision. Every student remains unresolved until an administrator
@@ -3497,6 +3605,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
           flags: recommendation.flags,
           gradeRecordCount: studentGrades.length,
           academicCalculationMethod: 'TWO_SEMESTER_AVERAGE',
+          academicCalculationSource: moeysResult ? 'KHM_MOEYS_OFFICIAL_REPORT' : 'GENERIC_NORMALIZED_GRADES',
           semester1Average: annualResult.semester1Average,
           semester2Average: annualResult.semester2Average,
           annualAverage: annualResult.annualAverage,
@@ -3505,6 +3614,8 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', as
             ? academicAverage! >= policy.passAverage ? 'PASS' : 'FAIL'
             : 'INCOMPLETE',
           sourceClass: enrollment.class,
+          totalAbsenceCount,
+          placementStatus: 'PENDING_CLASS_ASSIGNMENT',
           generatedAt: new Date().toISOString(),
         },
       };
@@ -3611,18 +3722,17 @@ app.patch('/schools/:schoolId/academic-years/:yearId/year-end-cycle/decisions/:d
       return res.status(400).json({ success: false, error: 'An override reason and explanation are required' });
     }
 
-    let targetClassId = req.body.targetClassId === undefined ? existing.targetClassId : req.body.targetClassId || null;
+    let targetGrade = req.body.targetGrade === undefined ? existing.targetGrade : String(req.body.targetGrade || '').trim() || null;
     if (['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT'].includes(finalOutcome)) {
-      if (!targetClassId) return res.status(400).json({ success: false, error: 'A target class is required for this outcome' });
-      const targetClass = await prisma.class.findFirst({
-        where: { id: targetClassId, schoolId, academicYearId: existing.cycle.toAcademicYearId },
-      });
-      if (!targetClass) return res.status(400).json({ success: false, error: 'Target class must belong to the target academic year' });
-      if (finalOutcome === 'REPEAT' && parseGradeNumber(targetClass.grade) !== parseGradeNumber(existing.fromClass.grade)) {
-        return res.status(400).json({ success: false, error: 'A repeating student must be assigned to the same grade' });
+      const sourceGrade = parseGradeNumber(existing.fromClass.grade);
+      const expectedGrade = finalOutcome === 'REPEAT' ? sourceGrade : sourceGrade === null ? null : sourceGrade + 1;
+      if (expectedGrade === null) return res.status(400).json({ success: false, error: 'The source grade cannot be resolved' });
+      if (targetGrade && parseGradeNumber(targetGrade) !== expectedGrade) {
+        return res.status(400).json({ success: false, error: 'The target grade does not match the selected progression outcome' });
       }
+      targetGrade = String(expectedGrade);
     } else {
-      targetClassId = null;
+      targetGrade = null;
     }
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -3640,7 +3750,8 @@ app.patch('/schools/:schoolId/academic-years/:yearId/year-end-cycle/decisions/:d
         },
         data: {
           finalOutcome,
-          targetClassId,
+          targetClassId: null,
+          targetGrade,
           decisionSource: isOverride ? 'OVERRIDE' : 'MANUAL',
           reasonCode: req.body.reasonCode === undefined ? existing.reasonCode : req.body.reasonCode || null,
           reasonDetails: req.body.reasonDetails === undefined ? existing.reasonDetails : req.body.reasonDetails || null,
@@ -3670,7 +3781,7 @@ app.patch('/schools/:schoolId/academic-years/:yearId/year-end-cycle/decisions/:d
           reasonCode: req.body.reasonCode || existing.reasonCode,
           notes: req.body.reasonDetails || null,
           actorId,
-          metadata: { targetClassId, interventions: req.body.interventions || existing.interventions } as any,
+          metadata: { targetGrade, placementStatus: 'PENDING_CLASS_ASSIGNMENT', interventions: req.body.interventions || existing.interventions } as any,
         },
       });
       return decision;
@@ -3716,7 +3827,9 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/accept-recomm
           where: { id: { in: promotable.map((decision) => decision.id) }, cycleId },
           data: {
             finalOutcome: 'PROMOTE',
-            decisionSource: 'MANUAL',
+            // The administrator confirms a deterministic system result; keep
+            // its provenance distinct from a manually-entered override.
+            decisionSource: 'SYSTEM',
             reviewedBy: actorId,
             reviewedAt: confirmedAt,
             version: { increment: 1 },
@@ -3728,7 +3841,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/accept-recomm
           where: { id: { in: graduating.map((decision) => decision.id) }, cycleId },
           data: {
             finalOutcome: 'GRADUATE',
-            decisionSource: 'MANUAL',
+            decisionSource: 'SYSTEM',
             reviewedBy: actorId,
             reviewedAt: confirmedAt,
             version: { increment: 1 },
@@ -3749,7 +3862,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/accept-recomm
             toOutcome: decision.acceptedOutcome,
             reasonCode: decision.reasonCode,
             actorId,
-            metadata: { bulkAction: true, targetClassId: decision.targetClassId } as any,
+            metadata: { bulkAction: true, targetGrade: decision.targetGrade, placementStatus: 'PENDING_CLASS_ASSIGNMENT' } as any,
           })),
         });
       }
@@ -3798,11 +3911,11 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/submit', asyn
       if (!cycle) throw new YearEndWorkflowError(404, 'Year-end cycle not found');
       if (cycle.status !== 'DRAFT') throw new YearEndWorkflowError(409, 'Only draft cycles can be submitted');
       const pending = cycle.decisions.filter((decision) => decision.finalOutcome === 'PENDING');
-      const missingClass = cycle.decisions.filter((decision) => ['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT'].includes(decision.finalOutcome) && !decision.targetClassId);
-      if (pending.length || missingClass.length) {
-        throw new YearEndWorkflowError(400, 'Resolve every pending decision and target-class assignment before submission', {
+      const missingGrade = cycle.decisions.filter((decision) => ['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT'].includes(decision.finalOutcome) && !decision.targetGrade);
+      if (pending.length || missingGrade.length) {
+        throw new YearEndWorkflowError(400, 'Resolve every pending decision and target grade before submission', {
           pending: pending.length,
-          missingClass: missingClass.length,
+          missingGrade: missingGrade.length,
         });
       }
       return tx.yearEndCycle.update({
@@ -3878,7 +3991,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/finalize', as
       const placementOutcomes = new Set(['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT']);
       const pendingCount = cycle.decisions.filter((decision) => decision.finalOutcome === 'PENDING').length;
       const missingTargetCount = cycle.decisions.filter(
-        (decision) => placementOutcomes.has(decision.finalOutcome) && !decision.targetClassId,
+        (decision) => placementOutcomes.has(decision.finalOutcome) && !decision.targetGrade,
       ).length;
       if (pendingCount || missingTargetCount) {
         throw new YearEndWorkflowError(409, 'Every decision must be resolved before finalization', {
@@ -3888,8 +4001,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/finalize', as
       }
 
       const studentIds = cycle.decisions.map((decision) => decision.studentId);
-      const targetClassIds = [...new Set(cycle.decisions.flatMap((decision) => decision.targetClassId ? [decision.targetClassId] : []))];
-      const [students, sourceEnrollments, targetEnrollments, targetClasses, targetEnrollmentCounts, existingProgressions] = await Promise.all([
+      const [students, sourceEnrollments, targetEnrollments, existingProgressions] = await Promise.all([
         tx.student.findMany({
           where: { id: { in: studentIds }, schoolId, recordStatus: 'ACTIVE' },
           select: { id: true },
@@ -3910,20 +4022,11 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/finalize', as
             endedAt: null,
             class: { schoolId, academicYearId: cycle.toAcademicYearId },
           },
-          select: { id: true, studentId: true, classId: true },
-        }),
-        tx.class.findMany({
-          where: { id: { in: targetClassIds }, schoolId, academicYearId: cycle.toAcademicYearId },
-          select: { id: true, name: true, capacity: true },
-        }),
-        tx.studentClass.groupBy({
-          by: ['classId'],
-          where: { classId: { in: targetClassIds }, status: 'ACTIVE', endedAt: null },
-          _count: { _all: true },
+          select: { id: true, studentId: true, classId: true, class: { select: { grade: true } } },
         }),
         tx.studentProgression.findMany({
           where: { studentId: { in: studentIds }, fromAcademicYearId: yearId, toAcademicYearId: cycle.toAcademicYearId },
-          select: { studentId: true, fromClassId: true, toClassId: true },
+          select: { studentId: true, fromClassId: true, toClassId: true, toGrade: true },
         }),
       ]);
 
@@ -3948,33 +4051,16 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/finalize', as
         throw new YearEndWorkflowError(409, 'Source enrollment changed after the review was generated', { invalidSourceCount });
       }
 
-      const targetClassById = new Map(targetClasses.map((targetClass) => [targetClass.id, targetClass]));
-      const activeCountByTargetClass = new Map(targetEnrollmentCounts.map((row) => [row.classId, row._count._all]));
-      if (targetClasses.length !== targetClassIds.length) {
-        throw new YearEndWorkflowError(409, 'One or more target classes do not belong to this school and target academic year');
-      }
       const conflictingTargetCount = cycle.decisions.filter((decision) => {
         const existing = targetByStudent.get(decision.studentId);
         if (!existing) return false;
-        return !placementOutcomes.has(decision.finalOutcome) || existing.classId !== decision.targetClassId;
+        return !placementOutcomes.has(decision.finalOutcome)
+          || parseGradeNumber(existing.class.grade) !== parseGradeNumber(decision.targetGrade || '');
       }).length;
       if (conflictingTargetCount) {
         throw new YearEndWorkflowError(409, 'An existing target-year enrollment conflicts with the approved placement', {
           conflictingTargetCount,
         });
-      }
-
-      const additionsByTarget = new Map<string, number>();
-      for (const decision of cycle.decisions) {
-        if (placementOutcomes.has(decision.finalOutcome) && decision.targetClassId && !targetByStudent.has(decision.studentId)) {
-          additionsByTarget.set(decision.targetClassId, (additionsByTarget.get(decision.targetClassId) || 0) + 1);
-        }
-      }
-      for (const [targetClassId, additions] of additionsByTarget) {
-        const targetClass = targetClassById.get(targetClassId)!;
-        if (targetClass.capacity !== null && (activeCountByTargetClass.get(targetClassId) || 0) + additions > targetClass.capacity) {
-          throw new YearEndWorkflowError(409, `Target class ${targetClass.name} exceeds capacity`);
-        }
       }
 
       const progressionByStudent = new Map(existingProgressions.map((progression) => [progression.studentId, progression]));
@@ -3983,7 +4069,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/finalize', as
         if (!existing) return false;
         return !placementOutcomes.has(decision.finalOutcome)
           || existing.fromClassId !== decision.fromClassId
-          || existing.toClassId !== decision.targetClassId;
+          || parseGradeNumber(existing.toGrade || '') !== parseGradeNumber(decision.targetGrade || '');
       }).length;
       if (conflictingProgressionCount) {
         throw new YearEndWorkflowError(409, 'Existing progression history conflicts with this year-end decision', {
@@ -4012,26 +4098,8 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/finalize', as
         throw new YearEndWorkflowError(409, 'Source enrollments changed during finalization; no changes were committed');
       }
 
-      const newEnrollmentDecisions = cycle.decisions.filter(
-        (decision) => placementOutcomes.has(decision.finalOutcome) && decision.targetClassId && !targetByStudent.has(decision.studentId),
-      );
-      if (newEnrollmentDecisions.length) {
-        await tx.studentClass.createMany({
-          data: newEnrollmentDecisions.map((decision) => ({
-            studentId: decision.studentId,
-            classId: decision.targetClassId!,
-            academicYearId: cycle.toAcademicYearId,
-            enrolledAt: cycle.toAcademicYear.startDate,
-            startedAt: cycle.toAcademicYear.startDate,
-            entryReason: 'YEAR_PROMOTION' as const,
-            createdById: actorId,
-            status: 'ACTIVE',
-          })),
-        });
-      }
-
       const newProgressions = cycle.decisions.filter(
-        (decision) => placementOutcomes.has(decision.finalOutcome) && decision.targetClassId && !progressionByStudent.has(decision.studentId),
+        (decision) => placementOutcomes.has(decision.finalOutcome) && decision.targetGrade && !progressionByStudent.has(decision.studentId),
       );
       if (newProgressions.length) {
         await tx.studentProgression.createMany({
@@ -4040,7 +4108,8 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/finalize', as
             fromAcademicYearId: yearId,
             toAcademicYearId: cycle.toAcademicYearId,
             fromClassId: decision.fromClassId,
-            toClassId: decision.targetClassId!,
+            toClassId: targetByStudent.get(decision.studentId)?.classId || null,
+            toGrade: decision.targetGrade,
             promotionType: decision.finalOutcome === 'REPEAT' ? 'REPEAT' as const : decision.decisionSource === 'SYSTEM' ? 'AUTOMATIC' as const : 'MANUAL' as const,
             promotionDate: new Date(),
             promotedBy: actorId,
@@ -4049,23 +4118,25 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/finalize', as
         });
       }
 
-      const placementsByClass = new Map<string, string[]>();
-      for (const decision of cycle.decisions) {
-        if (!placementOutcomes.has(decision.finalOutcome) || !decision.targetClassId) continue;
-        placementsByClass.set(decision.targetClassId, [...(placementsByClass.get(decision.targetClassId) || []), decision.studentId]);
-      }
-      let updatedStudents = 0;
-      for (const [targetClassId, ids] of placementsByClass) {
-        const update = await tx.student.updateMany({ where: { id: { in: ids }, schoolId }, data: { classId: targetClassId } });
-        updatedStudents += update.count;
-      }
-      const studentsLeavingSchool = [...graduatedIds, ...withdrawnIds];
-      if (studentsLeavingSchool.length) {
-        const update = await tx.student.updateMany({ where: { id: { in: studentsLeavingSchool }, schoolId }, data: { classId: null } });
-        updatedStudents += update.count;
-      }
-      if (updatedStudents !== cycle.decisions.length) {
+      // Promotion records the next year + grade. Students stay unassigned until
+      // the scheduling team later places them into 11A/11B/etc. Preserve an
+      // already-valid target-year assignment if one was deliberately created.
+      const unassigned = await tx.student.updateMany({
+        where: { id: { in: studentIds }, schoolId },
+        data: { classId: null },
+      });
+      if (unassigned.count !== cycle.decisions.length) {
         throw new YearEndWorkflowError(409, 'Student school ownership changed during finalization; no changes were committed');
+      }
+      const existingPlacementsByClass = new Map<string, string[]>();
+      for (const enrollment of targetEnrollments) {
+        existingPlacementsByClass.set(
+          enrollment.classId,
+          [...(existingPlacementsByClass.get(enrollment.classId) || []), enrollment.studentId],
+        );
+      }
+      for (const [targetClassId, ids] of existingPlacementsByClass) {
+        await tx.student.updateMany({ where: { id: { in: ids }, schoolId }, data: { classId: targetClassId } });
       }
 
       const finalized = await tx.yearEndCycle.updateMany({
@@ -4076,7 +4147,15 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/finalize', as
         where: { id: yearId, schoolId },
         data: { isPromotionDone: true, promotionDate: new Date(), status: 'ENDED', isCurrent: false },
       });
-      if (finalized.count !== 1 || endedYear.count !== 1) {
+      await tx.academicYear.updateMany({
+        where: { schoolId, isCurrent: true, id: { notIn: [cycle.toAcademicYearId] } },
+        data: { isCurrent: false },
+      });
+      const activatedTargetYear = await tx.academicYear.updateMany({
+        where: { id: cycle.toAcademicYearId, schoolId },
+        data: { isCurrent: true, status: 'ACTIVE' },
+      });
+      if (finalized.count !== 1 || endedYear.count !== 1 || activatedTargetYear.count !== 1) {
         throw new YearEndWorkflowError(409, 'Cycle or academic year state changed during finalization; no changes were committed');
       }
 
@@ -5227,7 +5306,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
     const promotionStats = {
       promotedOut: promotionsOut.filter(p => p.promotionType === 'AUTOMATIC').length,
       repeated: promotionsOut.filter(p => p.promotionType === 'REPEAT').length,
-      graduated: promotionsOut.filter(p => p.promotionType === 'MANUAL' && p.toClass.grade === '12').length,
+      graduated: promotionsOut.filter(p => p.promotionType === 'MANUAL' && parseGradeNumber(p.toClass?.grade || p.toGrade || '') === 12).length,
       transferredOut: promotionsOut.filter(p => p.promotionType === 'TRANSFER_OUT').length,
       newAdmissions: promotionsIn.filter(p => p.promotionType === 'NEW_ADMISSION').length,
       transferredIn: promotionsIn.filter(p => p.promotionType === 'TRANSFER_IN').length,
@@ -5310,7 +5389,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
             studentName: (p.student.customFields as any)?.regional?.khmerName || `${p.student.firstName} ${p.student.lastName}`,
             gender: p.student.gender,
             fromClass: p.fromClass.name,
-            toClass: p.toClass.name,
+            toClass: p.toClass?.name || (p.toGrade ? `Grade ${p.toGrade} · section pending` : 'Section pending'),
             toYear: p.toAcademicYear.name,
             type: p.promotionType,
             date: p.promotionDate,
@@ -5320,7 +5399,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
             studentName: (p.student.customFields as any)?.regional?.khmerName || `${p.student.firstName} ${p.student.lastName}`,
             gender: p.student.gender,
             fromClass: p.fromClass.name,
-            toClass: p.toClass.name,
+            toClass: p.toClass?.name || (p.toGrade ? `Grade ${p.toGrade} · section pending` : 'Section pending'),
             fromYear: p.fromAcademicYear.name,
             type: p.promotionType,
             date: p.promotionDate,

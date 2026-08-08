@@ -14,6 +14,8 @@ export type YearEndCycleStatus = 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'FINALIZED
 export interface PromotionPolicy {
   passAverage: number;
   minAttendanceRate: number;
+  enforceMinimumAttendanceRate: boolean;
+  maxTotalAbsences: number;
   terminalGrade: number;
   maxUnexcusedAbsences: number | null;
   maxDisciplineIncidents: number | null;
@@ -30,6 +32,7 @@ export interface YearEndDecision {
   studentId: string;
   fromClassId: string;
   targetClassId: string | null;
+  targetGrade: string | null;
   recommendedOutcome: YearEndOutcome;
   finalOutcome: YearEndOutcome;
   decisionSource: 'SYSTEM' | 'MANUAL' | 'OVERRIDE';
@@ -51,6 +54,8 @@ export interface YearEndDecision {
     annualAverage?: number | null;
     annualResultComplete?: boolean;
     academicStatus?: 'PASS' | 'FAIL' | 'INCOMPLETE';
+    totalAbsenceCount?: number;
+    placementStatus?: 'PENDING_CLASS_ASSIGNMENT' | 'ASSIGNED';
   } | null;
   interventions: string[] | null;
   interventionStatus: string | null;
@@ -136,7 +141,7 @@ export const yearEndApi = {
     schoolId: string,
     fromYearId: string,
     decisionId: string,
-    update: Partial<Pick<YearEndDecision, 'finalOutcome' | 'targetClassId' | 'reasonCode' | 'reasonDetails' | 'interventions' | 'interventionStatus' | 'disciplineIncidentCount'>> & Pick<YearEndDecision, 'version'>,
+    update: Partial<Pick<YearEndDecision, 'finalOutcome' | 'targetGrade' | 'reasonCode' | 'reasonDetails' | 'interventions' | 'interventionStatus' | 'disciplineIncidentCount'>> & Pick<YearEndDecision, 'version'>,
   ) {
     return request<YearEndDecision>(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${fromYearId}/year-end-cycle/decisions/${decisionId}`, {
       method: 'PATCH',

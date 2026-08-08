@@ -9,6 +9,8 @@ export type YearEndOutcome =
 export interface PromotionPolicyValues {
   passAverage: number;
   minAttendanceRate: number;
+  enforceMinimumAttendanceRate: boolean;
+  maxTotalAbsences: number;
   terminalGrade: number;
   maxUnexcusedAbsences: number | null;
   maxDisciplineIncidents: number | null;
@@ -23,6 +25,8 @@ export interface PromotionPolicyValues {
 export const DEFAULT_PROMOTION_POLICY: PromotionPolicyValues = {
   passAverage: 50,
   minAttendanceRate: 75,
+  enforceMinimumAttendanceRate: false,
+  maxTotalAbsences: 44,
   terminalGrade: 12,
   maxUnexcusedAbsences: null,
   maxDisciplineIncidents: null,
@@ -49,6 +53,8 @@ export function normalizePromotionPolicy(input: Partial<PromotionPolicyValues> |
   return {
     passAverage: Math.min(100, Math.max(0, finiteNumber(input?.passAverage, DEFAULT_PROMOTION_POLICY.passAverage))),
     minAttendanceRate: Math.min(100, Math.max(0, finiteNumber(input?.minAttendanceRate, DEFAULT_PROMOTION_POLICY.minAttendanceRate))),
+    enforceMinimumAttendanceRate: input?.enforceMinimumAttendanceRate === true,
+    maxTotalAbsences: Math.max(0, Math.round(finiteNumber(input?.maxTotalAbsences, DEFAULT_PROMOTION_POLICY.maxTotalAbsences))),
     terminalGrade: Math.min(20, Math.max(1, Math.round(finiteNumber(input?.terminalGrade, DEFAULT_PROMOTION_POLICY.terminalGrade)))),
     maxUnexcusedAbsences: nullableNonNegativeInt(input?.maxUnexcusedAbsences),
     maxDisciplineIncidents: nullableNonNegativeInt(input?.maxDisciplineIncidents),
@@ -95,6 +101,7 @@ export interface YearEndTermWindow {
   endDate: Date;
   excludedMonths: number[];
   gradeLevels: number[];
+  examMonth?: number | null;
 }
 
 export interface AnnualAcademicResult {
@@ -128,13 +135,13 @@ function normalizedGradeMonth(grade: YearEndGradeRecord): number | null {
   return monthAliases[key] || null;
 }
 
-function termMonthKeys(term: YearEndTermWindow): Set<string> {
-  const keys = new Set<string>();
+function termMonthKeys(term: YearEndTermWindow): string[] {
+  const keys: string[] = [];
   const cursor = new Date(Date.UTC(term.startDate.getUTCFullYear(), term.startDate.getUTCMonth(), 1));
   const endKey = term.endDate.getUTCFullYear() * 100 + term.endDate.getUTCMonth() + 1;
   while (cursor.getUTCFullYear() * 100 + cursor.getUTCMonth() + 1 <= endKey) {
     const month = cursor.getUTCMonth() + 1;
-    if (!term.excludedMonths.includes(month)) keys.add(`${cursor.getUTCFullYear()}-${month}`);
+    if (!term.excludedMonths.includes(month)) keys.push(`${cursor.getUTCFullYear()}-${month}`);
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
   }
   return keys;
@@ -143,18 +150,16 @@ function termMonthKeys(term: YearEndTermWindow): Set<string> {
 function gradeBelongsToTerm(grade: YearEndGradeRecord, term: YearEndTermWindow): boolean {
   const month = normalizedGradeMonth(grade);
   if (month === null || term.excludedMonths.includes(month)) return false;
-  const keys = termMonthKeys(term);
+  const keys = new Set(termMonthKeys(term));
   if (Number.isInteger(grade.year)) return keys.has(`${grade.year}-${month}`);
   // Older grade rows may not have a year. Class ownership already restricts
   // them to one academic year, so matching the configured term month is safe.
   return [...keys].some((key) => key.endsWith(`-${month}`));
 }
 
-function semesterPercentage(grades: YearEndGradeRecord[], term: YearEndTermWindow | undefined): number | null {
-  if (!term) return null;
+function monthlyPercentage(grades: YearEndGradeRecord[]): number | null {
   const bySubject = new Map<string, { percentages: number[]; coefficient: number }>();
   for (const grade of grades) {
-    if (!gradeBelongsToTerm(grade, term)) continue;
     const percentage = gradePercentage(grade);
     if (percentage === null) continue;
     const current = bySubject.get(grade.subjectId) || {
@@ -177,6 +182,47 @@ function semesterPercentage(grades: YearEndGradeRecord[], term: YearEndTermWindo
   }
   if (totalCoefficient === 0) return null;
   return Math.round((weightedTotal / totalCoefficient) * 100) / 100;
+}
+
+function semesterPercentage(grades: YearEndGradeRecord[], term: YearEndTermWindow | undefined): number | null {
+  if (!term) return null;
+  const periods = termMonthKeys(term);
+  const gradesByPeriod = new Map<string, YearEndGradeRecord[]>();
+  for (const grade of grades) {
+    if (!gradeBelongsToTerm(grade, term)) continue;
+    const month = normalizedGradeMonth(grade);
+    if (month === null) continue;
+    const period = Number.isInteger(grade.year)
+      ? `${grade.year}-${month}`
+      : periods.find((key) => key.endsWith(`-${month}`));
+    if (!period) continue;
+    gradesByPeriod.set(period, [...(gradesByPeriod.get(period) || []), grade]);
+  }
+
+  // Cambodia's school calendar can continue through August even when the
+  // Semester 2 exam/result is in July. Prefer the configured exam month, but
+  // safely fall back to the latest month that actually has results.
+  const configuredExamPeriod = term.examMonth
+    ? periods.find((period) => period.endsWith(`-${term.examMonth}`))
+    : undefined;
+  const examPeriod = configuredExamPeriod && gradesByPeriod.has(configuredExamPeriod)
+    ? configuredExamPeriod
+    : [...periods].reverse().find((period) => gradesByPeriod.has(period));
+  if (!examPeriod) return null;
+
+  const examIndex = periods.indexOf(examPeriod);
+  // Keep parity with the official MoEYS semester report: every configured
+  // pre-exam month that remains after AcademicTerm.excludedMonths participates
+  // in the semester average. Holiday months (e.g. April / Khmer New Year) must
+  // be listed in excludedMonths so they are not treated as zero-score months.
+  // A remaining pre-exam month with no recorded result still contributes zero.
+  const preExamAverages = periods
+    .slice(0, examIndex)
+    .map((period) => monthlyPercentage(gradesByPeriod.get(period) || []) ?? 0);
+  const examAverage = monthlyPercentage(gradesByPeriod.get(examPeriod) || []);
+  const preSemesterAverage = averagePercent(preExamAverages);
+  if (examAverage === null || preSemesterAverage === null) return null;
+  return Math.round(((preSemesterAverage + examAverage) / 2) * 100) / 100;
 }
 
 export function calculateAnnualAcademicResult(
@@ -209,6 +255,7 @@ export interface RecommendationInput {
   academicEvidenceFlags?: string[];
   attendanceRate: number | null;
   absentCount: number;
+  totalAbsenceCount: number;
   disciplineIncidentCount: number | null;
   hasTargetGrade: boolean;
   isTerminalGrade: boolean;
@@ -217,11 +264,11 @@ export interface RecommendationInput {
 export function canAcceptSystemRecommendation(decision: {
   finalOutcome: YearEndOutcome;
   recommendedOutcome: YearEndOutcome;
-  targetClassId: string | null;
+  targetGrade: string | null;
 }): boolean {
   if (decision.finalOutcome !== 'PENDING') return false;
   if (decision.recommendedOutcome === 'GRADUATE') return true;
-  return decision.recommendedOutcome === 'PROMOTE' && Boolean(decision.targetClassId);
+  return decision.recommendedOutcome === 'PROMOTE' && Boolean(decision.targetGrade);
 }
 
 export function recommendYearEndOutcome(
@@ -236,8 +283,11 @@ export function recommendYearEndOutcome(
     flags.push('ACADEMIC_BELOW_THRESHOLD');
   }
 
-  if (input.attendanceRate !== null && input.attendanceRate < policy.minAttendanceRate) {
+  if (policy.enforceMinimumAttendanceRate && input.attendanceRate !== null && input.attendanceRate < policy.minAttendanceRate) {
     flags.push('ATTENDANCE_BELOW_THRESHOLD');
+  }
+  if (input.totalAbsenceCount > policy.maxTotalAbsences) {
+    flags.push('EXCESSIVE_TOTAL_ABSENCE');
   }
   if (policy.maxUnexcusedAbsences !== null && input.absentCount > policy.maxUnexcusedAbsences) {
     flags.push('EXCESSIVE_UNEXCUSED_ABSENCE');
@@ -257,7 +307,7 @@ export function recommendYearEndOutcome(
     return { outcome: 'GRADUATE', reasonCode: 'TERMINAL_GRADE_COMPLETED', flags };
   }
   if (!input.hasTargetGrade) {
-    return { outcome: 'PENDING', reasonCode: 'TARGET_CLASS_REQUIRED', flags: [...flags, 'TARGET_CLASS_REQUIRED'] };
+    return { outcome: 'PENDING', reasonCode: 'TARGET_GRADE_REQUIRED', flags: [...flags, 'TARGET_GRADE_REQUIRED'] };
   }
   return { outcome: 'PROMOTE', reasonCode: 'MEETS_SCHOOL_POLICY', flags };
 }
@@ -277,4 +327,8 @@ export function duplicateIds(values: string[]): string[] {
     else seen.add(value);
   }
   return [...duplicates];
+}
+
+export function isExcusedAbsenceStatus(status: string): boolean {
+  return status === 'EXCUSED' || status === 'PERMISSION' || status === 'MEDICAL_LEAVE';
 }

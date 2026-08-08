@@ -44,6 +44,7 @@ interface ManagedStudent {
   photoUrl?: string;
   enrolledAt?: string;
   status?: string;
+  plannedGrade?: string | null;
 }
 
 interface ClassData {
@@ -108,6 +109,7 @@ function normalizeStudent(raw: any): ManagedStudent {
     photoUrl: raw.photoUrl || raw.student?.photoUrl,
     enrolledAt: raw.enrolledAt,
     status: raw.status,
+    plannedGrade: raw.plannedGrade || null,
   };
 }
 
@@ -373,7 +375,7 @@ export default function ClassManagePage() {
         if (showLoader) setLoadingPool(true);
 
         const [poolPayload, classesPayload] = await Promise.all([
-          fetchAuthedJson(`${CLASS_SERVICE_URL}/classes/unassigned-students/${academicYearId}?limit=200`),
+          fetchAuthedJson(`${CLASS_SERVICE_URL}/classes/unassigned-students/${academicYearId}?limit=200&targetClassId=${encodeURIComponent(classId)}`),
           fetchAuthedJson(`${CLASS_SERVICE_URL}/classes/lightweight?academicYearId=${academicYearId}`),
         ]);
 
@@ -1061,6 +1063,7 @@ export default function ClassManagePage() {
                                 <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${student.gender === 'FEMALE' ? 'bg-fuchsia-50 text-fuchsia-700 ring-1 ring-fuchsia-100 dark:bg-fuchsia-500/10 dark:text-fuchsia-300 dark:ring-fuchsia-500/20' : 'bg-blue-50 text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20'}`}>
                                   {formatGenderLabel(student.gender)}
                                 </span>
+                                {student.plannedGrade && <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">Grade {student.plannedGrade} · promoted</span>}
                               </div>
                               <p className="mt-1 truncate text-xs font-medium text-slate-500 dark:text-gray-400">
                                 {student.khmerName || 'No Khmer name'} · {student.studentId}

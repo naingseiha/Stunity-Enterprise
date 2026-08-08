@@ -27,7 +27,8 @@ interface Progression {
   fromYear: { id: string; name: string };
   toYear: { id: string; name: string };
   fromClass: { name: string; grade: string };
-  toClass: { name: string; grade: string };
+  toClass: { name: string; grade: string } | null;
+  toGrade?: string | null;
   promotionType: string;
   promotionDate: string;
   notes: string | null;
@@ -371,7 +372,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                                 <span className="font-medium">{p.fromClass.name}</span>
                                 <span className="text-gray-400">({p.fromYear.name})</span>
                                 <ChevronRight className="w-4 h-4 text-gray-400" />
-                                <span className="font-medium">{p.toClass.name}</span>
+                                <span className="font-medium">{p.toClass?.name || `Grade ${p.toGrade || '—'} · section pending`}</span>
                                 <span className="text-gray-400">({p.toYear.name})</span>
                               </div>
                               {p.notes && (

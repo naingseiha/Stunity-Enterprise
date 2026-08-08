@@ -1590,7 +1590,7 @@ app.get(
     try {
       const { academicYearId } = req.params;
       const schoolId = req.user!.schoolId;
-      const { search, limit = "100", page = "1" } = req.query as any;
+      const { search, limit = "100", page = "1", targetClassId } = req.query as any;
 
       // Multi-tenant: ensure academic year belongs to this school
       const academicYear = await prisma.academicYear.findFirst({
@@ -1602,6 +1602,13 @@ app.get(
           success: false,
           message: "Academic year not found or access denied",
         });
+      }
+
+      const targetClass = targetClassId
+        ? await prisma.class.findFirst({ where: { id: String(targetClassId), academicYearId, schoolId }, select: { id: true, grade: true } })
+        : null;
+      if (targetClassId && !targetClass) {
+        return res.status(404).json({ success: false, message: "Target class not found in this academic year" });
       }
 
       console.log(
@@ -1624,6 +1631,16 @@ app.get(
       const assignedStudentIds = [
         ...new Set(assignedStudentClasses.map((sc) => sc.studentId)),
       ];
+      const plannedProgressions = await prisma.studentProgression.findMany({
+        where: { toAcademicYearId: academicYearId, student: { schoolId } },
+        select: { studentId: true, toGrade: true },
+      });
+      const plannedGradeByStudent = new Map(plannedProgressions.map((row) => [row.studentId, row.toGrade]));
+      const wrongGradeStudentIds = targetClass
+        ? plannedProgressions
+            .filter((row) => row.toGrade && String(row.toGrade).replace(/\D/g, "") !== String(targetClass.grade).replace(/\D/g, ""))
+            .map((row) => row.studentId)
+        : [];
 
       // Build where clause for unassigned students
       const where: any = {
@@ -1631,8 +1648,9 @@ app.get(
         recordStatus: "ACTIVE",
       };
 
-      if (assignedStudentIds.length > 0) {
-        where.id = { notIn: assignedStudentIds };
+      const excludedStudentIds = [...new Set([...assignedStudentIds, ...wrongGradeStudentIds])];
+      if (excludedStudentIds.length > 0) {
+        where.id = { notIn: excludedStudentIds };
       }
 
       if (search) {
@@ -1671,7 +1689,7 @@ app.get(
       res.json({
         success: true,
         data: {
-          students,
+          students: students.map((student) => ({ ...student, plannedGrade: plannedGradeByStudent.get(student.id) || null })),
           pagination: {
             total,
             page: pageNum,
@@ -2534,6 +2552,14 @@ app.post(
         });
       }
 
+      const plannedProgression = await prisma.studentProgression.findFirst({
+        where: { studentId, toAcademicYearId: classData.academicYearId },
+        select: { id: true, toGrade: true },
+      });
+      if (plannedProgression?.toGrade && String(plannedProgression.toGrade).replace(/\D/g, "") !== String(classData.grade).replace(/\D/g, "")) {
+        return res.status(409).json({ success: false, message: `Student is approved for grade ${plannedProgression.toGrade}, not grade ${classData.grade}`, code: "PROMOTION_GRADE_MISMATCH" });
+      }
+
       // Check if student is already in this class
       const existingAssignment = await prisma.studentClass.findFirst({
         where: {
@@ -2606,6 +2632,9 @@ app.post(
         where: { id: studentId },
         data: { classId: id },
       });
+      if (plannedProgression) {
+        await prisma.studentProgression.update({ where: { id: plannedProgression.id }, data: { toClassId: id } });
+      }
 
       console.log(
         `✅ [School ${schoolId}] Assigned student ${student.firstName} ${student.lastName} to class ${classData.name}`,
@@ -2690,6 +2719,24 @@ app.post(
         });
       }
 
+      const plannedProgressions = yearId
+        ? await prisma.studentProgression.findMany({
+            where: { studentId: { in: studentIds }, toAcademicYearId: yearId },
+            select: { id: true, studentId: true, toGrade: true },
+          })
+        : [];
+      const gradeMismatches = plannedProgressions.filter(
+        (row) => row.toGrade && String(row.toGrade).replace(/\D/g, "") !== String(classData.grade).replace(/\D/g, ""),
+      );
+      if (gradeMismatches.length) {
+        return res.status(409).json({
+          success: false,
+          message: "One or more students were approved for a different grade level",
+          code: "PROMOTION_GRADE_MISMATCH",
+          studentIds: gradeMismatches.map((row) => row.studentId),
+        });
+      }
+
       // Check for existing assignments in THIS class (single query)
       const existingInThisClass = await prisma.studentClass.findMany({
         where: {
@@ -2764,6 +2811,13 @@ app.post(
         where: { id: { in: newStudentIds } },
         data: { classId: id },
       });
+      const placedProgressions = plannedProgressions.filter((row) => newStudentIds.includes(row.studentId));
+      if (placedProgressions.length) {
+        await prisma.studentProgression.updateMany({
+          where: { id: { in: placedProgressions.map((row) => row.id) } },
+          data: { toClassId: id },
+        });
+      }
 
       console.log(
         `✅ [School ${schoolId}] Batch assigned ${result.count} students in one transaction!`,
