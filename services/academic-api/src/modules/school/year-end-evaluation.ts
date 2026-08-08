@@ -214,6 +214,16 @@ export interface RecommendationInput {
   isTerminalGrade: boolean;
 }
 
+export function canAcceptSystemRecommendation(decision: {
+  finalOutcome: YearEndOutcome;
+  recommendedOutcome: YearEndOutcome;
+  targetClassId: string | null;
+}): boolean {
+  if (decision.finalOutcome !== 'PENDING') return false;
+  if (decision.recommendedOutcome === 'GRADUATE') return true;
+  return decision.recommendedOutcome === 'PROMOTE' && Boolean(decision.targetClassId);
+}
+
 export function recommendYearEndOutcome(
   input: RecommendationInput,
   policy: PromotionPolicyValues,

@@ -4,6 +4,7 @@ import {
   DEFAULT_PROMOTION_POLICY,
   averagePercent,
   calculateAnnualAcademicResult,
+  canAcceptSystemRecommendation,
   duplicateIds,
   gradePercentage,
   normalizePromotionPolicy,
@@ -51,6 +52,14 @@ test('does not invent an annual result when a semester is missing', () => {
   assert.equal(result.annualAverage, null);
   assert.equal(result.isComplete, false);
   assert.deepEqual(result.flags, ['SEMESTER_2_RESULT_MISSING']);
+});
+
+test('accepts only clear pending system recommendations', () => {
+  assert.equal(canAcceptSystemRecommendation({ finalOutcome: 'PENDING', recommendedOutcome: 'PROMOTE', targetClassId: 'next-class' }), true);
+  assert.equal(canAcceptSystemRecommendation({ finalOutcome: 'PENDING', recommendedOutcome: 'GRADUATE', targetClassId: null }), true);
+  assert.equal(canAcceptSystemRecommendation({ finalOutcome: 'PENDING', recommendedOutcome: 'PROMOTE', targetClassId: null }), false);
+  assert.equal(canAcceptSystemRecommendation({ finalOutcome: 'PENDING', recommendedOutcome: 'PENDING', targetClassId: 'next-class' }), false);
+  assert.equal(canAcceptSystemRecommendation({ finalOutcome: 'PROMOTE', recommendedOutcome: 'PROMOTE', targetClassId: 'next-class' }), false);
 });
 
 test('recommends promotion only when policy requirements pass', () => {

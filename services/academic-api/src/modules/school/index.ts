@@ -43,6 +43,7 @@ import {
 import {
   DEFAULT_PROMOTION_POLICY,
   calculateAnnualAcademicResult,
+  canAcceptSystemRecommendation,
   duplicateIds,
   normalizePromotionPolicy,
   parseGradeNumber,
@@ -3705,14 +3706,9 @@ app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/accept-recomm
         throw new YearEndWorkflowError(409, 'System recommendations can only be accepted while the register is a draft');
       }
 
-      const promotable = cycle.decisions.filter((decision) =>
-        decision.finalOutcome === 'PENDING'
-          && decision.recommendedOutcome === 'PROMOTE'
-          && Boolean(decision.targetClassId),
-      );
-      const graduating = cycle.decisions.filter((decision) =>
-        decision.finalOutcome === 'PENDING' && decision.recommendedOutcome === 'GRADUATE',
-      );
+      const acceptable = cycle.decisions.filter(canAcceptSystemRecommendation);
+      const promotable = acceptable.filter((decision) => decision.recommendedOutcome === 'PROMOTE');
+      const graduating = acceptable.filter((decision) => decision.recommendedOutcome === 'GRADUATE');
       const confirmedAt = new Date();
 
       if (promotable.length) {
