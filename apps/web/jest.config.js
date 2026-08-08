@@ -8,6 +8,9 @@ module.exports = {
   transform: {
     ...tsJestTransformCfg,
   },
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
   // Only run our hand-written unit tests, not anything under .next/node_modules.
   testMatch: ['<rootDir>/src/**/*.test.ts'],
 };

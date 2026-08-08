@@ -22,7 +22,10 @@ describe('TokenManager rotating-session support', () => {
   }
 
   beforeAll(() => {
-    Object.defineProperty(global, 'window', { value: {}, configurable: true });
+    Object.defineProperty(global, 'window', {
+      value: { dispatchEvent: jest.fn(() => true) },
+      configurable: true,
+    });
     Object.defineProperty(global, 'navigator', {
       value: { userAgent: 'jest-user-agent' },
       configurable: true,
