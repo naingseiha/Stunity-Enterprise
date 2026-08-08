@@ -30,9 +30,10 @@ RUN npm install --ignore-scripts
 COPY packages/database/prisma ./prisma/
 RUN npx prisma@5.22.0 generate --schema=./prisma/schema.prisma
 
-# Copy source and build
+# Copy source and shared libs, then build
 COPY services/ai-service/tsconfig.json ./
 COPY services/ai-service/src/ ./src/
+COPY services/lib/ /lib/
 RUN npm run build
 
 # Stage 2: Production runtime
@@ -59,13 +60,16 @@ RUN npm install --omit=dev --ignore-scripts
 COPY --from=builder /app/prisma ./prisma/
 RUN npx prisma@5.22.0 generate --schema=./prisma/schema.prisma
 
-# Copy compiled JavaScript
+# Shared auth helpers + compiled app
+COPY services/lib/ /lib/
 COPY --from=builder /app/dist ./dist/
 
 # Set environment
 ENV NODE_ENV=production
 # Cloud Run sets PORT=8080 by default — our app reads process.env.PORT
 ENV PORT=8080
+# Shared helpers live at /lib (outside /app).
+ENV NODE_PATH=/app/node_modules
 
 # Cloud Run ignores HEALTHCHECK but useful for local Docker testing
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
