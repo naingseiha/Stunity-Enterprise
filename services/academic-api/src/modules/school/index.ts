@@ -51,7 +51,10 @@ import {
   recommendYearEndOutcome,
 } from './year-end-evaluation';
 import { buildKhmMoeysMonthlyReport } from '../grade/reports/monthly/build-khm-moeys-monthly-report';
-import { monthsClosedByCalendarEvents } from '../grade/reports/monthly/resolve-semester-months';
+import {
+  monthsBetweenInclusive,
+  monthsClosedByCalendarEvents,
+} from '../grade/reports/monthly/resolve-semester-months';
 
 // Load environment variables from root .env in local dev, and keep process env for deployed runtimes
 
@@ -5569,6 +5572,19 @@ app.get('/schools/:schoolId/academic-years/:yearId/terms', async (req: Request, 
       where: { id: yearId, schoolId },
       select: {
         terms: { orderBy: [{ termNumber: 'asc' }, { startDate: 'asc' }] },
+        calendars: {
+          select: {
+            events: {
+              where: { type: 'VACATION' },
+              select: {
+                type: true,
+                isSchoolDay: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -5576,7 +5592,27 @@ app.get('/schools/:schoolId/academic-years/:yearId/terms', async (req: Request, 
       return res.status(404).json({ success: false, error: 'រកមិនឃើញឆ្នាំសិក្សា។' });
     }
 
-    res.json({ success: true, data: year.terms });
+    // Calendar VACATION ranges are a second, user-friendly way to configure
+    // no-exam months. Merge them into the term response so every consumer
+    // (monthly picker, semester engine, year-end workflow) sees one canonical
+    // exclusion plan without requiring the admin to configure April twice.
+    const vacationMonths = monthsClosedByCalendarEvents(
+      year.calendars.flatMap((calendar) => calendar.events),
+    );
+    const terms = year.terms.map((term) => ({
+      ...term,
+      excludedMonths: [
+        ...new Set([...(term.excludedMonths || []), ...vacationMonths]),
+      ]
+        .filter(
+          (month) =>
+            month !== term.examMonth &&
+            monthsBetweenInclusive(term.startDate, term.endDate).includes(month),
+        )
+        .sort((left, right) => left - right),
+    }));
+
+    res.json({ success: true, data: terms });
   } catch (error: any) {
     console.error('Error fetching academic year terms:', error);
     res.status(500).json({ success: false, error: 'មិនអាចទាញយកឆមាសបានទេ។' });

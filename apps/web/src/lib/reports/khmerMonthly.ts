@@ -10,4 +10,6 @@ export {
   getMonthlyReportMonthsForGrades,
   getExamMonthsForGrade,
   getMonthsBetweenDates,
+  resolveReportTermPlan,
 } from './templates/khm-moeys/dynamic-months';
+export type { ReportTermPlan } from './templates/khm-moeys/dynamic-months';

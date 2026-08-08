@@ -13,6 +13,16 @@ export type AvailableMonthsOptions = {
   includeExamMonths?: boolean;
 };
 
+export type ReportTermPlan = {
+  grade: number;
+  termNumber: number;
+  countedMonths: AvailableMonth[];
+  examMonth: number | null;
+  excludedMonths: number[];
+  startDate?: string;
+  endDate?: string;
+};
+
 /** Get all month numbers between a start and end date */
 export function getMonthsBetweenDates(startDateStr: string, endDateStr: string): number[] {
   const months: number[] = [];
@@ -58,9 +68,14 @@ export function getAvailableMonthsForGrade(
 
   for (const term of sortedTerms) {
     const allMonths = getMonthsBetweenDates(term.startDate, term.endDate);
+    const examIndex = term.examMonth ? allMonths.indexOf(term.examMonth) : -1;
+    const reportMonths =
+      !includeExamMonths && examIndex >= 0
+        ? allMonths.slice(0, examIndex)
+        : allMonths;
 
     // We filter out excludedMonths (holidays / no-exam months such as April).
-    const validMonths = allMonths.filter((m) => !term.excludedMonths?.includes(m));
+    const validMonths = reportMonths.filter((m) => !term.excludedMonths?.includes(m));
 
     for (const m of validMonths) {
       if (addedMonths.has(m)) continue;
@@ -109,9 +124,62 @@ export function getMonthlyReportMonthsForGrades(
   const shared = first.filter((month) =>
     rest.every((list) => list.some((item) => item.number === month.number)),
   );
-  // Mixed grade tracks (e.g. 7–11 vs 9–12) can have no shared months —
-  // fall back to the first selected grade so the picker is never blank.
-  return shared.length > 0 ? shared : first;
+  // A mixed batch must never silently borrow the first grade's month plan.
+  // An empty intersection tells the UI to split the batch or ask for one group.
+  return shared;
+}
+
+/**
+ * Resolve the exact calculation window for one grade and semester. Months
+ * after the configured exam are intentionally excluded from the average.
+ */
+export function resolveReportTermPlan(
+  terms: AcademicTerm[],
+  gradeInput: string | number,
+  termNumber: number,
+): ReportTermPlan {
+  const grade = Number(String(gradeInput).replace(/[^0-9]/g, '')) || 0;
+  const applicable = terms.filter(
+    (term) => !term.gradeLevels?.length || term.gradeLevels.includes(grade),
+  );
+  const term = applicable.find((candidate) => candidate.termNumber === termNumber);
+
+  if (!term) {
+    return {
+      grade,
+      termNumber,
+      countedMonths: [],
+      examMonth: null,
+      excludedMonths: [],
+    };
+  }
+
+  const excludedMonths = [...new Set(term.excludedMonths || [])].sort((a, b) => a - b);
+  const allMonths = getMonthsBetweenDates(term.startDate, term.endDate);
+  const configuredExam = Number(term.examMonth);
+  const examMonth = allMonths.includes(configuredExam)
+    ? configuredExam
+    : allMonths.at(-1) || null;
+  const examIndex = examMonth == null ? -1 : allMonths.indexOf(examMonth);
+  const preExamMonths = examIndex >= 0 ? allMonths.slice(0, examIndex) : allMonths;
+  const countedMonths = preExamMonths
+    .filter((month) => !excludedMonths.includes(month))
+    .map((month) => ({
+      number: month,
+      label: getKhmerMonthLabel(month),
+      isExamMonth: false,
+      termNumber: term.termNumber,
+    }));
+
+  return {
+    grade,
+    termNumber: term.termNumber,
+    countedMonths,
+    examMonth,
+    excludedMonths: excludedMonths.filter((month) => month !== examMonth),
+    startDate: term.startDate,
+    endDate: term.endDate,
+  };
 }
 
 /** Exam months configured for a grade from AcademicTerm settings. */

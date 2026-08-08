@@ -77,7 +77,9 @@ export function buildCambodiaAcademicTerms(startDate: string, endDate: string): 
   const safeEnd = Number.isNaN(end.getTime()) ? atMonth(startYear, 8, 31) : end;
   const standardSemesterOneEnd = earlierDate(atMonth(startYear, 3, 31), safeEnd);
   const examSemesterOneEnd = earlierDate(atMonth(startYear, 3, 0), safeEnd);
-  const standardSemesterTwoStart = atMonth(startYear, 5, 1);
+  // Semester 2 starts in March. April stays inside the term but is explicitly
+  // marked as vacation, so reports count March, May and June before July exam.
+  const standardSemesterTwoStart = atMonth(startYear, 3, 1);
   const examSemesterTwoStart = atMonth(startYear, 3, 1);
 
   return [

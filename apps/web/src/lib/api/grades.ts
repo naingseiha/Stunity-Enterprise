@@ -133,6 +133,7 @@ export interface MonthlyReportAnnual {
   annualAverage: number;
   annualRank: number;
   annualGrade: string;
+  isComplete?: boolean;
 }
 
 export type MonthlyReportFormat =
@@ -164,6 +165,10 @@ export interface KhmerMonthlyReportStudent {
   rank: number;
   absent: number;
   permission: number;
+  /** Missing required subject/month scores stay incomplete instead of becoming 0/F. */
+  isComplete?: boolean;
+  enteredSubjectCount?: number;
+  expectedSubjectCount?: number;
   /** Present for semester / semester-exam / tracking formats */
   semesterOne?: MonthlyReportSemesterOne;
   /** Present when API `format` is `annual` */
@@ -212,6 +217,10 @@ export interface KhmerMonthlyReportData {
   statistics: {
     totalStudents: number;
     femaleStudents: number;
+    completeStudents?: number;
+    completeFemaleStudents?: number;
+    incompleteStudents?: number;
+    incompleteFemaleStudents?: number;
     passedStudents: number;
     passedFemaleStudents: number;
     failedStudents: number;

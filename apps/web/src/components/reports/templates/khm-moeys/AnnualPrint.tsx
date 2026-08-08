@@ -174,19 +174,20 @@ export default function AnnualPrint({
                         index +
                         1;
                   const annual = student.annual!;
+                  const complete = annual.isComplete ?? student.isComplete !== false;
                   return (
                     <tr key={student.studentId}>
                       <td>{globalIndex}</td>
                       <td className="name">{student.studentName}</td>
                       {isGradeWide && settings.showClassName ? <td>{student.className}</td> : null}
-                      <td>{annual.semester1Average.toFixed(2)}</td>
-                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{annual.semester1Rank}</td>
-                      <td>{annual.semester2Average.toFixed(2)}</td>
-                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{annual.semester2Rank}</td>
-                      <td>{annual.annualAverage.toFixed(2)}</td>
-                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{annual.annualRank}</td>
+                      <td>{complete ? annual.semester1Average.toFixed(2) : '—'}</td>
+                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{complete && annual.semester1Rank > 0 ? annual.semester1Rank : '—'}</td>
+                      <td>{complete ? annual.semester2Average.toFixed(2) : '—'}</td>
+                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{complete && annual.semester2Rank > 0 ? annual.semester2Rank : '—'}</td>
+                      <td>{complete ? annual.annualAverage.toFixed(2) : '—'}</td>
+                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{complete && annual.annualRank > 0 ? annual.annualRank : '—'}</td>
                       <td>
-                        <strong>{annual.annualGrade}</strong>
+                        <strong>{complete ? annual.annualGrade : 'មិនទាន់គ្រប់'}</strong>
                       </td>
                     </tr>
                   );

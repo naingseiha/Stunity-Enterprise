@@ -23,7 +23,14 @@ export default function MonthlyReportPrint(props: MonthlySummaryPrintProps & { s
   const format: MonthlyReportFormat = report.format ?? 'summary';
 
   if (activeTab === 'transcript') {
-    return <TranscriptPrint report={report} settings={props.settings} schoolProfile={schoolProfile} />;
+    return (
+      <TranscriptPrint
+        report={report}
+        settings={props.settings}
+        schoolProfile={schoolProfile}
+        showDraftNotice={report.students.some((student) => student.isComplete === false)}
+      />
+    );
   }
 
   if (activeTab === 'honor') {

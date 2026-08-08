@@ -11,6 +11,7 @@ import {
   Award,
   CalendarRange,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Eye,
@@ -50,7 +51,9 @@ import {
   sortSubjectsByOrder,
   getAvailableMonthsForGrade,
   getMonthlyReportMonthsForGrades,
+  resolveReportTermPlan,
 } from '@/lib/reports/khmerMonthly';
+import { buildTermCompatibilityGroups } from '@/lib/reports/templates/khm-moeys/term-compatibility';
 import {
   resolveMonthlyReportFormat,
   type AcademicResultReportKind,
@@ -142,6 +145,7 @@ export default function KhmerMonthlyReportPage() {
   const [selectedYear, setSelectedYear] = useState(contextSelectedYear?.id || '');
   const [scope, setScope] = useState<ReportScope>('class');
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
+  const [selectedCompatibilityKey, setSelectedCompatibilityKey] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedMonthNumber, setSelectedMonthNumber] = useState(2);
   const initialKind =
@@ -152,6 +156,8 @@ export default function KhmerMonthlyReportPage() {
   const [activeTab, setActiveTab] = useState<'monthly' | 'transcript' | 'certificate'>('monthly');
   const [hiddenSubjects, setHiddenSubjects] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [generatedSignature, setGeneratedSignature] = useState('');
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
   const selectedYearDataForTerms =
     allYears.find((year) => year.id === selectedYear) || contextSelectedYear;
@@ -393,6 +399,41 @@ export default function KhmerMonthlyReportPage() {
     );
   }, [classes]);
 
+  const compatibilityGroups = useMemo(
+    () => buildTermCompatibilityGroups(activeTerms, grades),
+    [activeTerms, grades],
+  );
+  const selectedCompatibilityGroup =
+    compatibilityGroups.find((group) => group.key === selectedCompatibilityKey) ||
+    compatibilityGroups[0];
+  const compatibleClasses = useMemo(() => {
+    const allowedGrades = new Set(selectedCompatibilityGroup?.grades || []);
+    return classes.filter((classItem) => allowedGrades.has(String(classItem.grade)));
+  }, [classes, selectedCompatibilityGroup?.grades]);
+  const compatibleClassesByGrade = useMemo(() => {
+    return (selectedCompatibilityGroup?.grades || []).map((grade) => ({
+      grade,
+      classes: compatibleClasses
+        .filter((classItem) => String(classItem.grade) === grade)
+        .sort((left, right) => left.name.localeCompare(right.name, 'km', { numeric: true })),
+    }));
+  }, [compatibleClasses, selectedCompatibilityGroup?.grades]);
+
+  useEffect(() => {
+    if (compatibilityGroups.length === 0) {
+      if (selectedCompatibilityKey) setSelectedCompatibilityKey('');
+      return;
+    }
+    if (!compatibilityGroups.some((group) => group.key === selectedCompatibilityKey)) {
+      setSelectedCompatibilityKey(compatibilityGroups[0].key);
+    }
+  }, [compatibilityGroups, selectedCompatibilityKey]);
+
+  useEffect(() => {
+    const allowedIds = new Set(compatibleClasses.map((classItem) => classItem.id));
+    setSelectedClasses((current) => current.filter((id) => allowedIds.has(id)));
+  }, [compatibleClasses]);
+
   const gradesForMonthPicker = useMemo(() => {
     if (scope === 'grade') {
       // Single grade only — intersecting every school grade empties the month list
@@ -405,8 +446,9 @@ export default function KhmerMonthlyReportPage() {
       .map((grade) => (grade == null ? '' : String(grade)))
       .filter(Boolean);
     if (fromSelected.length > 0) return [...new Set(fromSelected)];
+    if (selectedCompatibilityGroup?.grades.length) return selectedCompatibilityGroup.grades;
     return grades[0] ? [grades[0]] : [];
-  }, [scope, selectedGrade, selectedClasses, classes, grades]);
+  }, [scope, selectedGrade, selectedClasses, classes, grades, selectedCompatibilityGroup?.grades]);
 
   /** All term months (includes exam months) — used for semester/tracking context. */
   const termMonths = useMemo(() => {
@@ -428,35 +470,65 @@ export default function KhmerMonthlyReportPage() {
     ? monthlyMonths
     : termMonths;
 
-  /** Insight chips: which months are counted / excluded for the current selection. */
-  const periodInsight = useMemo(() => {
-    const gradeNum =
-      Number(String(gradesForMonthPicker[0] || selectedGrade || '7').replace(/[^0-9]/g, '')) || 7;
-    const applicable = activeTerms.filter(
-      (term) =>
-        !term.gradeLevels?.length || term.gradeLevels.includes(gradeNum),
+  /** Exact term plans for every selected grade; mixed groups stay visibly separate. */
+  const insightTermNumber =
+    reportKind === 'monthly' && monthlyOutput !== 'tracking'
+      ? monthlyMonths.find((month) => month.number === selectedMonthNumber)?.termNumber || selectedSemester
+      : selectedSemester;
+  const periodPlans = useMemo(() => {
+    const gradeHints = gradesForMonthPicker.length
+      ? gradesForMonthPicker
+      : selectedGrade
+        ? [selectedGrade]
+        : [];
+    const termNumbers = reportKind === 'annual' ? [1, 2] : [insightTermNumber];
+    return [...new Set(gradeHints.map(String))].flatMap((grade) =>
+      termNumbers.map((termNumber) => resolveReportTermPlan(activeTerms, grade, termNumber)),
     );
-    const term =
-      applicable.find((item) => item.termNumber === selectedSemester) ||
-      applicable[0];
-    const excluded = new Set<number>(term?.excludedMonths || []);
-    const examMonth = term?.examMonth ?? null;
-    const counted = termMonths
-      .filter((month) => month.termNumber === (term?.termNumber || selectedSemester))
-      .filter((month) => !month.isExamMonth && !excluded.has(month.number));
-    return {
-      counted,
-      excluded: [...excluded].sort((a, b) => a - b),
-      examMonth,
-      termNumber: term?.termNumber || selectedSemester,
-    };
-  }, [
-    activeTerms,
-    gradesForMonthPicker,
-    selectedGrade,
-    selectedSemester,
-    termMonths,
-  ]);
+  }, [activeTerms, gradesForMonthPicker, selectedGrade, insightTermNumber, reportKind]);
+  const periodPlanGroupCount = Math.max(
+    0,
+    ...[1, 2].map(
+      (termNumber) =>
+        new Set(
+          periodPlans
+            .filter((plan) => plan.termNumber === termNumber)
+            .map((plan) =>
+              JSON.stringify({
+                months: plan.countedMonths.map((month) => month.number),
+                examMonth: plan.examMonth,
+                excludedMonths: plan.excludedMonths,
+              }),
+            ),
+        ).size,
+    ),
+  );
+  const hasMixedTermPlans = periodPlanGroupCount > 1;
+  const displayedPeriodPlans = useMemo(() => {
+    const grouped = new Map<
+      string,
+      { grades: number[]; plan: (typeof periodPlans)[number] }
+    >();
+    periodPlans.forEach((plan) => {
+      const key = JSON.stringify({
+        termNumber: plan.termNumber,
+        months: plan.countedMonths.map((month) => month.number),
+        examMonth: plan.examMonth,
+        excludedMonths: plan.excludedMonths,
+      });
+      const current = grouped.get(key);
+      if (current) {
+        current.grades.push(plan.grade);
+      } else {
+        grouped.set(key, { grades: [plan.grade], plan });
+      }
+    });
+    return Array.from(grouped.entries()).map(([key, value]) => ({
+      key,
+      grades: value.grades.sort((left, right) => left - right),
+      plan: value.plan,
+    }));
+  }, [periodPlans]);
 
   useEffect(() => {
     if (availableMonths.length > 0 && !availableMonths.some((m) => m.number === selectedMonthNumber)) {
@@ -465,15 +537,12 @@ export default function KhmerMonthlyReportPage() {
   }, [availableMonths, selectedMonthNumber]);
 
   useEffect(() => {
-    if (selectedClasses.length === 0 && classes[0]?.id) setSelectedClasses([classes[0].id]);
     if (!selectedGrade && grades[0]) setSelectedGrade(grades[0]);
-  }, [classes, grades, selectedClasses, selectedGrade]);
+  }, [grades, selectedGrade]);
 
   useEffect(() => {
     const validClasses = selectedClasses.filter(id => classes.some(c => c.id === id));
-    if (selectedClasses.length > 0 && validClasses.length === 0) {
-      setSelectedClasses(classes[0]?.id ? [classes[0].id] : []);
-    } else if (validClasses.length !== selectedClasses.length) {
+    if (validClasses.length !== selectedClasses.length) {
       setSelectedClasses(validClasses);
     }
   }, [classes, selectedClasses]);
@@ -495,20 +564,14 @@ export default function KhmerMonthlyReportPage() {
 
   useEffect(() => {
     if (reportKind !== 'semester' && reportKind !== 'semester-exam') return;
-    const gradeNum =
-      Number(String(selectedGrade || '').replace(/[^0-9]/g, '')) || 0;
-    const term =
-      activeTerms.find(
-        (item) =>
-          item.termNumber === selectedSemester &&
-          (!item.gradeLevels?.length || item.gradeLevels.includes(gradeNum)),
-      ) || activeTerms.find((item) => item.termNumber === selectedSemester);
-    if (term?.examMonth) {
-      setSelectedMonthNumber(term.examMonth);
+    const gradeHint = gradesForMonthPicker[0] || selectedGrade || grades[0];
+    const plan = resolveReportTermPlan(activeTerms, gradeHint || '7', selectedSemester);
+    if (plan.examMonth) {
+      setSelectedMonthNumber(plan.examMonth);
       return;
     }
     setSelectedMonthNumber(selectedSemester === 1 ? 2 : 7);
-  }, [reportKind, selectedSemester, activeTerms, selectedGrade]);
+  }, [reportKind, selectedSemester, activeTerms, selectedGrade, gradesForMonthPicker, grades]);
 
   useEffect(() => {
     setHiddenSubjects(new Set());
@@ -533,36 +596,17 @@ export default function KhmerMonthlyReportPage() {
   const selectedMonthLabel = getKhmerMonthLabel(selectedMonthNumber);
   const selectedMonthDisplay = getKhmerMonthDisplayName(selectedMonthNumber, selectedMonthLabel);
   const academicStartYear = selectedYearData ? Number.parseInt(selectedYearData.name, 10) : new Date().getFullYear();
-  const canGenerate = selectedYear && (scope === 'class' ? selectedClasses.length > 0 : selectedGrade);
+  const hasValidMonthlyWindow =
+    reportKind !== 'monthly' || monthlyOutput === 'tracking' || monthlyMonths.length > 0;
+  const canGenerate = Boolean(
+    selectedYear &&
+      hasValidMonthlyWindow &&
+      (scope === 'class' ? selectedClasses.length > 0 : selectedGrade),
+  );
   const educationModelLabel = formatEducationModelLabel(school?.educationModel || 'KHM_MOEYS');
 
   const templateQuery =
     school?.educationModel === 'CUSTOM' ? 'KHM_MOEYS' : undefined;
-
-  const groupedClasses = useMemo(() => {
-    const groups: { [grade: string]: typeof classes } = {};
-    classes.forEach((classItem) => {
-      const g = classItem.grade || 'Other';
-      if (!groups[g]) groups[g] = [];
-      groups[g].push(classItem);
-    });
-
-    Object.keys(groups).forEach((g) => {
-      groups[g].sort((a, b) => a.name.localeCompare(b.name, 'km', { numeric: true }));
-    });
-
-    return Object.keys(groups)
-      .sort((a, b) => {
-        const numA = parseInt(a.replace(/\D/g, ''), 10);
-        const numB = parseInt(b.replace(/\D/g, ''), 10);
-        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-        return a.localeCompare(b);
-      })
-      .map((g) => ({
-        grade: g,
-        classItems: groups[g],
-      }));
-  }, [classes]);
 
   const sortedSubjects = useMemo(() => {
     if (!reports.length) return [];
@@ -611,6 +655,49 @@ export default function KhmerMonthlyReportPage() {
     [sortedStudents, tablePage]
   );
 
+  const filterSignature = useMemo(
+    () =>
+      JSON.stringify({
+        selectedYear,
+        scope,
+        selectedClasses: [...selectedClasses].sort(),
+        selectedGrade,
+        selectedMonthNumber,
+        reportKind,
+        monthlyOutput,
+        selectedSemester,
+      }),
+    [
+      selectedYear,
+      scope,
+      selectedClasses,
+      selectedGrade,
+      selectedMonthNumber,
+      reportKind,
+      monthlyOutput,
+      selectedSemester,
+    ],
+  );
+  const isReportDirty = reports.length > 0 && generatedSignature !== filterSignature;
+  const reportReadiness = useMemo(() => {
+    return reports.reduce(
+      (summary, report) => {
+        const incomplete =
+          report.statistics.incompleteStudents ??
+          report.students.filter((student) => student.isComplete === false).length;
+        summary.total += report.statistics.totalStudents;
+        summary.incomplete += incomplete;
+        summary.complete +=
+          report.statistics.completeStudents ?? report.statistics.totalStudents - incomplete;
+        return summary;
+      },
+      { total: 0, complete: 0, incomplete: 0 },
+    );
+  }, [reports]);
+  const canPrintOfficial =
+    reports.length > 0 && !isReportDirty && reportReadiness.incomplete === 0;
+  const canPrintCurrent = reports.length > 0 && !isReportDirty;
+
   const handleGenerate = async (forceFresh = false) => {
     if (!canGenerate) return;
 
@@ -623,13 +710,25 @@ export default function KhmerMonthlyReportPage() {
         // Execute sequentially to prevent database connection pool exhaustion (checkout timeout)
         for (const classId of selectedClasses) {
           const classData = classes.find((c) => c.id === classId);
+          const classPlan = resolveReportTermPlan(
+            activeTerms,
+            classData?.grade || selectedGrade || '7',
+            selectedSemester,
+          );
+          const classMonthNumber =
+            reportKind === 'semester' ||
+            reportKind === 'semester-exam' ||
+            reportKind === 'annual' ||
+            (reportKind === 'monthly' && monthlyOutput === 'tracking')
+              ? classPlan.examMonth || selectedMonthNumber
+              : selectedMonthNumber;
           try {
             const report = await gradeAPI.getMonthlyReport({
               scope,
               classId,
               grade: classData?.grade,
-              month: selectedMonthLabel,
-              monthNumber: selectedMonthNumber,
+              month: getKhmerMonthLabel(classMonthNumber),
+              monthNumber: classMonthNumber,
               year: Number.isFinite(academicStartYear) ? academicStartYear : undefined,
               academicYearId: selectedYear,
               format: reportFormat,
@@ -650,13 +749,26 @@ export default function KhmerMonthlyReportPage() {
         }
 
         setReports(results);
+        setGeneratedSignature(filterSignature);
       } else {
+        const gradePlan = resolveReportTermPlan(
+          activeTerms,
+          selectedGrade || '7',
+          selectedSemester,
+        );
+        const gradeMonthNumber =
+          reportKind === 'semester' ||
+          reportKind === 'semester-exam' ||
+          reportKind === 'annual' ||
+          (reportKind === 'monthly' && monthlyOutput === 'tracking')
+            ? gradePlan.examMonth || selectedMonthNumber
+            : selectedMonthNumber;
         const data = await gradeAPI.getMonthlyReport({
           scope,
           classId: undefined,
           grade: selectedGrade,
-          month: selectedMonthLabel,
-          monthNumber: selectedMonthNumber,
+          month: getKhmerMonthLabel(gradeMonthNumber),
+          monthNumber: gradeMonthNumber,
           year: Number.isFinite(academicStartYear) ? academicStartYear : undefined,
           academicYearId: selectedYear,
           format: reportFormat,
@@ -664,6 +776,7 @@ export default function KhmerMonthlyReportPage() {
           options: { forceFresh },
         });
         setReports(data ? [data] : []);
+        setGeneratedSignature(filterSignature);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to generate report');
@@ -889,20 +1002,24 @@ export default function KhmerMonthlyReportPage() {
   }
 
   const semesterMonthLabels = ['វិច្ឆិកា', 'ធ្នូ', 'មករា', 'កុម្ភៈ'];
+  const visibleReports = isReportDirty ? [] : reports;
+  const visibleStatistics = visibleReports[0]?.statistics;
 
   const metricCards = [
     {
       label: t('students'),
-      value: reports[0]?.statistics.totalStudents ?? '—',
-      note: reports.length > 0 ? t('metricFemale', { count: reports[0].statistics.femaleStudents }) : t('metricGenerate'),
+      value: visibleStatistics?.totalStudents ?? '—',
+      note: visibleStatistics ? t('metricFemale', { count: visibleStatistics.femaleStudents }) : t('metricGenerate'),
       Icon: Users,
       accent: 'border-blue-100 bg-blue-50/70 text-blue-700',
       iconTone: 'bg-blue-100 text-blue-700',
     },
     {
       label: t('passed'),
-      value: reports[0]?.statistics.passedStudents ?? '—',
-      note: reports.length > 0 ? `${t('failed')}: ${reports[0].statistics.failedStudents}` : t('metricPassNote'),
+      value: visibleStatistics?.passedStudents ?? '—',
+      note: visibleStatistics
+        ? `${t('failed')}: ${visibleStatistics.failedStudents} · មិនទាន់គ្រប់: ${visibleStatistics.incompleteStudents ?? 0}`
+        : t('metricPassNote'),
       Icon: CheckCircle2,
       accent: 'border-emerald-100 bg-emerald-50/70 text-emerald-700',
       iconTone: 'bg-emerald-100 text-emerald-700',
@@ -1394,7 +1511,7 @@ export default function KhmerMonthlyReportPage() {
                       </div>
                       <div className="min-w-0 flex-1 leading-none">
                         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                          {t('eyebrow')}
+                          {activeTab === 'monthly' ? `របាយការណ៍${formatLabelMap[reportKind]}` : t('eyebrow')}
                         </h1>
                       </div>
                     </div>
@@ -1440,7 +1557,7 @@ export default function KhmerMonthlyReportPage() {
                       }`}
                     >
                       <FileText className="h-4 w-4" />
-                      <span>{t('formatMonthly')} (របាយការណ៍ប្រចាំខែ)</span>
+                      <span>លទ្ធផលសិក្សា (ប្រចាំខែ · ឆមាស · ប្រចាំឆ្នាំ)</span>
                       {activeTab === 'monthly' && (
                         <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-full" />
                       )}
@@ -1519,7 +1636,9 @@ export default function KhmerMonthlyReportPage() {
                                       {formatLabelMap[id]}
                                     </span>
                                     <span className="mt-0.5 block text-[11px] leading-snug text-slate-500 line-clamp-2">
-                                      {t(descKey)}
+                                      {id === 'semester'
+                                        ? 'លទ្ធផលឆមាស = (មធ្យមខែមុនប្រឡង + ប្រឡងឆមាស) / 2។ ខែ និងខែប្រឡងទាញពី Academic Term សម្រាប់កម្រិតថ្នាក់នីមួយៗ។'
+                                        : t(descKey)}
                                     </span>
                                   </span>
                                 </div>
@@ -1683,100 +1802,150 @@ export default function KhmerMonthlyReportPage() {
                         reportKind === 'monthly' ||
                         reportKind === 'annual') && (
                         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                            {t('step3Period')} · {t('smartBreakHint')}
-                          </p>
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {periodInsight.counted.map((month) => (
-                              <span
-                                key={`c-${month.number}`}
-                                className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800"
-                              >
-                                {t('periodCounted')}: {month.label}
-                              </span>
-                            ))}
-                            {periodInsight.examMonth ? (
-                              <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-800">
-                                {t('periodExam')}: {getKhmerMonthLabel(periodInsight.examMonth)}
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                              {t('step3Period')} · {t('smartBreakHint')}
+                            </p>
+                            {hasMixedTermPlans ? (
+                              <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-bold text-violet-700">
+                                ក្រុមកាលវិភាគ {periodPlanGroupCount} · បង្កើតដាច់ដោយឡែកស្វ័យប្រវត្តិ
                               </span>
                             ) : null}
-                            {periodInsight.excluded.map((monthNumber) => (
-                              <span
-                                key={`x-${monthNumber}`}
-                                className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800"
-                              >
-                                {t('periodExcluded')}: {getKhmerMonthLabel(monthNumber)}
-                              </span>
+                          </div>
+                          <div className="mt-2 space-y-2">
+                            {displayedPeriodPlans.map(({ key, grades: planGrades, plan }) => (
+                              <div key={key} className="flex flex-wrap items-center gap-1.5">
+                                {displayedPeriodPlans.length > 1 || planGrades.length > 1 ? (
+                                  <span className="mr-1 text-[11px] font-bold text-slate-700">
+                                    ថ្នាក់ទី {planGrades.join(', ')} · ឆមាសទី{plan.termNumber}
+                                  </span>
+                                ) : null}
+                                {plan.countedMonths.map((month) => (
+                                  <span
+                                    key={`c-${plan.grade}-${month.number}`}
+                                    className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800"
+                                  >
+                                    {t('periodCounted')}: {month.label}
+                                  </span>
+                                ))}
+                                {plan.examMonth ? (
+                                  <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-800">
+                                    {t('periodExam')}: {getKhmerMonthLabel(plan.examMonth)}
+                                  </span>
+                                ) : null}
+                                {plan.excludedMonths.map((monthNumber) => (
+                                  <span
+                                    key={`x-${plan.grade}-${monthNumber}`}
+                                    className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800"
+                                  >
+                                    {t('periodExcluded')}: {getKhmerMonthLabel(monthNumber)}
+                                  </span>
+                                ))}
+                              </div>
                             ))}
                           </div>
                         </div>
                       )}
 
                       {scope === 'class' && (
-                        <div className="mt-5 block">
-                          <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              {t('class')}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (selectedClasses.length === classes.length) {
-                                  setSelectedClasses([]);
-                                } else {
-                                  setSelectedClasses(classes.map(c => c.id));
-                                }
-                              }}
-                              className="text-xs font-medium text-blue-600 transition hover:text-blue-700 active:scale-95"
-                            >
-                              {selectedClasses.length === classes.length ? t('deselectAll', { fallback: 'Deselect All' }) : t('selectAll', { fallback: 'Select All' })}
-                            </button>
+                        <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                          <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white">
+                                <Users className="h-4 w-4" />
+                              </span>
+                              <div>
+                                <h3 className="text-sm font-black text-slate-900">ជ្រើសថ្នាក់សម្រាប់បង្កើតរបាយការណ៍</h3>
+                                <p className="text-[11px] text-slate-500">ជ្រើសមួយ ឬច្រើនបាន ប៉ុន្តែត្រូវស្ថិតក្នុងក្រុមកាលវិភាគដូចគ្នា។</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700">
+                                បានជ្រើស {selectedClasses.length}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={compatibleClasses.length === 0}
+                                onClick={() => {
+                                  const allSelected = compatibleClasses.every((classItem) => selectedClasses.includes(classItem.id));
+                                  setSelectedClasses(allSelected ? [] : compatibleClasses.map((classItem) => classItem.id));
+                                }}
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-700 disabled:opacity-40"
+                              >
+                                {compatibleClasses.length > 0 && compatibleClasses.every((classItem) => selectedClasses.includes(classItem.id))
+                                  ? 'សម្អាត'
+                                  : 'ជ្រើសទាំងអស់ក្នុងក្រុម'}
+                              </button>
+                            </div>
+                          </header>
+
+                          <div className="border-b border-slate-100 px-4 py-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="mr-1 text-[10px] font-black uppercase tracking-wider text-slate-400">ក្រុមកាលវិភាគ</span>
+                              {compatibilityGroups.map((group, index) => {
+                                const active = group.key === selectedCompatibilityGroup?.key;
+                                return (
+                                  <button
+                                    key={group.key}
+                                    type="button"
+                                    aria-pressed={active}
+                                    onClick={() => {
+                                      if (!active) {
+                                        setSelectedCompatibilityKey(group.key);
+                                        setSelectedClasses([]);
+                                      }
+                                    }}
+                                    className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold transition ${
+                                      active
+                                        ? 'border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-200'
+                                        : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50'
+                                    }`}
+                                  >
+                                    <span className={`flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-black ${active ? 'bg-white/20' : 'bg-slate-100 text-slate-500'}`}>
+                                      {String.fromCharCode(65 + index)}
+                                    </span>
+                                    ថ្នាក់ទី {group.grades.join(', ')}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {selectedCompatibilityGroup ? (
+                              <div className={`mt-2.5 flex items-start gap-2 rounded-lg border px-3 py-2 text-[11px] font-semibold ${
+                                selectedCompatibilityGroup.configured
+                                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                                  : 'border-amber-200 bg-amber-50 text-amber-800'
+                              }`}>
+                                {selectedCompatibilityGroup.configured ? (
+                                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                ) : (
+                                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                )}
+                                <span>
+                                  {selectedCompatibilityGroup.configured
+                                    ? `ថ្នាក់ទី ${selectedCompatibilityGroup.grades.join(', ')} មានថ្ងៃឆមាស ខែប្រឡង និងខែវិស្សមកាលដូចគ្នា ដូច្នេះអាចបង្កើតរួមគ្នាបាន។`
+                                    : 'កម្រិតនេះមិនទាន់មាន Academic Term គ្រប់គ្រាន់ទេ។ ប្រព័ន្ធកំណត់ឱ្យជ្រើសរួមតែក្នុងកម្រិតថ្នាក់ដូចគ្នា។'}
+                                </span>
+                              </div>
+                            ) : null}
                           </div>
+
                           {loadingClasses ? (
                             <div className="flex flex-col items-center justify-center py-8 text-slate-400 gap-2">
                               <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
                               <span className="text-xs font-medium text-slate-500">{t('loading')}</span>
                             </div>
-                          ) : groupedClasses.length === 0 ? (
+                          ) : compatibleClasses.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-8 text-slate-400">
                               <Inbox className="h-8 w-8 stroke-1" />
                               <span className="mt-2 text-xs font-medium">{t('noClassesFound', { fallback: 'No classes found for this year' })}</span>
                             </div>
                           ) : (
-                            <div className="divide-y divide-slate-100">
-                              {groupedClasses.map(({ grade, classItems }) => {
-                                const gradeClassIds = classItems.map(c => c.id);
-                                const allSelected = gradeClassIds.every(id => selectedClasses.includes(id));
-
-                                return (
-                                  <div key={grade} className="flex items-start gap-4 py-3.5 first:pt-1 last:pb-1">
-                                    {/* Aligned Left Grade Indicator */}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        if (allSelected) {
-                                          setSelectedClasses(prev => prev.filter(id => !gradeClassIds.includes(id)));
-                                        } else {
-                                          setSelectedClasses(prev => {
-                                            const filtered = prev.filter(id => !gradeClassIds.includes(id));
-                                            return [...filtered, ...gradeClassIds];
-                                          });
-                                        }
-                                      }}
-                                      className="w-20 shrink-0 text-left transition hover:opacity-80 active:scale-95"
-                                    >
-                                      <span className={`inline-flex items-center justify-center rounded-lg px-2.5 py-1 text-xs font-bold transition duration-150 ${
-                                        allSelected
-                                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-200/50'
-                                          : 'bg-slate-100 text-slate-600'
-                                      }`}>
-                                        ថ្នាក់ទី {grade}
-                                      </span>
-                                    </button>
-      
-                                    {/* Wrapping Class Chips on the Right */}
-                                    <div className="flex flex-wrap gap-2">
-                                      {classItems.map((classItem) => {
+                            <div className="max-h-64 space-y-3 overflow-y-auto p-4">
+                              {compatibleClassesByGrade.map(({ grade, classes: classItems }) => (
+                                <div key={grade} className="grid gap-2 sm:grid-cols-[72px_1fr] sm:items-start">
+                                  <div className="pt-1.5 text-xs font-black text-slate-500">ថ្នាក់ទី {grade}</div>
+                                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                                    {classItems.map((classItem) => {
                                         const isSelected = selectedClasses.includes(classItem.id);
                                         return (
                                           <button
@@ -1789,26 +1958,26 @@ export default function KhmerMonthlyReportPage() {
                                                 setSelectedClasses([...selectedClasses, classItem.id]);
                                               }
                                             }}
-                                            className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 duration-100 ${
+                                            className={`flex min-w-0 items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-bold transition active:scale-[0.99] ${
                                               isSelected 
-                                                ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-200/50 hover:from-blue-700 hover:to-indigo-700' 
-                                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                                                ? 'border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-200'
+                                                : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50'
                                             }`}
                                           >
-                                            <span>{classItem.name}</span>
-                                            <span className={`text-[10px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
-                                              ({classItem._count?.students || 0})
+                                            <span className="truncate">{classItem.name}</span>
+                                            <span className={`inline-flex shrink-0 items-center gap-1 text-[10px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                                              {isSelected ? <Check className="h-3 w-3" /> : null}
+                                              {classItem._count?.students || 0}
                                             </span>
                                           </button>
                                         );
                                       })}
-                                    </div>
                                   </div>
-                                );
-                              })}
+                                </div>
+                              ))}
                             </div>
                           )}
-                        </div>
+                        </section>
                       )}
 
                       {error && (
@@ -1846,11 +2015,12 @@ export default function KhmerMonthlyReportPage() {
                         <button
                           type="button"
                           onClick={() => window.print()}
-                          disabled={reports.length === 0}
+                          disabled={!canPrintCurrent}
+                          title={!canPrintOfficial && canPrintCurrent ? 'បោះពុម្ពជាសេចក្ដីព្រាង ព្រោះពិន្ទុមិនទាន់គ្រប់' : undefined}
                           className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-5 py-2.5 text-sm font-bold text-violet-700 transition hover:bg-violet-100 hover:border-violet-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 duration-100 shadow-sm"
                         >
                           <Printer className="h-4 w-4" />
-                          {t('print')}
+                          {reportReadiness.incomplete > 0 ? 'បោះពុម្ព Draft' : t('print')}
                           <kbd className="ml-1.5 hidden rounded border border-violet-200 bg-violet-100/50 px-1 text-[9px] text-violet-600 sm:inline">⌘P</kbd>
                         </button>
                         <div className="ml-auto flex items-center gap-2 text-xs text-slate-500">
@@ -1859,10 +2029,15 @@ export default function KhmerMonthlyReportPage() {
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
                               {t('loading')}
                             </span>
+                          ) : isReportDirty ? (
+                            <div className="flex items-center gap-2 text-amber-700">
+                              <AlertCircle className="h-3.5 w-3.5" />
+                              តម្រងបានផ្លាស់ប្តូរ · សូមបង្កើតឡើងវិញ
+                            </div>
                           ) : reports.length > 0 ? (
-                            <div className="flex items-center gap-2 text-emerald-600">
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              {reports[0].students.length} {t('students').toLowerCase()}
+                            <div className={`flex items-center gap-2 ${reportReadiness.incomplete > 0 ? 'text-amber-700' : 'text-emerald-600'}`}>
+                              {reportReadiness.incomplete > 0 ? <AlertCircle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                              {reportReadiness.complete}/{reportReadiness.total} គ្រប់ · {reportReadiness.incomplete} មិនទាន់គ្រប់
                             </div>
                           ) : (
                             <span className="inline-flex items-center gap-1.5">
@@ -2629,10 +2804,19 @@ export default function KhmerMonthlyReportPage() {
                       <RotateCcw className="h-3.5 w-3.5" />
                       Restore defaults
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedSettings((current) => !current)}
+                      aria-expanded={showAdvancedSettings}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+                    >
+                      {showAdvancedSettings ? 'បិទការកំណត់' : 'បើកការកំណត់បោះពុម្ព'}
+                      <ChevronDown className={`h-3.5 w-3.5 transition ${showAdvancedSettings ? 'rotate-180' : ''}`} />
+                    </button>
                   </div>
                 </header>
 
-                <div className="space-y-6 p-5">
+                {showAdvancedSettings ? <div className="space-y-6 p-5">
                   {/* Institution & Signatures */}
                   <div>
                     <div className="mb-3 flex items-center gap-2">
@@ -2822,7 +3006,11 @@ export default function KhmerMonthlyReportPage() {
                       </label>
                     </div>
                   )}
-                </div>
+                </div> : (
+                  <div className="px-5 py-3 text-xs text-slate-500">
+                    ប្រើទម្រង់ផ្លូវការ A4 ដែលបានរក្សាទុក។ បើកការកំណត់នៅពេលត្រូវកែហត្ថលេខា ជួរឈរ ឬទំហំអក្សរ។
+                  </div>
+                )}
               </section>
             )}
 
@@ -2867,7 +3055,28 @@ export default function KhmerMonthlyReportPage() {
                   </div>
                 )}
 
-                {reports.length > 0 && !loadingReport && (
+                {isReportDirty && !loadingReport && (
+                  <div className="mx-auto max-w-2xl rounded-3xl border border-amber-200 bg-amber-50 px-6 py-12 text-center">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-amber-200 bg-white text-amber-700">
+                      <AlertCircle className="h-7 w-7" />
+                    </div>
+                    <h3 className="mt-4 text-lg font-semibold text-amber-950">លទ្ធផលចាស់ត្រូវបានលាក់</h3>
+                    <p className="mx-auto mt-2 max-w-md text-sm text-amber-800">
+                      អ្នកបានផ្លាស់ប្តូរឆ្នាំសិក្សា ថ្នាក់ ខែ ឬប្រភេទរបាយការណ៍។ សូមបង្កើតរបាយការណ៍ឡើងវិញ ដើម្បីជៀសវាងបោះពុម្ពទិន្នន័យខុសកាលបរិច្ឆេទ។
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleGenerate(false)}
+                      disabled={!canGenerate}
+                      className="mt-6 inline-flex items-center gap-2 rounded-xl bg-amber-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      បង្កើតឡើងវិញ
+                    </button>
+                  </div>
+                )}
+
+                {reports.length > 0 && !isReportDirty && !loadingReport && (
                   <div className="khmer-report-preview-container mx-auto">
                     {reports.map((rep, idx) => {
                       const repVisibleSubjects = rep.subjects?.filter(
@@ -2876,8 +3085,16 @@ export default function KhmerMonthlyReportPage() {
                       return (
                         <div 
                           key={rep.class?.id || idx} 
+                          className="relative"
                           style={{ pageBreakAfter: idx < reports.length - 1 ? 'always' : 'auto' }}
                         >
+                          {(rep.statistics.incompleteStudents ?? rep.students.filter((student) => student.isComplete === false).length) > 0 ? (
+                            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center overflow-hidden" aria-hidden="true">
+                              <span className="-rotate-45 select-none text-[80px] font-black tracking-[0.2em] text-amber-500/15 print:text-slate-500/15">
+                                DRAFT
+                              </span>
+                            </div>
+                          ) : null}
                           <MonthlyReportPrint 
                             report={rep} 
                             settings={settings} 
@@ -2922,9 +3139,9 @@ export default function KhmerMonthlyReportPage() {
             <button
               type="button"
               onClick={() => window.print()}
-              disabled={reports.length === 0}
+              disabled={!canPrintCurrent}
+              title={reportReadiness.incomplete > 0 ? 'Draft: ពិន្ទុមិនទាន់គ្រប់' : 'Print (⌘P)'}
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              title="Print (⌘P)"
             >
               <Printer className="h-3.5 w-3.5" />
             </button>

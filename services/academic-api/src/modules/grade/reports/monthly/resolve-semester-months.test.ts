@@ -75,3 +75,15 @@ test("calendar VACATION in April auto-excludes April even when excludedMonths is
   assert.deepEqual(plan.preMonths, [3, 5, 6]);
   assert.ok(!plan.preMonths.includes(4));
 });
+
+test("a one-day public holiday does not remove the whole reporting month", () => {
+  const breakMonths = monthsClosedByCalendarEvents([
+    {
+      type: "HOLIDAY",
+      isSchoolDay: false,
+      startDate: "2026-05-01",
+      endDate: "2026-05-01",
+    },
+  ]);
+  assert.deepEqual(breakMonths, []);
+});

@@ -14,7 +14,10 @@ export default function HonorRollPrint({
   schoolProfile?: any;
   topN?: number;
 }) {
-  const ranked = [...report.students].sort((a, b) => a.rank - b.rank).slice(0, topN);
+  const ranked = report.students
+    .filter((student) => student.isComplete !== false && student.rank > 0)
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, topN);
   const pages = paginateKhmerMonthlyReport(ranked, 30, 34);
   const isGradeWide = report.scope === 'grade';
   const classLabel = isGradeWide

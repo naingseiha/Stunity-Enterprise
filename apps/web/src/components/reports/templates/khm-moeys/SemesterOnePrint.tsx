@@ -235,6 +235,7 @@ export default function SemesterOnePrint({
                       : settings.firstPageStudentCount + (pageIndex - 1) * settings.nextPageStudentCount + index + 1;
                   const s = student.semesterOne!;
                   const totalAbs = (student.permission || 0) + (student.absent || 0);
+                  const complete = student.isComplete !== false;
 
                   if (examOnly) {
                     return (
@@ -251,11 +252,11 @@ export default function SemesterOnePrint({
                             </td>
                           </>
                         )}
-                        <td>{s.examTotal.toFixed(0)}</td>
-                        <td>{s.examAverage.toFixed(2)}</td>
-                        <td style={{ color: '#dc2626', fontWeight: 700 }}>{s.examRank}</td>
+                        <td>{complete ? s.examTotal.toFixed(0) : '—'}</td>
+                        <td>{complete ? s.examAverage.toFixed(2) : '—'}</td>
+                        <td style={{ color: '#dc2626', fontWeight: 700 }}>{complete && s.examRank > 0 ? s.examRank : '—'}</td>
                         <td>
-                          <strong>{s.finalGrade}</strong>
+                          <strong>{complete ? s.finalGrade : 'មិនទាន់គ្រប់'}</strong>
                         </td>
                       </tr>
                     );
@@ -271,15 +272,15 @@ export default function SemesterOnePrint({
                       <td>
                         <strong>{totalAbs}</strong>
                       </td>
-                      <td>{s.preSemesterAverage.toFixed(2)}</td>
-                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{s.preSemesterRank}</td>
-                      <td>{s.examTotal.toFixed(0)}</td>
-                      <td>{s.examAverage.toFixed(2)}</td>
-                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{s.examRank}</td>
-                      <td>{s.finalAverage.toFixed(2)}</td>
-                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{s.finalRank}</td>
+                      <td>{complete ? s.preSemesterAverage.toFixed(2) : '—'}</td>
+                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{complete && s.preSemesterRank > 0 ? s.preSemesterRank : '—'}</td>
+                      <td>{complete ? s.examTotal.toFixed(0) : '—'}</td>
+                      <td>{complete ? s.examAverage.toFixed(2) : '—'}</td>
+                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{complete && s.examRank > 0 ? s.examRank : '—'}</td>
+                      <td>{complete ? s.finalAverage.toFixed(2) : '—'}</td>
+                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{complete && s.finalRank > 0 ? s.finalRank : '—'}</td>
                       <td>
-                        <strong>{s.finalGrade}</strong>
+                        <strong>{complete ? s.finalGrade : 'មិនទាន់គ្រប់'}</strong>
                       </td>
                     </tr>
                   );
@@ -317,6 +318,11 @@ export default function SemesterOnePrint({
                       </div>
                     </div>
                   </div>
+                  {(report.statistics.incompleteStudents ?? 0) > 0 ? (
+                    <div style={{ margin: '-7px 0 12px', border: '1px solid #f59e0b', borderRadius: 6, background: '#fffbeb', padding: '5px 9px', color: '#92400e', fontSize: 9, fontWeight: 700 }}>
+                      ពិន្ទុមិនទាន់គ្រប់៖ {report.statistics.incompleteStudents} នាក់ · មិនបានរាប់ជាជាប់ ធ្លាក់ ឬចំណាត់ថ្នាក់
+                    </div>
+                  ) : null}
 
                   {/* 2. Grade Distribution Cards */}
                   <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 10, marginBottom: 8, color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>កម្រិតលទ្ធផលសិក្សា</div>

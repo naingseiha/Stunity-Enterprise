@@ -242,7 +242,8 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
                     pageIndex === 0
                       ? index + 1
                       : settings.firstPageStudentCount + (pageIndex - 1) * settings.nextPageStudentCount + index + 1;
-                  const passed = settings.autoCircle && settings.showCircles && isPassed(student.gradeLevel, student.average);
+                  const complete = student.isComplete !== false;
+                  const passed = complete && settings.autoCircle && settings.showCircles && isPassed(student.gradeLevel, student.average);
                   return (
                     <tr key={student.studentId}>
                       <td>{passed ? <span className="khmer-monthly-index-circle">{rowNum}</span> : rowNum}</td>
@@ -262,18 +263,18 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
                       )}
                       {settings.showTotal && (
                         <td>
-                          <strong>{formatScore(student.totalScore, 0)}</strong>
+                          <strong>{complete ? formatScore(student.totalScore, 0) : '—'}</strong>
                         </td>
                       )}
                       {settings.showAverage && (
                         <td>
-                          <strong>{formatScore(student.average, 2)}</strong>
+                          <strong>{complete ? formatScore(student.average, 2) : '—'}</strong>
                         </td>
                       )}
-                      {settings.showRank && <td style={{ color: '#dc2626', fontWeight: 700 }}>{student.rank}</td>}
+                      {settings.showRank && <td style={{ color: '#dc2626', fontWeight: 700 }}>{complete && student.rank > 0 ? student.rank : '—'}</td>}
                       {settings.showGradeLevel && (
                         <td>
-                          <strong>{student.gradeLevel}</strong>
+                          <strong>{complete ? student.gradeLevel : 'មិនទាន់គ្រប់'}</strong>
                         </td>
                       )}
                     </tr>
@@ -312,6 +313,11 @@ export default function MonthlyDetailedPrint({ report, settings, subjects: subje
                       </div>
                     </div>
                   </div>
+                  {(report.statistics.incompleteStudents ?? 0) > 0 ? (
+                    <div style={{ margin: '-7px 0 12px', border: '1px solid #f59e0b', borderRadius: 6, background: '#fffbeb', padding: '5px 9px', color: '#92400e', fontSize: 9, fontWeight: 700 }}>
+                      ពិន្ទុមិនទាន់គ្រប់៖ {report.statistics.incompleteStudents} នាក់ · មិនបានរាប់ជាជាប់ ធ្លាក់ ឬចំណាត់ថ្នាក់
+                    </div>
+                  ) : null}
 
                   {/* 2. Grade Distribution Cards */}
                   <div style={{ fontFamily: 'var(--khmer-report-moul)', fontSize: 10, marginBottom: 8, color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>កម្រិតលទ្ធផលសិក្សា</div>

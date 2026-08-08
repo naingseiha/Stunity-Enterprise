@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import {
   CalendarCheck2,
+  CalendarOff,
   ChevronDown,
   ChevronUp,
   Plus,
@@ -162,6 +163,17 @@ export default function AcademicCalendarEditor({
     })));
   };
 
+  const markAprilAsVacation = () => {
+    onChange(terms.map((term) => {
+      const includedMonths = monthsInTerm(term.startDate, term.endDate);
+      if (!includedMonths.includes(4) || term.examMonth === 4) return term;
+      return {
+        ...term,
+        excludedMonths: [...new Set([...term.excludedMonths, 4])].sort((a, b) => a - b),
+      };
+    }));
+  };
+
   if (!academicYearStart || !academicYearEnd) {
     return (
       <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-5 py-8 text-center dark:border-amber-900 dark:bg-amber-950/30">
@@ -201,6 +213,14 @@ export default function AcademicCalendarEditor({
             >
               <Users className="h-4 w-4" />
               កាលវិភាគតែមួយគ្រប់ថ្នាក់
+            </button>
+            <button
+              type="button"
+              onClick={markAprilAsVacation}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-800 transition hover:border-amber-300 hover:bg-amber-100 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+            >
+              <CalendarOff className="h-4 w-4" />
+              កំណត់មេសាជាវិស្សមកាល
             </button>
           </div>
         </div>
@@ -349,26 +369,45 @@ export default function AcademicCalendarEditor({
                     </button>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-black text-slate-700 dark:text-gray-200">ផែនការខែសម្រាប់របាយការណ៍</p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">ចុចលើខែពណ៌ខៀវ ដើម្បីប្តូរជាខែវិស្សមកាល; ចុចម្តងទៀតដើម្បីដោះចេញ។</p>
+                    </div>
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-500 dark:border-gray-700 dark:bg-gray-950">
+                      ពណ៌បៃតង = ខែប្រឡង
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
                     {yearMonths.map((monthNumber) => {
                       const isInside = includedMonths.includes(monthNumber);
                       const isBreak = isInside && term.excludedMonths.includes(monthNumber);
                       const isExam = isInside && term.examMonth === monthNumber;
                       return (
-                        <span
+                        <button
+                          type="button"
                           key={monthNumber}
-                          className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-bold ${
+                          disabled={!isInside || isExam}
+                          aria-pressed={isBreak}
+                          aria-label={`${monthLabel(monthNumber)} ${isBreak ? 'វិស្សមកាល' : isExam ? 'ខែប្រឡង' : 'ខែសិក្សា'}`}
+                          onClick={() => updateTerm(index, {
+                            excludedMonths: isBreak
+                              ? term.excludedMonths.filter((item) => item !== monthNumber)
+                              : [...term.excludedMonths, monthNumber].sort((a, b) => a - b),
+                          })}
+                          className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition ${
                             isExam
                               ? 'border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                               : isBreak
-                                ? 'border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                ? 'border-amber-400 bg-amber-500 text-white shadow-sm ring-2 ring-amber-100 dark:border-amber-700 dark:bg-amber-700 dark:ring-amber-950'
                                 : isInside
-                                  ? 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300'
+                                  ? 'border-sky-200 bg-sky-50 text-sky-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300'
                                   : 'border-slate-100 bg-slate-50 text-slate-300 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-700'
-                          }`}
+                          } disabled:cursor-default`}
                         >
-                          {monthLabel(monthNumber)}{isExam ? ' · ប្រឡង' : isBreak ? ' · ឈប់' : ''}
-                        </span>
+                          {monthLabel(monthNumber)}{!isInside ? ' · ក្រៅឆមាស' : isExam ? ' · ប្រឡង' : isBreak ? ' · វិស្សមកាល' : ' · សិក្សា'}
+                        </button>
                       );
                     })}
                   </div>
@@ -383,7 +422,7 @@ export default function AcademicCalendarEditor({
                   </button>
 
                   {isExpanded ? (
-                    <div className="mt-3 grid gap-4 rounded-xl bg-slate-50 p-4 dark:bg-gray-950 md:grid-cols-2">
+                    <div className="mt-3 rounded-xl bg-slate-50 p-4 dark:bg-gray-950">
                       <div>
                         <label className="mb-1.5 block text-xs font-black text-slate-500">ឈ្មោះឆមាស</label>
                         <input
@@ -392,34 +431,6 @@ export default function AcademicCalendarEditor({
                           onChange={(event) => updateTerm(index, { name: event.target.value, nameKh: event.target.value })}
                           className={inputClass}
                         />
-                      </div>
-                      <div>
-                        <p className="mb-1.5 text-xs font-black text-slate-500">ខែដែលឈប់សិក្សាពេញមួយខែ</p>
-                        <div className="flex flex-wrap gap-2">
-                          {MONTHS.filter((month) => includedMonths.includes(month.value)).map((month) => {
-                            const selected = term.excludedMonths.includes(month.value);
-                            return (
-                              <button
-                                key={month.value}
-                                type="button"
-                                onClick={() => updateTerm(index, {
-                                  excludedMonths: selected
-                                    ? term.excludedMonths.filter((item) => item !== month.value)
-                                    : [...term.excludedMonths, month.value].sort((a, b) => a - b),
-                                })}
-                                className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${selected ? 'border-amber-500 bg-amber-500 text-white' : 'border-slate-200 bg-white text-slate-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'}`}
-                              >
-                                {month.km}
-                              </button>
-                            );
-                          })}
-                          {includedMonths.length === 0 ? <span className="text-xs text-slate-400">សូមកំណត់ថ្ងៃឆមាសជាមុន</span> : null}
-                        </div>
-                        <p className="mt-2 text-xs leading-5 text-amber-700 dark:text-amber-300">
-                          ជ្រើសខែដែលឈប់ពេញមួយខែ (ឧ. មេសា = វិសសមកាល)។ ខែទាំងនេះ{' '}
-                          <strong>មិនត្រូវបានបូកមធ្យម</strong>ក្នុងរបាយប្រចាំឆមាស។
-                          វិសសមកាលត្រឹមចន្លោះថ្ងៃក៏ដកស្វ័យប្រវត្តិពីប្រតិទិន VACATION/HOLIDAY ដែរ។
-                        </p>
                       </div>
                     </div>
                   ) : null}

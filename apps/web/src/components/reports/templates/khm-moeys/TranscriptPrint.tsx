@@ -395,6 +395,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
       {report.students
         .filter((student) => !filterStudentId || student.studentId === filterStudentId)
         .map((student) => {
+        const complete = student.isComplete !== false;
         // Calculate dynamic properties for student
         const classSize = report.students.length;
         const femaleCount = report.students.filter(
@@ -415,9 +416,11 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
         });
 
         // Formulated suggestion bullet
-        const hasPassed = student.average >= report.rules.passingAverage;
+        const hasPassed = complete && student.average >= report.rules.passingAverage;
         let suggestionText = '';
-        if (student.average >= 40) {
+        if (!complete) {
+          suggestionText = 'ពិន្ទុមិនទាន់បានបញ្ចូលគ្រប់មុខវិជ្ជា។ សូមពិនិត្យ និងបំពេញទិន្នន័យមុនចេញឯកសារផ្លូវការ។';
+        } else if (student.average >= 40) {
           suggestionText = 'លទ្ធផលសិក្សាល្អប្រសើរណាស់ គប្បីបន្តការខិតខំប្រឹងប្រែងនេះតទៅទៀត។';
         } else if (student.average >= 25) {
           suggestionText = 'ការសិក្សាទទួលបានលទ្ធផលល្អមធ្យម ត្រូវខិតខំរៀនសូត្របន្ថែមទៀត។';
@@ -553,7 +556,7 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
                   <td></td>
                   <td className="subject-name">ពិន្ទុសរុប</td>
                   <td>{toKhmerNumerals(columnSubjects.reduce((acc, sub) => acc + (sub.maxScore || 100), 0))}</td>
-                  <td>{toKhmerNumerals(student.totalScore.toFixed(1))}</td>
+                  <td>{complete ? toKhmerNumerals(student.totalScore.toFixed(1)) : '—'}</td>
                   <td colSpan={4} style={{ backgroundColor: '#fff', border: 'none' }}></td>
                 </tr>
 
@@ -562,18 +565,18 @@ export default function TranscriptPrint({ report, settings, schoolProfile, filte
                   <td></td>
                   <td className="subject-name">មធ្យមភាគ</td>
                   <td>{toKhmerNumerals((50).toFixed(2))}</td>
-                  <td>{toKhmerNumerals(student.average.toFixed(2))}</td>
-                  <td style={{ color: '#dc2626', fontWeight: 'bold' }}>{toKhmerNumerals(student.rank)}</td>
-                  <td>{student.gradeLevel || '-'}</td>
+                  <td>{complete ? toKhmerNumerals(student.average.toFixed(2)) : '—'}</td>
+                  <td style={{ color: '#dc2626', fontWeight: 'bold' }}>{complete && student.rank > 0 ? toKhmerNumerals(student.rank) : '—'}</td>
+                  <td>{complete ? (student.gradeLevel || '-') : 'មិនទាន់គ្រប់'}</td>
                   <td>
-                    {student.average >= 45 ? 'ល្អប្រសើរ' :
+                    {!complete ? 'មិនទាន់វាយតម្លៃ' : student.average >= 45 ? 'ល្អប្រសើរ' :
                      student.average >= 40 ? 'ល្អណាស់' :
                      student.average >= 35 ? 'ល្អ' :
                      student.average >= 30 ? 'ល្អបង្គួរ' :
                      student.average >= 25 ? 'មធ្យម' : 'ខ្សោយ'}
                   </td>
                   <td style={{ color: hasPassed ? 'inherit' : '#dc2626' }}>
-                    {hasPassed ? 'ជាប់' : 'ធ្លាក់'}
+                    {!complete ? 'មិនទាន់គ្រប់' : hasPassed ? 'ជាប់' : 'ធ្លាក់'}
                   </td>
                 </tr>
               </tbody>

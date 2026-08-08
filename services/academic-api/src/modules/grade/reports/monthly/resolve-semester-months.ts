@@ -71,13 +71,15 @@ export function normalizeExcludedMonths(raw?: number[] | null): number[] {
 
 function isSchoolClosingEvent(event: CalendarBreakEventLike): boolean {
   const type = String(event.type || "").toUpperCase();
-  if (type === "VACATION" || type === "HOLIDAY") return true;
-  return event.isSchoolDay === false;
+  // A VACATION means the school intentionally skips the monthly assessment
+  // window (for example the Khmer New Year break in April). A one-day public
+  // HOLIDAY must not remove an otherwise valid reporting month.
+  return type === "VACATION";
 }
 
 /**
- * Months that contain a school-closing calendar break (វិសមកាល / ថ្ងៃឈប់).
- * Even a short Khmer New Year break in April means that month has no monthly exam.
+ * Months that contain a configured VACATION (វិសមកាល).
+ * Even a short Khmer New Year vacation in April means that month has no monthly exam.
  */
 export function monthsClosedByCalendarEvents(
   events: CalendarBreakEventLike[] | null | undefined,

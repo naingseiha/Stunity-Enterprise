@@ -124,6 +124,7 @@ export default function TrackingBookPrint({
                       : firstPageCount + (pageIndex - 1) * nextPageCount + index + 1;
                   const semester = student.semesterOne!;
                   const averages = semester.monthAverages || {};
+                  const complete = student.isComplete !== false;
                   return (
                     <tr key={student.studentId}>
                       <td>{globalIndex}</td>
@@ -137,12 +138,12 @@ export default function TrackingBookPrint({
                           </td>
                         );
                       })}
-                      <td>{semester.finalAverage.toFixed(2)}</td>
+                      <td>{complete ? semester.finalAverage.toFixed(2) : '—'}</td>
                       <td style={{ color: '#dc2626', fontWeight: 700 }}>
-                        {semester.finalRank || student.rank}
+                        {complete ? (semester.finalRank || student.rank || '—') : '—'}
                       </td>
                       <td>
-                        <strong>{semester.finalGrade}</strong>
+                        <strong>{complete ? semester.finalGrade : 'មិនទាន់គ្រប់'}</strong>
                       </td>
                     </tr>
                   );

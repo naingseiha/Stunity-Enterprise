@@ -5,6 +5,10 @@ import {
   monthsClosedByCalendarEvents,
   resolveSemesterMonthPlan,
 } from "./resolve-semester-months";
+import {
+  buildReportStatistics,
+  rankCompleteRows,
+} from "./report-completeness";
 
 export type MonthlyReportFormat =
   | "summary"
@@ -112,6 +116,10 @@ type RankedStudent = {
   rank: number;
   absent: number;
   permission: number;
+  /** True only when every subject required for this class/track has a score. */
+  isComplete: boolean;
+  enteredSubjectCount: number;
+  expectedSubjectCount: number;
 };
 
 type SemesterOneExtras = {
@@ -135,6 +143,7 @@ type AnnualExtras = {
   annualAverage: number;
   annualRank: number;
   annualGrade: string;
+  isComplete: boolean;
 };
 
 async function computeRankedStudentsForMonth(
@@ -259,6 +268,8 @@ async function computeRankedStudentsForMonth(
     let totalScore = 0;
     let totalCoefficient = 0;
     let englishBonus = 0;
+    let expectedSubjectCount = 0;
+    let enteredSubjectCount = 0;
 
     sortedSubjects.forEach((subject) => {
       const subjectIds = subjectAliasMap.get(subject.id) || [subject.id];
@@ -271,12 +282,14 @@ async function computeRankedStudentsForMonth(
         );
       });
       if (!appliesToTrack) return;
+      expectedSubjectCount += 1;
 
       const gradeEntry = subjectIds
         .map((subjectId) => studentGrades.get(subjectId))
         .find(Boolean);
       gradeMap[subject.id] = gradeEntry ? gradeEntry.score : null;
       if (!gradeEntry) return;
+      enteredSubjectCount += 1;
 
       if (usesSemesterOneEnglishRule && L.isEnglishSubject(subject)) {
         englishBonus += Math.max(
@@ -291,6 +304,8 @@ async function computeRankedStudentsForMonth(
     });
 
     const adjustedTotalScore = totalScore + englishBonus;
+    const isComplete =
+      expectedSubjectCount > 0 && enteredSubjectCount === expectedSubjectCount;
     const average =
       totalCoefficient > 0 ? adjustedTotalScore / totalCoefficient : 0;
     const attendance = attendanceByStudent.get(entry.student.id) || {
@@ -312,22 +327,17 @@ async function computeRankedStudentsForMonth(
       totalScore: Math.round(adjustedTotalScore * 100) / 100,
       totalCoefficient: Math.round(totalCoefficient * 100) / 100,
       average: Math.round(average * 100) / 100,
-      gradeLevel: L.khmerMonthlyGradeLevel(average),
+      gradeLevel: isComplete ? L.khmerMonthlyGradeLevel(average) : "មិនទាន់គ្រប់",
       rank: 0,
       absent: attendance.absent,
       permission: attendance.permission,
+      isComplete,
+      enteredSubjectCount,
+      expectedSubjectCount,
     };
   });
 
-  return reportStudents
-    .sort((a, b) => {
-      if (b.average !== a.average) return b.average - a.average;
-      return a.studentName.localeCompare(b.studentName, "km");
-    })
-    .map((student, index) => ({
-      ...student,
-      rank: index + 1,
-    }));
+  return rankCompleteRows(reportStudents);
 }
 
 async function loadSharedContext(
@@ -612,10 +622,14 @@ export async function buildKhmMoeysMonthlyReport(
       buildKhmMoeysMonthlyReport(prisma, schoolId, {
         ...query,
         format: "semester-1",
+        month: undefined,
+        monthNumber: "2",
       }),
       buildKhmMoeysMonthlyReport(prisma, schoolId, {
         ...query,
         format: "semester-2",
+        month: undefined,
+        monthNumber: "7",
       }),
     ]);
 
@@ -632,21 +646,28 @@ export async function buildKhmMoeysMonthlyReport(
     )
       .map((sem1Row) => {
         const sem2Row = semesterTwoByStudent.get(sem1Row.studentId);
-        if (!sem2Row?.semesterOne || !sem1Row.semesterOne) return null;
+        if (!sem1Row.semesterOne) return null;
 
         const semester1Average = sem1Row.semesterOne.finalAverage;
-        const semester2Average = sem2Row.semesterOne.finalAverage;
-        const annualAverage =
-          Math.round(((semester1Average + semester2Average) / 2) * 100) / 100;
+        const semester2Average = sem2Row?.semesterOne?.finalAverage || 0;
+        const isComplete = Boolean(
+          sem1Row.isComplete && sem2Row?.isComplete && sem2Row.semesterOne,
+        );
+        const annualAverage = isComplete
+          ? Math.round(((semester1Average + semester2Average) / 2) * 100) / 100
+          : 0;
 
         const annual: AnnualExtras = {
           semester1Average,
           semester1Rank: sem1Row.semesterOne.finalRank,
           semester2Average,
-          semester2Rank: sem2Row.semesterOne.finalRank,
+          semester2Rank: sem2Row?.semesterOne?.finalRank || 0,
           annualAverage,
           annualRank: 0,
-          annualGrade: L.khmerMonthlyGradeLevel(annualAverage),
+          annualGrade: isComplete
+            ? L.khmerMonthlyGradeLevel(annualAverage)
+            : "មិនទាន់គ្រប់",
+          isComplete,
         };
 
         return {
@@ -654,34 +675,27 @@ export async function buildKhmMoeysMonthlyReport(
           average: annualAverage,
           gradeLevel: annual.annualGrade,
           rank: 0,
-          absent: (sem1Row.absent || 0) + (sem2Row.absent || 0),
-          permission: (sem1Row.permission || 0) + (sem2Row.permission || 0),
+          absent: (sem1Row.absent || 0) + (sem2Row?.absent || 0),
+          permission: (sem1Row.permission || 0) + (sem2Row?.permission || 0),
+          isComplete,
           annual,
           semesterOne: sem1Row.semesterOne,
         };
       })
       .filter((row): row is NonNullable<typeof row> => row !== null);
 
-    const annualSorted = [...merged].sort(
-      (a, b) => b.annual.annualAverage - a.annual.annualAverage,
-    );
-    const rankedStudents = annualSorted.map((row, index) => ({
+    const rankedStudents = rankCompleteRows(
+      merged,
+      (row) => row.annual.annualAverage,
+    ).map((row) => ({
       ...row,
-      rank: index + 1,
-      annual: { ...row.annual, annualRank: index + 1 },
+      annual: { ...row.annual, annualRank: row.rank },
       average: row.annual.annualAverage,
       gradeLevel: row.annual.annualGrade,
     }));
-
-    const totalStudents = rankedStudents.length;
-    const femaleStudents = rankedStudents.filter((student) =>
-      L.isFemaleGender(student.gender),
-    ).length;
-    const passedStudents = rankedStudents.filter(
-      (student) => student.average >= L.KHMER_MONTH_PASSING_AVERAGE,
-    );
-    const failedStudents = rankedStudents.filter(
-      (student) => student.average < L.KHMER_MONTH_PASSING_AVERAGE,
+    const statistics = buildReportStatistics(
+      rankedStudents,
+      L.KHMER_MONTH_PASSING_AVERAGE,
     );
 
     const monthsIncluded = [
@@ -709,18 +723,7 @@ export async function buildKhmMoeysMonthlyReport(
       teacherName: semesterOne.teacherName,
       subjects: semesterOne.subjects,
       students: rankedStudents,
-      statistics: {
-        totalStudents,
-        femaleStudents,
-        passedStudents: passedStudents.length,
-        passedFemaleStudents: passedStudents.filter((student) =>
-          L.isFemaleGender(student.gender),
-        ).length,
-        failedStudents: failedStudents.length,
-        failedFemaleStudents: failedStudents.filter((student) =>
-          L.isFemaleGender(student.gender),
-        ).length,
-      },
+      statistics,
       rules: semesterOne.rules,
       generatedAt: new Date().toISOString(),
     };
@@ -857,16 +860,24 @@ export async function buildKhmMoeysMonthlyReport(
     const merged = examStudents.map((examRow) => {
       const monthAverages: Record<number, number> = {};
       const preMonthAverages: number[] = [];
+      const preRows: Array<RankedStudent | undefined> = [];
       for (const snap of preSnapshots) {
         const row = snap.students.find(
           (s) => s.studentId === examRow.studentId,
         );
-        if (row !== undefined) {
+        preRows.push(row);
+        if (row?.isComplete) {
           preMonthAverages.push(row.average);
           monthAverages[snap.monthNumber] = row.average;
         }
       }
-      monthAverages[examMonthNumber] = examRow.average;
+      if (examRow.isComplete) monthAverages[examMonthNumber] = examRow.average;
+
+      const preMonthsComplete =
+        isExamOnly ||
+        (preRows.length === preSnapshots.length &&
+          preRows.every((row) => row?.isComplete));
+      const isComplete = examRow.isComplete && preMonthsComplete;
 
       const preSemesterAverage =
         preMonthAverages.length > 0
@@ -876,9 +887,11 @@ export async function buildKhmMoeysMonthlyReport(
 
       const examAverage = examRow.average;
       const examTotal = examRow.totalScore;
-      const finalAverage = isExamOnly
-        ? examAverage
-        : (preSemesterAverage + examAverage) / 2;
+      const finalAverage = isComplete
+        ? isExamOnly
+          ? examAverage
+          : (preSemesterAverage + examAverage) / 2
+        : 0;
 
       const semesterOne: SemesterOneExtras = {
         preSemesterAverage,
@@ -888,7 +901,9 @@ export async function buildKhmMoeysMonthlyReport(
         examRank: 0,
         finalAverage,
         finalRank: 0,
-        finalGrade: L.khmerMonthlyGradeLevel(finalAverage),
+        finalGrade: isComplete
+          ? L.khmerMonthlyGradeLevel(finalAverage)
+          : "មិនទាន់គ្រប់",
         monthAverages,
       };
 
@@ -898,18 +913,20 @@ export async function buildKhmMoeysMonthlyReport(
         totalScore: examTotal,
         gradeLevel: semesterOne.finalGrade,
         rank: 0,
+        isComplete,
         semesterOne,
       };
     });
 
-    const preSorted = [...merged].sort(
+    const completeMerged = merged.filter((row) => row.isComplete);
+    const preSorted = [...completeMerged].sort(
       (a, b) =>
         b.semesterOne.preSemesterAverage - a.semesterOne.preSemesterAverage,
     );
-    const examSorted = [...merged].sort(
+    const examSorted = [...completeMerged].sort(
       (a, b) => b.semesterOne.examAverage - a.semesterOne.examAverage,
     );
-    const finalSorted = [...merged].sort(
+    const finalSorted = [...completeMerged].sort(
       (a, b) => b.semesterOne.finalAverage - a.semesterOne.finalAverage,
     );
 
@@ -930,32 +947,22 @@ export async function buildKhmMoeysMonthlyReport(
       ? (row: (typeof withRanks)[number]) => row.semesterOne.examAverage
       : (row: (typeof withRanks)[number]) => row.semesterOne.finalAverage;
 
-    const rankedStudents = withRanks
-      .sort((a, b) => {
-        const diff = sortKey(b) - sortKey(a);
-        if (diff !== 0) return diff;
-        return a.studentName.localeCompare(b.studentName, "km");
-      })
-      .map((s, i) => ({
+    const rankedStudents = rankCompleteRows(withRanks, sortKey).map((s) => ({
         ...s,
-        rank: i + 1,
-        gradeLevel: isExamOnly
-          ? L.khmerMonthlyGradeLevel(s.semesterOne.examAverage)
-          : s.semesterOne.finalGrade,
-        average: isExamOnly
-          ? s.semesterOne.examAverage
-          : s.semesterOne.finalAverage,
+        gradeLevel: s.isComplete
+          ? isExamOnly
+            ? L.khmerMonthlyGradeLevel(s.semesterOne.examAverage)
+            : s.semesterOne.finalGrade
+          : "មិនទាន់គ្រប់",
+        average: s.isComplete
+          ? isExamOnly
+            ? s.semesterOne.examAverage
+            : s.semesterOne.finalAverage
+          : 0,
       }));
-
-    const totalStudents = rankedStudents.length;
-    const femaleStudents = rankedStudents.filter((student) =>
-      L.isFemaleGender(student.gender),
-    ).length;
-    const passedStudents = rankedStudents.filter(
-      (student) => student.average >= L.KHMER_MONTH_PASSING_AVERAGE,
-    );
-    const failedStudents = rankedStudents.filter(
-      (student) => student.average < L.KHMER_MONTH_PASSING_AVERAGE,
+    const statistics = buildReportStatistics(
+      rankedStudents,
+      L.KHMER_MONTH_PASSING_AVERAGE,
     );
 
     const monthsIncluded = isExamOnly
@@ -1021,18 +1028,7 @@ export async function buildKhmMoeysMonthlyReport(
       teacherName: shared.teacherName,
       subjects: shared.sortedSubjects,
       students: rankedStudents,
-      statistics: {
-        totalStudents,
-        femaleStudents,
-        passedStudents: passedStudents.length,
-        passedFemaleStudents: passedStudents.filter((student) =>
-          L.isFemaleGender(student.gender),
-        ).length,
-        failedStudents: failedStudents.length,
-        failedFemaleStudents: failedStudents.filter((student) =>
-          L.isFemaleGender(student.gender),
-        ).length,
-      },
+      statistics,
       rules: {
         system: "KHM_MOEYS",
         passingAverage: L.KHMER_MONTH_PASSING_AVERAGE,
@@ -1075,15 +1071,9 @@ export async function buildKhmMoeysMonthlyReport(
     actualYear,
   });
 
-  const totalStudents = rankedStudents.length;
-  const femaleStudents = rankedStudents.filter((student) =>
-    L.isFemaleGender(student.gender),
-  ).length;
-  const passedStudents = rankedStudents.filter(
-    (student) => student.average >= L.KHMER_MONTH_PASSING_AVERAGE,
-  );
-  const failedStudents = rankedStudents.filter(
-    (student) => student.average < L.KHMER_MONTH_PASSING_AVERAGE,
+  const statistics = buildReportStatistics(
+    rankedStudents,
+    L.KHMER_MONTH_PASSING_AVERAGE,
   );
 
   const usesSemesterOneEnglishRule = L.shouldApplySemesterOneEnglishRule(
@@ -1130,18 +1120,7 @@ export async function buildKhmMoeysMonthlyReport(
     teacherName: shared.teacherName,
     subjects: shared.sortedSubjects,
     students: rankedStudents,
-    statistics: {
-      totalStudents,
-      femaleStudents,
-      passedStudents: passedStudents.length,
-      passedFemaleStudents: passedStudents.filter((student) =>
-        L.isFemaleGender(student.gender),
-      ).length,
-      failedStudents: failedStudents.length,
-      failedFemaleStudents: failedStudents.filter((student) =>
-        L.isFemaleGender(student.gender),
-      ).length,
-    },
+    statistics,
     rules: {
       system: "KHM_MOEYS",
       passingAverage: L.KHMER_MONTH_PASSING_AVERAGE,

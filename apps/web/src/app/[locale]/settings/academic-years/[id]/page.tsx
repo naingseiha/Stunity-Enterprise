@@ -716,7 +716,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                                   ) : null}
                                   {term.excludedMonths?.map((monthNumber) => (
                                     <span key={monthNumber} className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-700">
-                                      Break: {MONTHS.find((month) => month.value === monthNumber)?.en || monthNumber}
+                                      វិស្សមកាល៖ {MONTHS.find((month) => month.value === monthNumber)?.km || monthNumber}
                                     </span>
                                   ))}
                                 </div>
