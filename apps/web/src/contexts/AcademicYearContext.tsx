@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getCurrentAcademicYear, getAcademicYears, type AcademicYear } from '@/lib/api/academic-years';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { TokenManager } from '@/lib/api/auth';
 
 interface AcademicYearContextType {
   currentYear: AcademicYear | null;
@@ -28,7 +29,7 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
 
   const loadYears = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = TokenManager.getAccessToken();
       const userDataStr = localStorage.getItem('user');
       const schoolDataStr = localStorage.getItem('school');
       
@@ -113,7 +114,7 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
-        const token = localStorage.getItem('accessToken');
+        const token = TokenManager.getAccessToken();
         if (token) {
           const res = await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${selectedYear.id}/terms`, {
             headers: { Authorization: `Bearer ${token}` }

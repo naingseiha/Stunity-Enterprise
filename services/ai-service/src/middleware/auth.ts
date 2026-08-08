@@ -1,12 +1,12 @@
 /**
  * JWT Auth Middleware for AI Service
- * 
- * Verifies the same JWT issued by auth-service using the shared JWT_SECRET.
- * Extracts userId and role from the token payload.
+ *
+ * Verifies access tokens with the shared issuer/audience/tokenUse profile.
  */
 
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../../../lib/auth-tokens';
+import { getJwtSecret } from '../../../lib/jwt-secret';
 
 export interface AuthRequest extends Request {
     userId?: string;
@@ -22,16 +22,10 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
         return;
     }
 
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-        res.status(500).json({ success: false, error: 'Server configuration error' });
-        return;
-    }
-
     try {
-        const decoded = jwt.verify(token, secret) as { userId: string; role?: string; id?: string };
-        req.userId = decoded.userId || decoded.id;
-        req.userRole = decoded.role;
+        const decoded = verifyAccessToken(token, getJwtSecret());
+        req.userId = decoded.userId;
+        req.userRole = typeof decoded.role === 'string' ? decoded.role : undefined;
         next();
     } catch {
         res.status(401).json({ success: false, error: 'Invalid or expired token' });

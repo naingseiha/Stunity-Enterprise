@@ -186,7 +186,23 @@ EOF
   # engagement-api only: passkeys/WebAuthn (auth module lives here now).
   # Harmless no-op on academic-api/ai-service (they don't read these).
   if [ "$SERVICE" = "engagement-api" ]; then
-    ENV_VARS="$ENV_VARS|AUTH_PASSKEYS_ENABLED=${AUTH_PASSKEYS_ENABLED:-false}|AUTH_DB_SESSIONS_ENABLED=${AUTH_DB_SESSIONS_ENABLED:-true}|AUTH_LEGACY_JWT_REFRESH_ENABLED=false|JWT_EXPIRATION=${JWT_EXPIRATION:-15m}|REFRESH_TOKEN_EXPIRATION=${REFRESH_TOKEN_EXPIRATION:-365d}|WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID:-}|WEBAUTHN_RP_NAME=${WEBAUTHN_RP_NAME:-}|WEBAUTHN_ORIGIN=${WEBAUTHN_ORIGIN:-}|QUIZ_WAR_ENABLED=${QUIZ_WAR_ENABLED:-false}"
+    if [ "${AUTH_DB_SESSIONS_ENABLED:-true}" != "true" ] && [ "${AUTH_ALLOW_INSECURE_SESSIONS:-}" != "true" ]; then
+      echo "❌ Refusing deploy: AUTH_DB_SESSIONS_ENABLED must be true for engagement-api production."
+      echo "   Set AUTH_ALLOW_INSECURE_SESSIONS=true only for break-glass."
+      exit 1
+    fi
+    if [ "${AUTH_LEGACY_JWT_REFRESH_ENABLED:-false}" = "true" ] && [ "${AUTH_ALLOW_INSECURE_SESSIONS:-}" != "true" ]; then
+      echo "❌ Refusing deploy: AUTH_LEGACY_JWT_REFRESH_ENABLED must stay false in production."
+      exit 1
+    fi
+    case "${JWT_SECRET:-}" in
+      ""|"stunity-enterprise-secret-2026"|"your-super-secret-jwt-key-change-this"|"secret"|"changeme")
+        echo "❌ Refusing deploy: JWT_SECRET is missing or a known placeholder. Rotate to a strong secret first."
+        exit 1
+        ;;
+    esac
+    # Force secure session flags on every production revision (do not inherit weaker Cloud Run values).
+    ENV_VARS="$ENV_VARS|AUTH_PASSKEYS_ENABLED=${AUTH_PASSKEYS_ENABLED:-false}|AUTH_DB_SESSIONS_ENABLED=true|AUTH_LEGACY_JWT_REFRESH_ENABLED=false|JWT_EXPIRATION=${JWT_EXPIRATION:-15m}|REFRESH_TOKEN_EXPIRATION=${REFRESH_TOKEN_EXPIRATION:-365d}|WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID:-}|WEBAUTHN_RP_NAME=${WEBAUTHN_RP_NAME:-}|WEBAUTHN_ORIGIN=${WEBAUTHN_ORIGIN:-}|QUIZ_WAR_ENABLED=${QUIZ_WAR_ENABLED:-false}"
   fi
   # academic-api's grade/attendance modules call engagement-api's
   # /auth/notifications/* routes cross-service. Requires engagement-api to

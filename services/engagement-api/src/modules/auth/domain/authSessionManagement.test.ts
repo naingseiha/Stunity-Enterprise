@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   AuthSessionManagementError,
   listActiveAuthSessions,
+  revokeOtherOwnedAuthSessions,
   revokeOwnedAuthSession,
 } from "./authSessionManagement";
 
@@ -49,6 +50,31 @@ test("another user's or already-revoked session is indistinguishable from missin
     (error: any) => error instanceof AuthSessionManagementError
       && error.code === "AUTH_SESSION_NOT_FOUND"
       && error.statusCode === 404,
+  );
+});
+
+test("revoke-other-sessions keeps the current device family and requires a device id", async () => {
+  let mutation: any;
+  const db = {
+    authSession: {
+      findMany: async () => [],
+      updateMany: async (args: any) => { mutation = args; return { count: 2 }; },
+    },
+  };
+  const result = await revokeOtherOwnedAuthSessions(db as any, "user-1", "device-a");
+  assert.deepEqual(mutation.where, {
+    userId: "user-1",
+    revokedAt: null,
+    NOT: { deviceId: "device-a" },
+  });
+  assert.equal(mutation.data.revokeReason, "REMOTE_SIGN_OUT_OTHERS");
+  assert.deepEqual(result, { revokedCount: 2 });
+
+  await assert.rejects(
+    () => revokeOtherOwnedAuthSessions(db as any, "user-1", "  "),
+    (error: any) => error instanceof AuthSessionManagementError
+      && error.code === "AUTH_DEVICE_ID_REQUIRED"
+      && error.statusCode === 400,
   );
 });
 

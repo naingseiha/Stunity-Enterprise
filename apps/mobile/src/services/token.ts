@@ -1,8 +1,12 @@
 /**
  * Token Service
- * 
- * Secure token management using Expo SecureStore
- * Handles access token, refresh token, and biometric auth
+ *
+ * Secure token management using Expo SecureStore.
+ * Session model (Facebook-style persistence):
+ * - Access tokens are short-lived and refreshed silently
+ * - Refresh credentials stay until explicit logout, remote revoke,
+ *   password/school-access invalidation, or refresh-token reuse/theft
+ * - Transient network/refresh conflicts never clear the local session
  */
 
 import * as SecureStore from 'expo-secure-store';
@@ -23,6 +27,19 @@ const KEYS = {
 const DEVICE_ONLY_SECURE_STORE_OPTIONS = {
   keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
 };
+
+const TERMINAL_REFRESH_CODES = new Set([
+  'SESSION_INVALID',
+  'SESSION_EXPIRED',
+  'SESSION_REUSE_DETECTED',
+  'LEGACY_REFRESH_DISABLED',
+  'SCHOOL_ACCESS_CHANGED',
+]);
+
+function refreshErrorCode(error: any): string | undefined {
+  const code = error?.response?.data?.code;
+  return typeof code === 'string' ? code : undefined;
+}
 
 class TokenService {
   private accessToken: string | null = null;
@@ -109,6 +126,40 @@ class TokenService {
     this.refreshSubscribers = [];
   }
 
+  private async persistRotatedPair(data: {
+    accessToken: string;
+    refreshToken: string;
+    expiresIn?: string | number;
+  }): Promise<string> {
+    const tokens: AuthTokens = {
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+      expiresIn: data.expiresIn ?? '15m',
+    };
+    await this.setTokens(tokens);
+    return tokens.accessToken;
+  }
+
+  private async attemptRefresh(refreshToken: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    expiresIn?: string | number;
+  } | null> {
+    const { authApi } = await import('@/api/client');
+    const response = await authApi.post('/auth/refresh', { refreshToken });
+    const data = response.data?.data || response.data?.tokens || response.data;
+    if (response.data?.success && data?.accessToken && data?.refreshToken) {
+      return {
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        expiresIn: data.expiresIn,
+      };
+    }
+    throw Object.assign(new Error('Token refresh failed'), {
+      response: { status: 401, data: { code: 'SESSION_INVALID' } },
+    });
+  }
+
   /**
    * Refresh the access token
    */
@@ -123,49 +174,64 @@ class TokenService {
     this.isRefreshing = true;
 
     try {
-      const refreshToken = this.refreshToken || await SecureStore.getItemAsync(KEYS.REFRESH_TOKEN);
+      let refreshToken = this.refreshToken || await SecureStore.getItemAsync(KEYS.REFRESH_TOKEN);
 
       if (!refreshToken) {
         this.notifyRefreshSubscribers(null);
         return null;
       }
 
-      // Import dynamically to avoid circular dependency
-      const { authApi } = await import('@/api/client');
+      try {
+        const rotated = await this.attemptRefresh(refreshToken);
+        if (!rotated) {
+          this.notifyRefreshSubscribers(null);
+          return null;
+        }
+        const accessToken = await this.persistRotatedPair(rotated);
+        this.notifyRefreshSubscribers(accessToken);
+        return accessToken;
+      } catch (error: any) {
+        const status = error?.response?.status;
+        const code = refreshErrorCode(error);
 
-      const response = await authApi.post('/auth/refresh', {
-        refreshToken,
-      });
+        // Another in-flight client won rotation. Prefer any newer credential
+        // already written to SecureStore; otherwise keep local session and
+        // let the next request retry (never force logout on conflict).
+        if (status === 409 || code === 'SESSION_CONFLICT') {
+          const latest = await SecureStore.getItemAsync(KEYS.REFRESH_TOKEN);
+          if (latest && latest !== refreshToken) {
+            try {
+              const rotated = await this.attemptRefresh(latest);
+              if (rotated) {
+                const accessToken = await this.persistRotatedPair(rotated);
+                this.notifyRefreshSubscribers(accessToken);
+                return accessToken;
+              }
+            } catch {
+              // fall through to preserve session
+            }
+          }
+          console.warn('Token: Refresh conflict — keeping local session for retry');
+          this.notifyRefreshSubscribers(null);
+          return null;
+        }
 
-      // Auth service returns { success, data: { accessToken, refreshToken, expiresIn } }
-      const data = response.data?.data || response.data?.tokens || response.data;
-      if (response.data?.success && data?.accessToken && data?.refreshToken) {
-        const tokens: AuthTokens = {
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-          expiresIn: data.expiresIn ?? '24h',
-        };
-        await this.setTokens(tokens);
+        // Definitive rejection (revoked, expired, reuse/theft, school access).
+        // This is the only refresh path that ends a persistent login.
+        if (
+          (status === 401 || status === 403)
+          && (!code || TERMINAL_REFRESH_CODES.has(code))
+        ) {
+          console.warn('Token: Refresh token rejected by server, clearing session', code || status);
+          await this.clearTokens();
+          this.notifyRefreshSubscribers(null);
+          throw error;
+        }
 
-        // Notify all subscribers
-        this.notifyRefreshSubscribers(tokens.accessToken);
-
-        return tokens.accessToken;
+        console.warn('Token: Refresh failed due to network/server error, tokens preserved');
+        this.notifyRefreshSubscribers(null);
+        return null;
       }
-
-      throw new Error('Token refresh failed');
-    } catch (error: any) {
-      this.notifyRefreshSubscribers(null);
-
-      const status = error?.response?.status;
-      if (status === 401 || status === 403) {
-        console.warn('Token: Refresh token rejected by server, clearing session');
-        await this.clearTokens();
-        throw error; // Rethrow to trigger terminal logout in API client
-      }
-
-      console.warn('Token: Refresh failed due to network/server error, tokens preserved');
-      return null; // Return null to indicate transient failure (no logout)
     } finally {
       this.isRefreshing = false;
     }
@@ -219,7 +285,7 @@ class TokenService {
         };
         expiresInSeconds = value * (multipliers[unit] || 86400); // Default to days
       } else {
-        expiresInSeconds = 7 * 24 * 60 * 60; // Default to 7 days
+        expiresInSeconds = 15 * 60; // Default to 15 minutes (access token)
       }
     } else {
       expiresInSeconds = tokens.expiresIn;

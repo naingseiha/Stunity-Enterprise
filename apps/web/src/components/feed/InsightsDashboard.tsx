@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { TokenManager } from '@/lib/api/auth';
 import {
   Eye,
   Heart,
@@ -80,7 +81,7 @@ export default function InsightsDashboard({ apiUrl }: InsightsDashboardProps) {
   const fetchInsights = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
+      const token = TokenManager.getAccessToken();
       const res = await fetch(`${apiUrl}/analytics/my-insights?period=${period}`, {
         headers: { Authorization: `Bearer ${token}` },
       });

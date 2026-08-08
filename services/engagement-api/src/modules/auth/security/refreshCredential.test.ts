@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import jwt from 'jsonwebtoken';
 import {
+  assertSecureAuthSessionConfig,
   authDbSessionsEnabled,
+  authLegacyJwtRefreshEnabled,
   durationToMilliseconds,
+  getAuthSessionSecurityStatus,
   issueRefreshCredential,
 } from './refreshCredential';
 import { hashRefreshToken } from './authSessionService';
@@ -14,9 +17,53 @@ test('duration parser supports the configured session units', () => {
   assert.throws(() => durationToMilliseconds('1 year'));
 });
 
-test('database sessions are opt-in outside the production deploy wrapper', () => {
+test('database sessions are explicit outside production and fail-closed ON in production when unset', () => {
   assert.equal(authDbSessionsEnabled({ AUTH_DB_SESSIONS_ENABLED: 'true' } as NodeJS.ProcessEnv), true);
   assert.equal(authDbSessionsEnabled({ AUTH_DB_SESSIONS_ENABLED: 'false' } as NodeJS.ProcessEnv), false);
+  assert.equal(authDbSessionsEnabled({} as NodeJS.ProcessEnv), false);
+  assert.equal(
+    authDbSessionsEnabled({ NODE_ENV: 'production' } as NodeJS.ProcessEnv),
+    true,
+  );
+  assert.equal(
+    authDbSessionsEnabled({ NODE_ENV: 'production', AUTH_DB_SESSIONS_ENABLED: 'false' } as NodeJS.ProcessEnv),
+    false,
+  );
+});
+
+test('legacy JWT refresh is blocked in production without the insecure escape hatch', () => {
+  assert.equal(
+    authLegacyJwtRefreshEnabled({ AUTH_LEGACY_JWT_REFRESH_ENABLED: 'true' } as NodeJS.ProcessEnv),
+    true,
+  );
+  assert.equal(
+    authLegacyJwtRefreshEnabled({
+      NODE_ENV: 'production',
+      AUTH_LEGACY_JWT_REFRESH_ENABLED: 'true',
+    } as NodeJS.ProcessEnv),
+    false,
+  );
+  assert.equal(
+    authLegacyJwtRefreshEnabled({
+      NODE_ENV: 'production',
+      AUTH_LEGACY_JWT_REFRESH_ENABLED: 'true',
+      AUTH_ALLOW_INSECURE_SESSIONS: 'true',
+    } as NodeJS.ProcessEnv),
+    true,
+  );
+});
+
+test('production readiness fails closed when DB sessions are disabled', () => {
+  const status = getAuthSessionSecurityStatus({
+    NODE_ENV: 'production',
+    AUTH_DB_SESSIONS_ENABLED: 'false',
+  } as NodeJS.ProcessEnv);
+  assert.equal(status.secure, false);
+  assert.equal(status.ready, false);
+  assert.throws(() => assertSecureAuthSessionConfig({
+    NODE_ENV: 'production',
+    AUTH_DB_SESSIONS_ENABLED: 'false',
+  } as NodeJS.ProcessEnv));
 });
 
 test('legacy mode still issues a signed refresh token for rollout compatibility', async () => {

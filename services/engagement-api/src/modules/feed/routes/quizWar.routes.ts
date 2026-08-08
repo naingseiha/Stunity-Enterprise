@@ -22,6 +22,7 @@ import {
 import { feedCache } from '../redis';
 import { publishQuizWarUpdate } from '../websocket';
 import { isQuizWarEnabled } from '../featureFlags';
+import { mintWsTicket, WS_TICKET_TTL_SECONDS } from '../wsTicket';
 
 
 const router = Router();
@@ -173,6 +174,30 @@ router.get(
         details: error.message,
       });
     }
+  },
+);
+
+// ─────────────────────────────────────────────────────────
+// GET /quiz-wars/:warId/ws-ticket — short-lived WS auth ticket
+//
+// Minted with a real Authorization header so the access JWT never appears
+// on the WebSocket upgrade URL (and therefore never in access logs).
+// ─────────────────────────────────────────────────────────
+router.get(
+  '/quiz-wars/:warId/ws-ticket',
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const authHeader = req.headers['authorization'];
+    const jwtToken = authHeader && authHeader.split(' ')[1];
+    if (!req.user || !jwtToken) {
+      return res.status(401).json({ success: false, error: 'Authenticated user is required' });
+    }
+
+    const ticket = await mintWsTicket(jwtToken);
+    return res.json({
+      success: true,
+      data: { ticket, expiresInSeconds: WS_TICKET_TTL_SECONDS },
+    });
   },
 );
 

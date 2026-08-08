@@ -3,7 +3,6 @@ import { PrismaClient } from '@prisma/client';
 import { getJwtSecret } from '../../../lib/jwt-secret';
 import {
   signAccessToken,
-  signLegacyRefreshToken,
   verifyAccessToken,
   verifyTwoFactorChallenge,
 } from '../../../lib/auth-tokens';
@@ -11,6 +10,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { buildAccessTokenClaims } from '../utils/accessToken';
+import { issueRefreshCredential } from '../security/refreshCredential';
 
 const router = Router();
 
@@ -207,11 +207,14 @@ export default function twoFactorRoutes(prisma: PrismaClient) {
         JWT_EXPIRATION,
       );
 
-      const refreshToken = signLegacyRefreshToken(
-        user.id,
-        JWT_SECRET,
-        REFRESH_TOKEN_EXPIRATION,
-      );
+      const refreshToken = await issueRefreshCredential({
+        prisma,
+        userId: user.id,
+        schoolAccessVersion: user.schoolAccessVersion,
+        jwtSecret: JWT_SECRET,
+        refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION,
+        req,
+      });
 
       await prisma.user.update({
         where: { id: user.id },

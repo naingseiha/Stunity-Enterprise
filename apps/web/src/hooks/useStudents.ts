@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import useSWR, { preload } from 'swr';
 import useSWRMutation from 'swr/mutation';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { TokenManager } from '@/lib/api/auth';
 
 const STUDENT_SERVICE_URL = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003';
 const STUDENTS_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -124,7 +125,7 @@ function createStudentsCacheKey(params?: StudentsParams): string | null {
 
 // Custom fetcher with auth
 async function fetchStudents(url: string) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
 
   const response = await fetch(url, {
     headers: {
@@ -252,7 +253,7 @@ export function useStudents(params?: StudentsParams) {
 
 // Mutation helpers for create/update/delete
 async function mutateStudents(url: string, { arg }: { arg: { action: string; id?: string; data?: any } }) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
   const baseUrl = STUDENT_SERVICE_URL;
 
   let endpoint = `${baseUrl}/students`;

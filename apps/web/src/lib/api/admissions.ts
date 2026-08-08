@@ -1,4 +1,5 @@
 import { STUDENT_SERVICE_URL } from "./config";
+import { TokenManager } from '@/lib/api/auth';
 
 export type AdmissionApplicantType =
   | "NEW_STUDENT"
@@ -90,7 +91,7 @@ export interface AdmissionInput {
 
 async function admissionFetch(path: string, init?: RequestInit) {
   const token =
-    typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    TokenManager.getAccessToken();
   const response = await fetch(`${STUDENT_SERVICE_URL}${path}`, {
     ...init,
     headers: {

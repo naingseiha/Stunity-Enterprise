@@ -3,6 +3,7 @@
 import useSWR, { preload } from 'swr';
 import { ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { TokenManager } from '@/lib/api/auth';
 
 const SCHOOL_LOCATIONS_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -27,7 +28,7 @@ function getLocationsCacheKey(): string | null {
 }
 
 async function fetchLocations(url: string): Promise<SchoolLocationsResponse> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
 
   const response = await fetch(url, {
     headers: {

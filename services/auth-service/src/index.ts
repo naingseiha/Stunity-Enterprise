@@ -35,7 +35,6 @@ import { createAdminPermissionRouter } from './security/adminPermissionRoutes';
 import { PERMISSIONS, hasPermission } from '../../lib/admin-permissions';
 import {
   signAccessToken,
-  signLegacyRefreshToken,
   signTwoFactorChallenge,
   verifyAccessToken,
   verifyLegacyRefreshToken,
@@ -43,8 +42,23 @@ import {
 import {
   AuthSessionManagementError,
   listActiveAuthSessions,
+  revokeOtherOwnedAuthSessions,
   revokeOwnedAuthSession,
 } from './domain/authSessionManagement';
+import { getJwtSecret } from '../../lib/jwt-secret';
+import {
+  assertSecureAuthSessionConfig,
+  authDbSessionsEnabled,
+  authLegacyJwtRefreshEnabled,
+  durationToMilliseconds,
+  getAuthSessionSecurityStatus,
+  issueRefreshCredential,
+} from './security/refreshCredential';
+import {
+  AuthSessionError,
+  rotateAuthSession,
+  revokeAuthSession,
+} from './security/authSessionService';
 import {
   SchoolLinkError,
   approveSchoolLinkRequest,
@@ -62,19 +76,18 @@ dotenv.config({ path: '../../.env' });
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 const PORT = process.env.PORT || process.env.AUTH_SERVICE_PORT || 3001;
-// Security: fail startup in production if JWT_SECRET is unset
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
-}
+assertSecureAuthSessionConfig();
 const passwordlessConfig = assertPasswordlessProductionConfig();
 const authOperationalMetrics = createStructuredAuthMetrics();
 for (const warning of passwordlessConfig.warnings) {
   console.warn(`Passwordless configuration warning: ${warning}`);
 }
-const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
-// Remember-me style: long-lived tokens until explicit logout
+const JWT_SECRET = getJwtSecret();
+// Remember-me UX comes from the rotating device session, not a long-lived bearer.
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '15m';
-const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d'; // Refresh: 1 year
+// Sliding idle window: each refresh extends expiry from now. Active users stay
+// signed in indefinitely; unused sessions expire after this idle period.
+const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d';
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
 const parentDirectoryCache = new Map<string, { data: any; timestamp: number }>();
 const PARENT_DIRECTORY_CACHE_TTL_MS = 60 * 1000;
@@ -845,14 +858,21 @@ app.get('/health', (req: Request, res: Response) => {
 // distinguish a healthy legacy-password service from a ready OTP pilot.
 app.get(['/ready', '/health/ready'], async (_req: Request, res: Response) => {
   const passwordless = buildPasswordlessReadiness();
+  const sessions = getAuthSessionSecurityStatus();
   try {
     await prisma.$queryRaw`SELECT 1`;
-    return res.status(passwordless.ready ? 200 : 503).json({
-      status: passwordless.ready ? 'ready' : 'not_ready',
+    const ready = passwordless.ready && sessions.ready;
+    return res.status(ready ? 200 : 503).json({
+      status: ready ? 'ready' : 'not_ready',
       service: 'auth-service',
       checks: {
         database: { ready: true },
         passwordless,
+        sessions: {
+          ready: sessions.ready,
+          dbSessions: sessions.dbSessions,
+          legacyRefresh: sessions.legacyRefresh,
+        },
       },
     });
   } catch {
@@ -862,6 +882,11 @@ app.get(['/ready', '/health/ready'], async (_req: Request, res: Response) => {
       checks: {
         database: { ready: false },
         passwordless,
+        sessions: {
+          ready: sessions.ready,
+          dbSessions: sessions.dbSessions,
+          legacyRefresh: sessions.legacyRefresh,
+        },
       },
     });
   }
@@ -1087,11 +1112,14 @@ app.post(
         JWT_EXPIRATION,
       );
 
-      const refreshToken = signLegacyRefreshToken(
-        user.id,
-        JWT_SECRET,
-        REFRESH_TOKEN_EXPIRATION,
-      );
+      const refreshToken = await issueRefreshCredential({
+        prisma,
+        userId: user.id,
+        schoolAccessVersion: user.schoolAccessVersion,
+        jwtSecret: JWT_SECRET,
+        refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION,
+        req,
+      });
 
       // Calculate trial days remaining if applicable
       let trialDaysRemaining = null;
@@ -1270,11 +1298,14 @@ app.post(
         JWT_EXPIRATION,
       );
 
-      const refreshToken = signLegacyRefreshToken(
-        user.id,
-        JWT_SECRET,
-        REFRESH_TOKEN_EXPIRATION,
-      );
+      const refreshToken = await issueRefreshCredential({
+        prisma,
+        userId: user.id,
+        schoolAccessVersion: user.schoolAccessVersion,
+        jwtSecret: JWT_SECRET,
+        refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION,
+        req,
+      });
 
       res.status(201).json({
         success: true,
@@ -1319,8 +1350,13 @@ app.post('/auth/logout', async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
     if (refreshToken && typeof refreshToken === 'string') {
-      const maxAgeMs = 365 * 24 * 60 * 60 * 1000; // 1 year
-      tokenBlacklist.revokeRefreshToken(refreshToken, maxAgeMs);
+      if (authDbSessionsEnabled()) {
+        await revokeAuthSession(prisma, refreshToken, 'USER_LOGOUT');
+      }
+      tokenBlacklist.revokeRefreshToken(
+        refreshToken,
+        durationToMilliseconds(REFRESH_TOKEN_EXPIRATION),
+      );
     }
     res.json({
       success: true,
@@ -1337,7 +1373,7 @@ app.post('/auth/logout', async (req: Request, res: Response) => {
 });
 
 app.get('/auth/me/sessions', authenticateToken, async (req: AuthRequest, res: Response) => {
-  if (process.env.AUTH_DB_SESSIONS_ENABLED !== 'true') {
+  if (!authDbSessionsEnabled()) {
     return res.status(503).json({
       success: false,
       code: 'AUTH_SESSIONS_NOT_ENABLED',
@@ -1345,16 +1381,46 @@ app.get('/auth/me/sessions', authenticateToken, async (req: AuthRequest, res: Re
     });
   }
   try {
+    const deviceId = req.get('x-device-id')?.trim() || '';
     const sessions = await listActiveAuthSessions(prisma, req.user!.id);
-    return res.json({ success: true, data: { sessions } });
+    return res.json({
+      success: true,
+      data: {
+        sessions: sessions.map((session) => ({
+          ...session,
+          isCurrent: Boolean(deviceId && session.deviceId && session.deviceId === deviceId),
+        })),
+      },
+    });
   } catch (error) {
     console.error('List auth sessions error:', error);
     return res.status(500).json({ success: false, error: 'Failed to list sessions' });
   }
 });
 
+app.post('/auth/me/sessions/revoke-others', authenticateToken, async (req: AuthRequest, res: Response) => {
+  if (!authDbSessionsEnabled()) {
+    return res.status(503).json({
+      success: false,
+      code: 'AUTH_SESSIONS_NOT_ENABLED',
+      error: 'Session management is not enabled for this environment.',
+    });
+  }
+  const deviceId = req.get('x-device-id')?.trim() || '';
+  try {
+    const result = await revokeOtherOwnedAuthSessions(prisma, req.user!.id, deviceId);
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    if (error instanceof AuthSessionManagementError) {
+      return res.status(error.statusCode).json({ success: false, code: error.code, error: error.message });
+    }
+    console.error('Revoke other auth sessions error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to revoke other sessions' });
+  }
+});
+
 app.delete('/auth/me/sessions/:sessionId', authenticateToken, async (req: AuthRequest, res: Response) => {
-  if (process.env.AUTH_DB_SESSIONS_ENABLED !== 'true') {
+  if (!authDbSessionsEnabled()) {
     return res.status(503).json({
       success: false,
       code: 'AUTH_SESSIONS_NOT_ENABLED',
@@ -1404,20 +1470,43 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
       });
     }
 
-    // Verify token
-    let decoded: any;
-    try {
-      decoded = verifyLegacyRefreshToken(refreshToken, JWT_SECRET);
-    } catch (err: any) {
+    let decoded: any = null;
+    let rotatedSession: Awaited<ReturnType<typeof rotateAuthSession>> | null = null;
+    let refreshUserId: string;
+
+    if (authDbSessionsEnabled() && !refreshToken.includes('.')) {
+      try {
+        rotatedSession = await rotateAuthSession(prisma, refreshToken, {
+          expiresAt: new Date(Date.now() + durationToMilliseconds(REFRESH_TOKEN_EXPIRATION)),
+        });
+        refreshUserId = rotatedSession.userId;
+      } catch (error) {
+        if (error instanceof AuthSessionError) {
+          const status = error.code === 'SESSION_CONFLICT' ? 409 : 401;
+          return res.status(status).json({ success: false, code: error.code, error: error.message });
+        }
+        throw error;
+      }
+    } else if (!authDbSessionsEnabled() || authLegacyJwtRefreshEnabled()) {
+      try {
+        decoded = verifyLegacyRefreshToken(refreshToken, JWT_SECRET);
+        refreshUserId = decoded.userId;
+      } catch {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid or expired refresh token',
+        });
+      }
+    } else {
       return res.status(401).json({
         success: false,
-        error: 'Invalid or expired refresh token',
+        code: 'LEGACY_REFRESH_DISABLED',
+        error: 'Invalid refresh token',
       });
     }
 
-    // Find user
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: refreshUserId },
       include: {
         school: {
           select: {
@@ -1436,16 +1525,23 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
     });
 
     if (!user || !user.isActive) {
+      if (rotatedSession) {
+        await revokeAuthSession(prisma, rotatedSession.refreshToken, 'USER_INACTIVE');
+      }
       return res.status(401).json({
         success: false,
         error: 'User not found or inactive',
       });
     }
 
-    // Check password change invalidation
-    if (user.passwordChangedAt && decoded.iat) {
+    const credentialIssuedAt = rotatedSession?.previousCreatedAt
+      || (decoded?.iat ? new Date(decoded.iat * 1000) : null);
+    if (user.passwordChangedAt && credentialIssuedAt) {
       const changedTimestamp = Math.floor(new Date(user.passwordChangedAt).getTime() / 1000);
-      if (decoded.iat < changedTimestamp) {
+      if (Math.floor(credentialIssuedAt.getTime() / 1000) < changedTimestamp) {
+        if (rotatedSession) {
+          await revokeAuthSession(prisma, rotatedSession.refreshToken, 'PASSWORD_CHANGED');
+        }
         return res.status(401).json({
           success: false,
           error: 'Password changed. Please log in again.',
@@ -1455,10 +1551,22 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
 
     const schoolAccess = resolveSchoolAccessContext(user.school, user.role === 'SUPER_ADMIN');
     if (!schoolAccess.allowed) {
+      if (rotatedSession) {
+        await revokeAuthSession(prisma, rotatedSession.refreshToken, 'SCHOOL_ACCESS_DENIED');
+      }
       return res.status(schoolAccess.statusCode || 403).json({
         success: false,
         error: schoolAccess.error || 'Access denied',
         ...(schoolAccess.details ? { details: schoolAccess.details } : {}),
+      });
+    }
+
+    if (rotatedSession && rotatedSession.schoolAccessVersion !== user.schoolAccessVersion) {
+      await revokeAuthSession(prisma, rotatedSession.refreshToken, 'SCHOOL_ACCESS_CHANGED');
+      return res.status(401).json({
+        success: false,
+        code: 'SCHOOL_ACCESS_CHANGED',
+        error: 'School access changed. Please sign in again.',
       });
     }
 
@@ -1478,10 +1586,9 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
       }
     : null;
 
-    // Generate new tokens
     const newAccessToken = signAccessToken(
       buildAccessTokenClaims(user, {
-        isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role for backward compat
+        isSuperAdmin: user.role === 'SUPER_ADMIN',
         schoolAccessScope: schoolAccess.accessScope,
         school: schoolPayload,
       }),
@@ -1489,11 +1596,17 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
       JWT_EXPIRATION,
     );
 
-    const newRefreshToken = signLegacyRefreshToken(
-      user.id,
-      JWT_SECRET,
-      REFRESH_TOKEN_EXPIRATION,
-    );
+    const newRefreshToken = rotatedSession?.refreshToken || await issueRefreshCredential({
+      prisma,
+      userId: user.id,
+      schoolAccessVersion: user.schoolAccessVersion,
+      jwtSecret: JWT_SECRET,
+      refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION,
+      req,
+    });
+    if (authDbSessionsEnabled() && decoded) {
+      tokenBlacklist.revokeRefreshToken(refreshToken, durationToMilliseconds(REFRESH_TOKEN_EXPIRATION));
+    }
 
     console.log('🔄 Token refreshed successfully for:', user.email);
 
@@ -1904,11 +2017,14 @@ app.post(
         JWT_EXPIRATION,
       );
 
-      const refreshToken = signLegacyRefreshToken(
-        user.id,
-        JWT_SECRET,
-        REFRESH_TOKEN_EXPIRATION,
-      );
+      const refreshToken = await issueRefreshCredential({
+        prisma,
+        userId: user.id,
+        schoolAccessVersion: user.schoolAccessVersion,
+        jwtSecret: JWT_SECRET,
+        refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION,
+        req,
+      });
 
       res.json({
         success: true,
@@ -3859,11 +3975,14 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
       JWT_SECRET,
       JWT_EXPIRATION,
     );
-    const refreshToken = signLegacyRefreshToken(
-      result.id,
-      JWT_SECRET,
-      REFRESH_TOKEN_EXPIRATION,
-    );
+    const refreshToken = await issueRefreshCredential({
+      prisma,
+      userId: result.id,
+      schoolAccessVersion: result.schoolAccessVersion,
+      jwtSecret: JWT_SECRET,
+      refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION,
+      req,
+    });
 
     // Return success with token
     res.status(201).json({

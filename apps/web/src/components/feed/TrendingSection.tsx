@@ -2,6 +2,7 @@
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect } from 'react';
+import { TokenManager } from '@/lib/api/auth';
 import {
   TrendingUp,
   Eye,
@@ -54,7 +55,7 @@ export default function TrendingSection({ apiUrl, onPostClick }: TrendingSection
   const fetchTrending = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
+      const token = TokenManager.getAccessToken();
       const res = await fetch(`${apiUrl}/analytics/trending?period=${period}&limit=5`, {
         headers: { Authorization: `Bearer ${token}` },
       });

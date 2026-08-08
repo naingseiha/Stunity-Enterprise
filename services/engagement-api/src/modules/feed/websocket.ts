@@ -8,11 +8,18 @@ import { inMemorySubscribe } from './redis';
 
 import { REDIS_CHANNELS, SSEEvent } from './events';
 import { isQuizWarEnabled } from './featureFlags';
+import { consumeWsTicket } from './wsTicket';
 
 const JWT_SECRET = getJwtSecret();
 
 // Map of warId -> Set of active WebSocket connections
 const activeConnections = new Map<string, Set<WebSocket>>();
+
+function rejectUpgrade(socket: any, status: 401 | 403) {
+  const reason = status === 401 ? 'Unauthorized' : 'Forbidden';
+  socket.write(`HTTP/1.1 ${status} ${reason}\r\n\r\n`);
+  socket.destroy();
+}
 
 export function initWebSocketServer(server: Server) {
   if (!isQuizWarEnabled()) {
@@ -24,43 +31,46 @@ export function initWebSocketServer(server: Server) {
 
   console.log('📡 WS: Initializing Quiz War WebSocket Server');
 
-  // Handle upgrade manually to support route matching + authentication
+  // Handle upgrade manually to support route matching + ticket auth.
+  // Clients mint a short-lived opaque ticket over HTTPS (Authorization header)
+  // and only that ticket appears on the WS URL — never the access JWT.
   server.on('upgrade', (request: IncomingMessage, socket: any, head: Buffer) => {
-    const { pathname, query } = parseUrl(request.url || '', true);
+    void (async () => {
+      const { pathname, query } = parseUrl(request.url || '', true);
 
-    // Match path: /quiz-wars/:id/ws
-    const match = pathname?.match(/^\/quiz-wars\/([a-zA-Z0-9_-]+)\/ws$/);
-    if (!match) {
-      // Not a quiz war ws request, ignore and let other systems upgrade (e.g. messaging if any)
-      return;
-    }
-
-    const warId = match[1];
-    const token = typeof query.token === 'string' ? query.token : undefined;
-
-    if (!token) {
-      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-      socket.destroy();
-      return;
-    }
-
-    try {
-      // Verify JWT token
-      const decoded = verifyAccessToken(token, JWT_SECRET);
-      if (!decoded || !decoded.userId) {
-        socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
-        socket.destroy();
+      const match = pathname?.match(/^\/quiz-wars\/([a-zA-Z0-9_-]+)\/ws$/);
+      if (!match) {
         return;
       }
 
-      // Upgrade connection
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit('connection', ws, request, warId, decoded.userId);
-      });
-    } catch (err) {
-      socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
-      socket.destroy();
-    }
+      const warId = match[1];
+      const ticket = typeof query.ticket === 'string' ? query.ticket : undefined;
+
+      if (!ticket) {
+        rejectUpgrade(socket, 401);
+        return;
+      }
+
+      try {
+        const jwtToken = await consumeWsTicket(ticket);
+        if (!jwtToken) {
+          rejectUpgrade(socket, 403);
+          return;
+        }
+
+        const decoded = verifyAccessToken(jwtToken, JWT_SECRET);
+        if (!decoded?.userId) {
+          rejectUpgrade(socket, 403);
+          return;
+        }
+
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit('connection', ws, request, warId, decoded.userId);
+        });
+      } catch (err) {
+        rejectUpgrade(socket, 403);
+      }
+    })();
   });
 
   wss.on('connection', (ws: WebSocket, request: IncomingMessage, ...args: any[]) => {
@@ -74,11 +84,9 @@ export function initWebSocketServer(server: Server) {
     }
     activeConnections.get(warId)!.add(ws);
 
-    // Send connection success acknowledgement
     ws.send(JSON.stringify({ type: 'CONNECTED', warId }));
 
     ws.on('message', (message: string) => {
-      // Clients only receive score pushes, no interactive input required on WS stream
       console.log(`📡 WS: Received message from user ${userId} on war ${warId}: ${message}`);
     });
 
@@ -102,7 +110,6 @@ export function initWebSocketServer(server: Server) {
     });
   });
 
-  // ── Redis PubSub Subscription ──
   if (isRedisConnected) {
     const subscriber = createSubscriber();
     if (subscriber) {
@@ -118,7 +125,6 @@ export function initWebSocketServer(server: Server) {
     }
   }
 
-  // ── In-Memory Fallback Subscription ──
   inMemorySubscribe(REDIS_CHANNELS.globalEvents, (event: SSEEvent) => {
     if (event.type === ('QUIZ_WAR_UPDATED' as any) && event.data) {
       broadcastToWar(event.data.warId, event.data.event);

@@ -21,6 +21,7 @@ import { eventEmitter } from '@/utils/eventEmitter';
 import { tokenService } from '@/services/token';
 import { clearFeedCache } from '@/services/feedCache';
 import { clearUserScopedSessionCache } from '@/services/sessionCache';
+import { getAuthDeviceId } from '@/services/authDeviceId';
 
 export interface PasswordLoginResult {
   success: boolean;
@@ -158,16 +159,6 @@ const prewarmFeedAfterAuth = (role?: User['role']) => {
   }, 0);
 };
 
-const AUTH_DEVICE_ID_KEY = '@stunity/auth-device-id';
-
-async function getAuthDeviceId(): Promise<string> {
-  const existing = await AsyncStorage.getItem(AUTH_DEVICE_ID_KEY);
-  if (existing) return existing;
-  const created = `mobile_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
-  await AsyncStorage.setItem(AUTH_DEVICE_ID_KEY, created);
-  return created;
-}
-
 const mapAuthResponseUser = (apiUser: any, responseData: any): User => {
   return mapApiUserToUser({
     ...apiUser,
@@ -209,6 +200,8 @@ export const useAuthStore = create<AuthState>()(
           // Check for stored tokens
           const hasTokens = await tokenService.initialize();
 
+          // Biometric unlock is a local gate only. Credentials stay in SecureStore
+          // so a cancelled/failed prompt never becomes an auto-logout.
           if (hasTokens && !options?.skipBiometric) {
             const biometricEnabled = await tokenService.isBiometricEnabled();
             if (biometricEnabled) {
@@ -216,11 +209,11 @@ export const useAuthStore = create<AuthState>()(
               const authResult = await authenticateBiometric('Unlock Stunity');
               if (!authResult.success) {
                 set({
-                  user: null,
                   isAuthenticated: false,
                   isLoggingOut: false,
                   isLoading: false,
                   isInitialized: true,
+                  error: null,
                 });
                 return;
               }

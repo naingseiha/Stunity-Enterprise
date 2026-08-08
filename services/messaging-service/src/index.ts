@@ -5,9 +5,10 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
 import path from 'path';
 import { withPrismaPoolParams, scheduleDbKeepalive, shouldRunDbStartupWarmup } from '../../lib/prisma-pool-url';
+import { verifyAccessToken } from '../../lib/auth-tokens';
+import { getJwtSecret } from '../../lib/jwt-secret';
 import { compareSchoolAuthorizationProjection } from './security/schoolAuthorizationProjection';
 
 // Load environment variables from root .env
@@ -16,10 +17,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 const PORT = process.env.PORT || process.env.MESSAGING_SERVICE_PORT || 3011;
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
-}
-const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
+const JWT_SECRET = getJwtSecret();
 
 // ✅ Prisma with Supabase PostgreSQL
 const prisma = new PrismaClient({
@@ -311,7 +309,7 @@ const authenticateToken = async (req: Request, res: Response, next: NextFunction
       return res.status(401).json({ success: false, error: 'Access token required' });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = verifyAccessToken(token, JWT_SECRET) as any;
     let teacherId = decoded.teacherId;
     let parentId = decoded.parentId;
     let schoolId = decoded.schoolId;

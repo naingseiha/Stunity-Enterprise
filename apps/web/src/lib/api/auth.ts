@@ -182,39 +182,204 @@ export async function verifyToken(token: string): Promise<VerifyTokenResponse> {
   return response.json();
 }
 
-// Token management utilities (remember-me: long-lived tokens, refresh on 401)
+// Token management utilities (Facebook-style: stay signed in until logout).
+// Long-lived refresh credentials live in an httpOnly SameSite cookie via the
+// Next.js auth BFF (`/api/auth/*`). Short-lived access tokens stay in memory
+// (+ sessionStorage for same-tab hard refresh) so they are not persisted in
+// localStorage. Mobile is unaffected (SecureStore).
 let _refreshPromise: Promise<boolean> | null = null;
+let _accessToken: string | null = null;
+let _assumeLoggedOut = false;
+const WEB_DEVICE_ID_KEY = 'stunity_auth_device_id';
+const ACCESS_SESSION_KEY = 'accessToken';
+const AUTH_BROADCAST = 'stunity-auth-access';
+
+function getWebDeviceId(): string {
+  if (typeof window === 'undefined') return 'web_ssr';
+  const existing = localStorage.getItem(WEB_DEVICE_ID_KEY);
+  if (existing) return existing;
+  const created = `web_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+  localStorage.setItem(WEB_DEVICE_ID_KEY, created);
+  return created;
+}
+
+function deviceHeaders(): HeadersInit {
+  return {
+    'X-Device-Id': getWebDeviceId(),
+    'X-Device-Name': typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 200) : 'web',
+  };
+}
+
+function broadcastAccessToken(token: string | null) {
+  if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return;
+  try {
+    const channel = new BroadcastChannel(AUTH_BROADCAST);
+    channel.postMessage({ type: 'access', token });
+    channel.close();
+  } catch {
+    // Ignore — multi-tab sync is best-effort.
+  }
+}
+
+function writeAccessToken(token: string | null, { broadcast = true }: { broadcast?: boolean } = {}) {
+  _accessToken = token;
+  _assumeLoggedOut = false;
+  if (typeof window === 'undefined') return;
+  try {
+    if (token) sessionStorage.setItem(ACCESS_SESSION_KEY, token);
+    else sessionStorage.removeItem(ACCESS_SESSION_KEY);
+  } catch {
+    // Private mode may block sessionStorage.
+  }
+  // Never keep access tokens in localStorage (XSS + disk persistence).
+  localStorage.removeItem('accessToken');
+  if (broadcast) broadcastAccessToken(token);
+}
+
+function readAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  if (_accessToken) return _accessToken;
+  try {
+    const fromSession = sessionStorage.getItem(ACCESS_SESSION_KEY);
+    if (fromSession) {
+      _accessToken = fromSession;
+      return fromSession;
+    }
+  } catch {
+    // ignore
+  }
+  // One-time migrate away from legacy localStorage access tokens.
+  const legacy = localStorage.getItem('accessToken');
+  if (legacy) {
+    writeAccessToken(legacy, { broadcast: false });
+    return legacy;
+  }
+  return null;
+}
+
+/** Listen for access-token updates from other tabs (cookie refresh elsewhere). */
+export function subscribeAccessTokenSync(onChange?: (token: string | null) => void): () => void {
+  if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') {
+    return () => {};
+  }
+  const channel = new BroadcastChannel(AUTH_BROADCAST);
+  channel.onmessage = (event) => {
+    if (event?.data?.type !== 'access') return;
+    const token = typeof event.data.token === 'string' ? event.data.token : null;
+    writeAccessToken(token, { broadcast: false });
+    onChange?.(token);
+  };
+  return () => channel.close();
+}
+
+/** Move a refresh credential into the httpOnly cookie, then drop XSS-readable copy. */
+async function migrateRefreshToHttpOnlyCookie(refreshToken: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/auth/session', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return false;
+    // Always drop localStorage refresh after cookie is set (including rotated credentials).
+    localStorage.removeItem('refreshToken');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function refreshViaHttpOnlyCookie(): Promise<boolean> {
+  const res = await fetch('/api/auth/refresh', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      ...deviceHeaders(),
+    },
+  });
+  const data = await res.json().catch(() => ({} as any));
+  if (res.ok && data.success && data.data?.accessToken) {
+    writeAccessToken(data.data.accessToken);
+    localStorage.removeItem('refreshToken');
+    return true;
+  }
+  // Another tab may have rotated the cookie while we waited.
+  if (res.status === 409 || data?.code === 'SESSION_CONFLICT') {
+    return false;
+  }
+  if (data?.code === 'REFRESH_COOKIE_MISSING') {
+    _assumeLoggedOut = !localStorage.getItem('refreshToken');
+  }
+  return false;
+}
+
+async function refreshViaLegacyLocalStorage(credential: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${AUTH_SERVICE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...deviceHeaders(),
+      },
+      body: JSON.stringify({ refreshToken: credential }),
+    });
+    const data = await res.json().catch(() => ({} as any));
+    if (res.ok && data.success && data.data?.accessToken && data.data?.refreshToken) {
+      writeAccessToken(data.data.accessToken);
+      // Prefer cookie storage immediately after a successful legacy refresh.
+      const migrated = await migrateRefreshToHttpOnlyCookie(data.data.refreshToken);
+      if (!migrated) {
+        localStorage.setItem('refreshToken', data.data.refreshToken);
+      }
+      return true;
+    }
+    if (res.status === 409 || data?.code === 'SESSION_CONFLICT') {
+      const latest = localStorage.getItem('refreshToken');
+      if (latest && latest !== credential) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 export const TokenManager = {
   setTokens(accessToken: string, refreshToken: string) {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('accessToken', accessToken);
+      writeAccessToken(accessToken);
+      // Brief dual-write so a reload before the cookie POST finishes still works.
       localStorage.setItem('refreshToken', refreshToken);
+      void migrateRefreshToHttpOnlyCookie(refreshToken);
     }
   },
 
   getTokens(): { accessToken: string | null; refreshToken: string | null } | null {
     if (typeof window !== 'undefined') {
-      const accessToken = localStorage.getItem('accessToken');
+      const accessToken = readAccessToken();
       const refreshToken = localStorage.getItem('refreshToken');
-      if (!accessToken) return null;
+      if (!accessToken && !refreshToken) return null;
       return { accessToken, refreshToken };
     }
     return null;
   },
 
   getAccessToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('accessToken');
-    }
-    return null;
+    return readAccessToken();
   },
 
   getRefreshToken(): string | null {
+    // Refresh credentials are httpOnly; only a legacy localStorage copy may remain.
     if (typeof window !== 'undefined') {
       return localStorage.getItem('refreshToken');
     }
     return null;
+  },
+
+  /** True after a cookie/legacy refresh failed with no usable session. */
+  isAssumedLoggedOut(): boolean {
+    return _assumeLoggedOut;
   },
 
   accessTokenExpiresWithin(seconds: number): boolean {
@@ -229,48 +394,34 @@ export const TokenManager = {
     }
   },
 
-  /** Refresh tokens via /auth/refresh. Returns true if successful. */
+  /**
+   * Refresh via httpOnly cookie BFF first; fall back to legacy localStorage
+   * refresh once, then migrate into the cookie.
+   */
   async refreshTokens(): Promise<boolean> {
     if (typeof window === 'undefined') return false;
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) return false;
-
     if (_refreshPromise) return _refreshPromise;
-
-    const performRefresh = async (credential: string): Promise<boolean> => {
-      try {
-        const res = await fetch(`${AUTH_SERVICE_URL}/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken: credential }),
-        });
-        const data = await res.json();
-        if (res.ok && data.success && data.data?.accessToken && data.data?.refreshToken) {
-          localStorage.setItem('accessToken', data.data.accessToken);
-          localStorage.setItem('refreshToken', data.data.refreshToken);
-          return true;
-        }
-        return false;
-      } catch {
-        return false;
-      }
-    };
 
     _refreshPromise = (async () => {
       try {
         const lockManager = (navigator as Navigator & {
           locks?: { request<T>(name: string, callback: () => Promise<T>): Promise<T> };
         }).locks;
+
+        const run = async () => {
+          if (await refreshViaHttpOnlyCookie()) return true;
+
+          // Bridge for sessions created before the cookie BFF: rotate via body,
+          // then migrate the new opaque credential into the httpOnly cookie.
+          const legacy = localStorage.getItem('refreshToken');
+          if (!legacy) return false;
+          return refreshViaLegacyLocalStorage(legacy);
+        };
+
         if (lockManager) {
-          return lockManager.request('stunity-auth-refresh', async () => {
-            const latestCredential = localStorage.getItem('refreshToken');
-            if (!latestCredential) return false;
-            // Another tab completed rotation while this tab waited for the lock.
-            if (latestCredential !== refreshToken) return true;
-            return performRefresh(latestCredential);
-          });
+          return lockManager.request('stunity-auth-refresh', run);
         }
-        return performRefresh(refreshToken);
+        return run();
       } finally {
         _refreshPromise = null;
       }
@@ -302,8 +453,9 @@ export const TokenManager = {
   },
 
   clearTokens() {
+    writeAccessToken(null);
+    _assumeLoggedOut = true;
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
       localStorage.removeItem('school');
@@ -311,21 +463,33 @@ export const TokenManager = {
     _refreshPromise = null;
   },
 
-  /** Logout: revoke refresh token on server, then clear locally */
+  /** Logout: revoke via BFF cookie (and legacy body path), then clear locally */
   async logout() {
     if (typeof window === 'undefined') return;
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (refreshToken) {
+
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', ...deviceHeaders() },
+      });
+    } catch {
+      // Ignore - clear locally anyway
+    }
+
+    const legacyRefresh = localStorage.getItem('refreshToken');
+    if (legacyRefresh) {
       try {
         await fetch(`${AUTH_SERVICE_URL}/auth/logout`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
+          body: JSON.stringify({ refreshToken: legacyRefresh }),
         });
       } catch {
-        // Ignore - clear locally anyway
+        // Ignore
       }
     }
+
     this.clearTokens();
   },
 

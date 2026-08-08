@@ -1,10 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../../../lib/auth-tokens';
+import { getJwtSecret } from '../../../lib/jwt-secret';
 
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
-}
-const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
+const JWT_SECRET = getJwtSecret();
 
 export interface AuthRequest extends Request {
     user?: {
@@ -25,15 +23,13 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
             return res.status(401).json({ success: false, error: 'Access token required' });
         }
 
-        // console.log('🔐 [AUTH] Verifying token for:', req.method, req.path);
-
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        const decoded = verifyAccessToken(token, JWT_SECRET);
 
         req.user = {
             id: decoded.userId,
-            email: decoded.email,
-            role: decoded.role,
-            schoolId: decoded.schoolId,
+            email: typeof decoded.email === 'string' ? decoded.email : '',
+            role: typeof decoded.role === 'string' ? decoded.role : '',
+            schoolId: typeof decoded.schoolId === 'string' ? decoded.schoolId : '',
         };
         next();
     } catch (error: any) {

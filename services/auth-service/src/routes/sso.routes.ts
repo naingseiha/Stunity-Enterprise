@@ -4,9 +4,10 @@ import { Strategy as GoogleStrategy, Profile as GoogleProfile } from 'passport-g
 import { OIDCStrategy } from 'passport-azure-ad';
 import { PrismaClient } from '@prisma/client';
 import { getJwtSecret } from '../../../lib/jwt-secret';
-import { signAccessToken, signLegacyRefreshToken } from '../../../lib/auth-tokens';
+import { signAccessToken } from '../../../lib/auth-tokens';
 import * as ssoCodeStore from '../utils/ssoCodeStore';
 import { buildAccessTokenClaims } from '../utils/accessToken';
+import { issueRefreshCredential } from '../security/refreshCredential';
 
 const router = Router();
 
@@ -101,11 +102,14 @@ export default function ssoRoutes(prisma: PrismaClient) {
         JWT_EXPIRATION,
       );
 
-      const refreshToken = signLegacyRefreshToken(
-        user.id,
-        JWT_SECRET,
-        REFRESH_TOKEN_EXPIRATION,
-      );
+      const refreshToken = await issueRefreshCredential({
+        prisma,
+        userId: user.id,
+        schoolAccessVersion: user.schoolAccessVersion,
+        jwtSecret: JWT_SECRET,
+        refreshTokenExpiration: REFRESH_TOKEN_EXPIRATION,
+        req,
+      });
 
       // 3. Update login metadata
       await prisma.user.update({

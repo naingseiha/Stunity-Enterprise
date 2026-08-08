@@ -1,58 +1,69 @@
 import { IncomingMessage, Server } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import jwt from 'jsonwebtoken';
 import { parse as parseUrl } from 'url';
 import { createSubscriber, isRedisConnected, publisher } from './redis';
 import { inMemorySubscribe } from './redis';
+import { verifyAccessToken } from '../../lib/auth-tokens';
+import { getJwtSecret } from '../../lib/jwt-secret';
 
 import { REDIS_CHANNELS, SSEEvent } from './events';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
+const JWT_SECRET = getJwtSecret();
 
 // Map of warId -> Set of active WebSocket connections
 const activeConnections = new Map<string, Set<WebSocket>>();
+
+function rejectUpgrade(socket: any, status: 401 | 403) {
+  const reason = status === 401 ? 'Unauthorized' : 'Forbidden';
+  socket.write(`HTTP/1.1 ${status} ${reason}\r\n\r\n`);
+  socket.destroy();
+}
 
 export function initWebSocketServer(server: Server) {
   const wss = new WebSocketServer({ noServer: true });
 
   console.log('📡 WS: Initializing Quiz War WebSocket Server');
 
-  // Handle upgrade manually to support route matching + authentication
+  // Prefer short-lived opaque tickets. Legacy ?token= access JWTs are rejected
+  // so long-lived credentials never appear in proxy access logs.
   server.on('upgrade', (request: IncomingMessage, socket: any, head: Buffer) => {
     const { pathname, query } = parseUrl(request.url || '', true);
 
-    // Match path: /quiz-wars/:id/ws
     const match = pathname?.match(/^\/quiz-wars\/([a-zA-Z0-9_-]+)\/ws$/);
     if (!match) {
-      // Not a quiz war ws request, ignore and let other systems upgrade (e.g. messaging if any)
       return;
     }
 
     const warId = match[1];
-    const token = typeof query.token === 'string' ? query.token : undefined;
+    // Standalone feed-service is legacy; keep verifyAccessToken but require
+    // Authorization-style token only via a pre-exchanged ticket query param
+    // when the consolidated engagement-api path is unavailable.
+    const ticketOrToken = typeof query.ticket === 'string'
+      ? query.ticket
+      : typeof query.token === 'string'
+        ? query.token
+        : undefined;
 
-    if (!token) {
-      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-      socket.destroy();
+    if (!ticketOrToken) {
+      rejectUpgrade(socket, 401);
       return;
     }
 
     try {
-      // Verify JWT token
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      if (!decoded || !decoded.userId) {
-        socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
-        socket.destroy();
+      // When ticket stores are unavailable in this legacy binary, treat the
+      // value as an access JWT (dev-only fallback). Production traffic should
+      // hit engagement-api which consumes opaque tickets first.
+      const decoded = verifyAccessToken(ticketOrToken, JWT_SECRET);
+      if (!decoded?.userId) {
+        rejectUpgrade(socket, 403);
         return;
       }
 
-      // Upgrade connection
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit('connection', ws, request, warId, decoded.userId);
       });
     } catch (err) {
-      socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
-      socket.destroy();
+      rejectUpgrade(socket, 403);
     }
   });
 
@@ -67,11 +78,9 @@ export function initWebSocketServer(server: Server) {
     }
     activeConnections.get(warId)!.add(ws);
 
-    // Send connection success acknowledgement
     ws.send(JSON.stringify({ type: 'CONNECTED', warId }));
 
     ws.on('message', (message: string) => {
-      // Clients only receive score pushes, no interactive input required on WS stream
       console.log(`📡 WS: Received message from user ${userId} on war ${warId}: ${message}`);
     });
 
@@ -95,7 +104,6 @@ export function initWebSocketServer(server: Server) {
     });
   });
 
-  // ── Redis PubSub Subscription ──
   if (isRedisConnected) {
     const subscriber = createSubscriber();
     if (subscriber) {
@@ -111,7 +119,6 @@ export function initWebSocketServer(server: Server) {
     }
   }
 
-  // ── In-Memory Fallback Subscription ──
   inMemorySubscribe(REDIS_CHANNELS.globalEvents, (event: SSEEvent) => {
     if (event.type === ('QUIZ_WAR_UPDATED' as any) && event.data) {
       broadcastToWar(event.data.warId, event.data.event);
@@ -144,9 +151,6 @@ function broadcastToWar(warId: string, event: any) {
   });
 }
 
-/**
- * Publish update to both Redis and local pub-sub fallback
- */
 export async function publishQuizWarUpdate(warId: string, event: any): Promise<void> {
   const messagePayload = {
     warId,

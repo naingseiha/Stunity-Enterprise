@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { TokenManager } from '@/lib/api/auth';
 import {
   Activity,
   FileText,
@@ -45,7 +46,7 @@ export default function ActivityDashboard({ apiUrl }: ActivityDashboardProps) {
   const fetchActivity = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
+      const token = TokenManager.getAccessToken();
       const res = await fetch(`${apiUrl}/analytics/activity`, {
         headers: { Authorization: `Bearer ${token}` },
       });

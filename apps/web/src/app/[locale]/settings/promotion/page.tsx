@@ -1,779 +1,406 @@
 'use client';
 
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import { useTranslations } from 'next-intl';
-import { useEffect, useMemo, useState, use } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { TokenManager } from '@/lib/api/auth';
-import { useAcademicYear } from '@/contexts/AcademicYearContext';
-import {
-  getEligibleStudents,
-  getPromotionPreview,
-  promoteStudents,
-  type EligibleStudentsResponse,
-  type PromotionPreviewResponse,
-  type PromotionRequest,
-} from '@/lib/api/promotion';
-import { STUDENT_SERVICE_URL } from '@/lib/api/config';
-import { useSWRConfig } from 'swr';
-import UnifiedNavigation from '@/components/UnifiedNavigation';
-import AnimatedContent from '@/components/AnimatedContent';
+import { use, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   AlertCircle,
   ArrowRight,
+  BookOpenCheck,
+  Check,
   CheckCircle2,
-  ChevronRight,
+  ClipboardCheck,
+  Clock3,
+  Filter,
   GraduationCap,
-  Home,
   Loader2,
+  PencilLine,
   RefreshCw,
-  Settings,
+  Save,
+  Search,
+  Settings2,
+  ShieldCheck,
   Sparkles,
-  TrendingUp,
-  UserCheck,
-  UserX,
+  UserRoundCheck,
+  UserRoundX,
   Users,
   X,
 } from 'lucide-react';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
+import PageSkeleton from '@/components/layout/PageSkeleton';
+import { TokenManager } from '@/lib/api/auth';
+import { useAcademicYearsList } from '@/hooks/useAcademicYears';
+import { useClasses } from '@/hooks/useClasses';
+import {
+  yearEndApi,
+  type PromotionPolicy,
+  type YearEndCycle,
+  type YearEndDecision,
+  type YearEndOutcome,
+} from '@/lib/api/year-end';
 
-interface MergedPreviewItem {
-  fromClass: { id: string; name: string; grade: string; section: string | null };
-  toClass: { id: string; name: string } | null;
-  studentCount: number;
-  students: Array<{ id: string; firstName: string; lastName: string }>;
-  willGraduate: boolean;
-}
+const DEFAULT_POLICY: PromotionPolicy = {
+  passAverage: 50,
+  minAttendanceRate: 75,
+  terminalGrade: 12,
+  maxUnexcusedAbsences: null,
+  maxDisciplineIncidents: null,
+  requireCompleteGrades: false,
+  allowConditionalPromotion: true,
+  allowSupplementaryExam: true,
+  requireReasonForOverride: true,
+  requireSecondApproval: false,
+  additionalRules: {},
+};
 
-function StepBadge({
-  number,
-  label,
-  active,
-  current,
-}: {
-  number: number;
-  label: string;
-  active: boolean;
-  current: boolean;
-}) {
+const OUTCOMES: YearEndOutcome[] = ['PENDING', 'PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT', 'GRADUATE', 'WITHDRAWN'];
+const REASONS = [
+  'MEETS_SCHOOL_POLICY',
+  'ACADEMIC_BELOW_THRESHOLD',
+  'SUPPLEMENTARY_EXAM_PASSED',
+  'REMEDIAL_PROGRAM_COMPLETED',
+  'ATTENDANCE_BELOW_THRESHOLD',
+  'EXCESSIVE_UNEXCUSED_ABSENCE',
+  'DISCIPLINE_REVIEW_REQUIRED',
+  'SPECIAL_COMMITTEE_DECISION',
+  'PARENT_REQUEST',
+  'HEALTH_OR_WELFARE_CONSIDERATION',
+  'TRANSFER_OR_WITHDRAWAL',
+  'OTHER',
+];
+const INTERVENTIONS = ['REMEDIAL_COURSE', 'SUPPLEMENTARY_EXAM', 'ATTENDANCE_REVIEW', 'DISCIPLINE_REVIEW', 'COUNSELING', 'SPECIAL_COMMITTEE'];
+
+const outcomeTone: Record<YearEndOutcome, string> = {
+  PENDING: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200',
+  PROMOTE: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200',
+  CONDITIONAL_PROMOTE: 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200',
+  REPEAT: 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
+  GRADUATE: 'border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200',
+  WITHDRAWN: 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200',
+};
+
+const parseGrade = (value: string | number | null | undefined) => {
+  const match = String(value ?? '').match(/\d+/);
+  return match ? Number(match[0]) : null;
+};
+
+function OutcomeBadge({ outcome, compact = false }: { outcome: YearEndOutcome; compact?: boolean }) {
   return (
-    <div className="flex items-center gap-3">
-      <div
-        className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-black transition-all ${
-          active
-            ? 'bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/20'
-            : 'border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 text-slate-400 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-gray-500'
-        } ${current ? 'ring-4 ring-orange-500/10' : ''}`}
-      >
-        {number}
-      </div>
-      <div className="hidden sm:block">
-        <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${active ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-gray-500'}`}>
-          <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_bdad915c" />{number}
-        </p>
-        <p className={`mt-1 text-xs font-semibold ${active ? 'text-orange-600 dark:text-orange-300' : 'text-slate-400 dark:text-gray-500'}`}>
-          {label}
-        </p>
-      </div>
-    </div>
+    <span className={`inline-flex items-center rounded-full border font-black tracking-wide ${compact ? 'px-2 py-1 text-[9px]' : 'px-3 py-1.5 text-[10px]'} ${outcomeTone[outcome]}`}>
+      {outcome.replaceAll('_', ' ')}
+    </span>
   );
 }
 
-function MetricCard({
-  label,
-  value,
-  helper,
-  tone,
-  icon: Icon,
-}: {
-  label: string;
-  value: string | number;
-  helper: string;
-  tone: 'orange' | 'emerald' | 'slate';
-  icon: typeof TrendingUp;
-}) {
-  const tones = {
-    orange: {
-      surface: 'from-amber-400 via-orange-500 to-rose-500 shadow-amber-200/70 dark:shadow-orange-950/40',
-      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
-      glow: 'from-white/30 via-white/10 to-transparent',
-    },
-    emerald: {
-      surface: 'from-emerald-500 via-teal-500 to-cyan-500 shadow-emerald-200/70 dark:shadow-emerald-950/40',
-      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
-      glow: 'from-white/30 via-white/10 to-transparent',
-    },
-    slate: {
-      surface: 'from-blue-500 via-cyan-500 to-sky-500 shadow-blue-200/70 dark:shadow-blue-950/40',
-      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
-      glow: 'from-white/30 via-white/10 to-transparent',
-    },
-  };
-  const classes = tones[tone];
-
+function Metric({ icon: Icon, label, value, helper, tone }: { icon: typeof Users; label: string; value: number | string; helper: string; tone: string }) {
   return (
-    <div className={`group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-gradient-to-br ${classes.surface} p-5 text-white shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl dark:border-white/5`}>
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${classes.glow}`} />
-      <div className="relative z-10 flex items-start justify-between gap-4">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/75">{label}</p>
-          <p className="mt-3 text-3xl font-black tracking-tight text-white">{value}</p>
-          <div className="mt-3 inline-flex items-center rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white/90 ring-1 ring-white/20">
-            {helper}
-          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{label}</p>
+          <p className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p>
+          <p className="mt-2 text-xs font-semibold text-slate-500 dark:text-gray-400">{helper}</p>
         </div>
-        <div className={`rounded-[1rem] p-3.5 shadow-lg backdrop-blur-md ring-1 ${classes.icon}`}>
-          <Icon className="h-5 w-5" />
-        </div>
+        <div className={`rounded-xl p-3 ${tone}`}><Icon className="h-5 w-5" /></div>
       </div>
     </div>
   );
 }
 
-export default function StudentPromotionPage(props: { params: Promise<{ locale: string }> }) {
-    const autoT = useTranslations();
-  const params = use(props.params);
-  const { locale } = params;
-
+export default function PromotionReviewPage(props: { params: Promise<{ locale: string }> }) {
+  const { locale } = use(props.params);
+  const isKm = locale.toLowerCase().startsWith('km');
+  const tx = (km: string, en: string) => (isKm ? km : en);
   const router = useRouter();
-  const t = useTranslations('common');
-  const { mutate } = useSWRConfig();
-  const { allYears: academicYears } = useAcademicYear();
-
+  const searchParams = useSearchParams();
   const userData = TokenManager.getUserData();
   const user = userData?.user;
   const school = userData?.school;
   const schoolId = user?.schoolId || school?.id;
 
-  const [step, setStep] = useState(1);
-  const [fromYearId, setFromYearId] = useState('');
+  const { years, isLoading: yearsLoading, mutate: mutateYears } = useAcademicYearsList(schoolId);
+  const sortedYears = useMemo(() => [...years].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()), [years]);
+  const [fromYearId, setFromYearId] = useState(searchParams.get('yearId') || '');
   const [toYearId, setToYearId] = useState('');
-  const [eligibleStudents, setEligibleStudents] = useState<EligibleStudentsResponse | null>(null);
-  const [previewData, setPreviewData] = useState<PromotionPreviewResponse | null>(null);
-  const [promotions, setPromotions] = useState<PromotionRequest[]>([]);
+  const { classes: targetClasses } = useClasses({ academicYearId: toYearId || undefined, limit: 500 });
+
+  const [cycle, setCycle] = useState<YearEndCycle | null>(null);
+  const [policy, setPolicy] = useState<PromotionPolicy>(DEFAULT_POLICY);
   const [loading, setLoading] = useState(false);
-  const [executing, setExecuting] = useState(false);
-  const [results, setResults] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showPolicy, setShowPolicy] = useState(false);
+  const [search, setSearch] = useState('');
+  const [classFilter, setClassFilter] = useState('ALL');
+  const [outcomeFilter, setOutcomeFilter] = useState<YearEndOutcome | 'ALL'>('ALL');
+  const [attentionOnly, setAttentionOnly] = useState(false);
+  const [editing, setEditing] = useState<YearEndDecision | null>(null);
+  const [editForm, setEditForm] = useState({
+    finalOutcome: 'PENDING' as YearEndOutcome,
+    targetClassId: '',
+    reasonCode: '',
+    reasonDetails: '',
+    interventions: [] as string[],
+    interventionStatus: '',
+    disciplineIncidentCount: '',
+  });
 
   useEffect(() => {
-    const token = TokenManager.getAccessToken();
-    if (!token) {
-      router.replace(`/${locale}/auth/login`);
-    }
+    if (!TokenManager.getAccessToken()) router.replace(`/${locale}/auth/login`);
   }, [locale, router]);
 
-  const handleLogout = async () => {
-    await TokenManager.logout();
-    router.push(`/${locale}/auth/login`);
-  };
+  useEffect(() => {
+    if (!sortedYears.length) return;
+    const source = sortedYears.find((year) => year.id === fromYearId)
+      || sortedYears.find((year) => year.isCurrent)
+      || sortedYears[sortedYears.length - 1];
+    if (!fromYearId && source) setFromYearId(source.id);
+    const target = sortedYears.find((year) => source && new Date(year.startDate) > new Date(source.endDate));
+    if ((!toYearId || toYearId === source?.id) && target) setToYearId(target.id);
+  }, [fromYearId, sortedYears, toYearId]);
 
-  const resetFlow = () => {
-    setStep(1);
-    setFromYearId('');
-    setToYearId('');
-    setEligibleStudents(null);
-    setPreviewData(null);
-    setPromotions([]);
-    setResults(null);
-    setError('');
-  };
+  useEffect(() => {
+    if (!schoolId) return;
+    yearEndApi.getPolicy(schoolId).then(setPolicy).catch(() => setPolicy(DEFAULT_POLICY));
+  }, [schoolId]);
 
-  const handleLoadPreview = async () => {
-    if (!fromYearId || !toYearId || !schoolId) {
-      setError('Please select both academic years');
-      return;
-    }
-
+  useEffect(() => {
+    if (!schoolId || !fromYearId) return;
     setLoading(true);
     setError('');
+    yearEndApi.getCycle(schoolId, fromYearId, toYearId || undefined)
+      .then(setCycle)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [fromYearId, schoolId, toYearId]);
 
+  const fromYear = sortedYears.find((year) => year.id === fromYearId);
+  const toYear = sortedYears.find((year) => year.id === toYearId);
+  const sourceClasses = useMemo(() => Array.from(new Map((cycle?.decisions || []).map((decision) => [decision.fromClass.id, decision.fromClass])).values()), [cycle]);
+  const visibleDecisions = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return (cycle?.decisions || []).filter((decision) => {
+      const student = decision.student;
+      const names = [student.firstName, student.lastName, student.englishFirstName, student.englishLastName, student.studentId, decision.fromClass.name].filter(Boolean).join(' ').toLowerCase();
+      return (!query || names.includes(query))
+        && (classFilter === 'ALL' || decision.fromClassId === classFilter)
+        && (outcomeFilter === 'ALL' || decision.finalOutcome === outcomeFilter)
+        && (!attentionOnly || decision.finalOutcome === 'PENDING' || decision.decisionSource === 'OVERRIDE');
+    });
+  }, [attentionOnly, classFilter, cycle, outcomeFilter, search]);
+
+  const reloadCycle = async () => {
+    if (!schoolId || !fromYearId) return;
+    setCycle(await yearEndApi.getCycle(schoolId, fromYearId, toYearId || undefined));
+  };
+
+  const generate = async () => {
+    if (!schoolId || !fromYearId || !toYearId) return;
     try {
-      const token = TokenManager.getAccessToken();
-      const [eligible, preview] = await Promise.all([
-        getEligibleStudents(schoolId, fromYearId, token || undefined),
-        getPromotionPreview(schoolId, fromYearId, toYearId, token || undefined),
-      ]);
+      setLoading(true); setError(''); setSuccess('');
+      const generated = await yearEndApi.generate(schoolId, fromYearId, toYearId);
+      setCycle(generated);
+      setSuccess(tx('បានបង្កើតបញ្ជីវាយតម្លៃចុងឆ្នាំរួចរាល់។', 'Year-end evaluation list generated.'));
+    } catch (err: any) { setError(err.message); }
+    finally { setLoading(false); }
+  };
 
-      setEligibleStudents(eligible);
-      setPreviewData(preview);
+  const savePolicy = async () => {
+    if (!schoolId) return;
+    try {
+      setSaving(true); setError('');
+      setPolicy(await yearEndApi.savePolicy(schoolId, policy));
+      setSuccess(tx('បានរក្សាទុកគោលការណ៍សាលា។ Policy ថ្មីនឹងប្រើសម្រាប់បញ្ជីដែលបង្កើតបន្ទាប់។', 'School policy saved. It will apply to newly generated cycles.'));
+      setShowPolicy(false);
+    } catch (err: any) { setError(err.message); }
+    finally { setSaving(false); }
+  };
 
-      const requests: PromotionRequest[] = [];
-      eligible.classesByGrade?.forEach((classData) => {
-        const classPreview = preview.preview.find((item) => item.fromClass.id === classData.class.id);
-        if (!classPreview || classPreview.willGraduate) return;
+  const openEdit = (decision: YearEndDecision) => {
+    setEditing(decision);
+    setEditForm({
+      finalOutcome: decision.finalOutcome,
+      targetClassId: decision.targetClassId || '',
+      reasonCode: decision.reasonCode || '',
+      reasonDetails: decision.reasonDetails || '',
+      interventions: Array.isArray(decision.interventions) ? decision.interventions : [],
+      interventionStatus: decision.interventionStatus || '',
+      disciplineIncidentCount: decision.disciplineIncidentCount === null ? '' : String(decision.disciplineIncidentCount),
+    });
+  };
 
-        const targetClass = classPreview.targetClasses[0];
-        if (!targetClass) return;
+  const eligibleTargetClasses = useMemo(() => {
+    if (!editing) return targetClasses;
+    const sourceGrade = parseGrade(editing.fromClass.grade);
+    if (editForm.finalOutcome === 'REPEAT') return targetClasses.filter((target) => parseGrade(target.grade) === sourceGrade);
+    if (['PROMOTE', 'CONDITIONAL_PROMOTE'].includes(editForm.finalOutcome)) return targetClasses.filter((target) => parseGrade(target.grade) === (sourceGrade ?? -2) + 1);
+    return [];
+  }, [editForm.finalOutcome, editing, targetClasses]);
 
-        classData.students.forEach((student) => {
-          requests.push({
-            studentId: student.id,
-            fromClassId: classData.class.id,
-            toClassId: targetClass.id,
-            promotionType: 'AUTOMATIC',
-          });
-        });
+  useEffect(() => {
+    if (!editing || !['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT'].includes(editForm.finalOutcome)) return;
+    if (!eligibleTargetClasses.some((target) => target.id === editForm.targetClassId)) {
+      setEditForm((current) => ({ ...current, targetClassId: eligibleTargetClasses[0]?.id || '' }));
+    }
+  }, [editForm.finalOutcome, editForm.targetClassId, editing, eligibleTargetClasses]);
+
+  const saveDecision = async () => {
+    if (!editing || !schoolId) return;
+    try {
+      setSaving(true); setError('');
+      await yearEndApi.updateDecision(schoolId, fromYearId, editing.id, {
+        version: editing.version,
+        finalOutcome: editForm.finalOutcome,
+        targetClassId: editForm.targetClassId || null,
+        reasonCode: editForm.reasonCode || null,
+        reasonDetails: editForm.reasonDetails || null,
+        interventions: editForm.interventions,
+        interventionStatus: editForm.interventionStatus || null,
+        disciplineIncidentCount: editForm.disciplineIncidentCount === '' ? null : Number(editForm.disciplineIncidentCount),
       });
-
-      setPromotions(requests);
-      setStep(2);
-    } catch (err: any) {
-      setError(`Error loading preview: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
+      await reloadCycle();
+      setEditing(null);
+      setSuccess(tx('បានរក្សាទុកសេចក្តីសម្រេច និង audit trail។', 'Decision and audit trail saved.'));
+    } catch (err: any) { setError(err.message); }
+    finally { setSaving(false); }
   };
 
-  const handleExecutePromotion = async () => {
-    if (!schoolId || promotions.length === 0) return;
-
-    setExecuting(true);
-    setError('');
-
+  const transition = async (action: 'submit' | 'approve' | 'finalize') => {
+    if (!cycle || !schoolId) return;
+    const message = action === 'finalize'
+      ? tx('Finalize នឹងផ្លាស់ទីសិស្សទៅថ្នាក់ឆ្នាំថ្មី និងបិទឆ្នាំចាស់។ តើអ្នកប្រាកដទេ?', 'Finalizing will create next-year enrollments and close the source year. Continue?')
+      : tx('តើអ្នកចង់បន្តដំណាក់កាលនេះមែនទេ?', 'Continue with this workflow action?');
+    if (!window.confirm(message)) return;
     try {
-      const token = TokenManager.getAccessToken();
-      const userId = user?.id || 'SYSTEM';
-
-      const response = await promoteStudents(
-        schoolId,
-        fromYearId,
-        toYearId,
-        promotions,
-        userId,
-        token || undefined
-      );
-
-      setResults(response);
-
-      mutate(
-        (key) => typeof key === 'string' && key.startsWith(`${STUDENT_SERVICE_URL}/students`),
-        undefined,
-        { revalidate: true }
-      );
-
-      setStep(4);
-    } catch (err: any) {
-      setError(`Error executing promotion: ${err.message}`);
-    } finally {
-      setExecuting(false);
-    }
+      setSaving(true); setError(''); setSuccess('');
+      await yearEndApi.transition(schoolId, fromYearId, cycle.id, action);
+      await Promise.all([reloadCycle(), mutateYears()]);
+      setSuccess(action === 'finalize'
+        ? tx('បាន finalize បញ្ជីចុងឆ្នាំ និងបង្កើត enrollment ឆ្នាំថ្មីដោយជោគជ័យ។', 'Year-end decisions finalized and next-year enrollments created.')
+        : tx('បានប្តូរស្ថានភាព workflow ដោយជោគជ័យ។', 'Workflow status updated.'));
+    } catch (err: any) { setError(err.message); }
+    finally { setSaving(false); }
   };
 
-  const fromYear = academicYears.find((year) => year.id === fromYearId);
-  const toYear = academicYears.find((year) => year.id === toYearId);
-
-  const mergedPreview: MergedPreviewItem[] = useMemo(() => {
-    if (!eligibleStudents || !previewData) return [];
-
-    return (eligibleStudents.classesByGrade || [])
-      .map((classData) => {
-        const preview = previewData.preview.find((item) => item.fromClass.id === classData.class.id);
-        if (!preview) return null;
-        const targetClass = preview.willGraduate ? null : preview.targetClasses[0];
-        return {
-          fromClass: classData.class,
-          toClass: targetClass ? { id: targetClass.id, name: targetClass.name } : null,
-          studentCount: classData.studentCount,
-          students: classData.students.map((student) => ({
-            id: student.id,
-            firstName: student.firstName || '',
-            lastName: student.lastName || '',
-          })),
-          willGraduate: preview.willGraduate,
-        };
-      })
-      .filter(Boolean) as MergedPreviewItem[];
-  }, [eligibleStudents, previewData]);
-
-  const promotableStudents = mergedPreview
-    .filter((item) => !item.willGraduate && item.toClass)
-    .reduce((sum, item) => sum + item.studentCount, 0);
-  const totalStudents = mergedPreview.reduce((sum, item) => sum + item.studentCount, 0);
-  const graduatingStudents = mergedPreview
-    .filter((item) => item.willGraduate)
-    .reduce((sum, item) => sum + item.studentCount, 0);
-  const blockedStudents = mergedPreview
-    .filter((item) => !item.willGraduate && !item.toClass)
-    .reduce((sum, item) => sum + item.studentCount, 0);
-  const blockedClasses = mergedPreview.filter((item) => !item.willGraduate && !item.toClass).length;
+  const logout = async () => { await TokenManager.logout(); router.push(`/${locale}/auth/login`); };
+  if (yearsLoading && !years.length) return <PageSkeleton user={user} school={school} type="table" showFilters />;
 
   return (
     <>
-      <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-
-      <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_48%,#f8fafc_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0b1120_52%,#020617_100%)] transition-colors duration-500 lg:ml-64">
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <AnimatedContent animation="fade" delay={0}>
-            <section className="grid gap-5 xl:grid-cols-12">
-              <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 xl:col-span-8 sm:p-7">
-                <div className="pointer-events-none absolute inset-y-0 right-0 w-56 bg-gradient-to-l from-orange-100/60 to-transparent blur-3xl dark:from-orange-500/10" />
-                <div className="relative z-10">
-                  <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                    <Link href={`/${locale}/dashboard`} className="inline-flex items-center gap-1.5 transition-colors hover:text-slate-700 dark:text-gray-200 dark:hover:text-gray-300">
-                      <Home className="h-3.5 w-3.5" />
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_76af782a" />
-                    </Link>
-                    <ChevronRight className="h-3 w-3" />
-                    <span className="transition-colors hover:text-slate-700 dark:text-gray-200 dark:hover:text-gray-300"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_3105a2d9" /></span>
-                    <ChevronRight className="h-3 w-3" />
-                    <span className="text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f5af9cb2" /></span>
-                  </nav>
-
-                  <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
-                        <Settings className="h-3.5 w-3.5" />
-                        <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_1dc9b6ac" />
-                      </div>
-                      <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-[2.2rem]">
-                        <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_2a2a4046" />
-                      </h1>
-                      <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-gray-400 sm:text-[15px]">
-                        <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_c870ef7b" />
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-                      <button
-                        type="button"
-                        onClick={resetFlow}
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 hover:text-slate-900 dark:hover:text-white"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                        <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_bb9374bb" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap items-center gap-2.5">
-                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_84b5e8dd" />
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_0e9f05d9" />
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_befd44f4" />
-                    </span>
-                  </div>
+      <UnifiedNavigation user={user} school={school} onLogout={logout} />
+      <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_50%,#f8fafc_100%)] text-slate-900 dark:bg-[linear-gradient(180deg,#020617_0%,#0b1120_52%,#020617_100%)] dark:text-white lg:ml-64">
+        <main className="mx-auto max-w-[1500px] px-4 py-7 sm:px-6 lg:px-8">
+          <section className="overflow-hidden rounded-[2rem] border border-white/80 bg-[linear-gradient(135deg,#ffffff_0%,#fff7ed_50%,#eef2ff_100%)] p-6 shadow-[0_30px_90px_-45px_rgba(249,115,22,0.5)] dark:border-gray-800 dark:bg-[linear-gradient(135deg,#0f172a,#111827_50%,#172554)] sm:p-8">
+            <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+              <div className="max-w-3xl">
+                <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-orange-700 dark:bg-orange-500/15 dark:text-orange-300">
+                  <ClipboardCheck className="h-4 w-4" /> Enterprise year-end governance
                 </div>
+                <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+                  {tx('បញ្ជីវាយតម្លៃ និងសម្រេចចុងឆ្នាំសិក្សា', 'Year-end evaluation & progression decisions')}
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-600 dark:text-gray-300">
+                  {tx('ពិនិត្យពិន្ទុ វត្តមាន វិន័យ និងកម្មវិធីជួយសិស្ស មុនសម្រេចឡើងថ្នាក់ ឡើងថ្នាក់មានលក្ខខណ្ឌ ត្រួតថ្នាក់ ឬបញ្ចប់ការសិក្សា។', 'Review grades, attendance, discipline and interventions before promotion, conditional promotion, retention or graduation.')}
+                </p>
               </div>
-
-              <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 dark:text-gray-100 xl:col-span-4 sm:p-7">
-                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-amber-300/30 blur-3xl" />
-                <div className="pointer-events-none absolute -bottom-16 left-0 h-40 w-40 rounded-full bg-orange-300/20 blur-3xl" />
-                <div className="relative z-10">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_7b23b971" /></p>
-                      <div className="mt-3 flex items-end gap-2">
-                        <span className="text-4xl font-black tracking-tight">0{step}</span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_a529b984" /></span>
-                      </div>
-                    </div>
-                    <div className="rounded-[0.95rem] border border-orange-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-orange-200/75 text-orange-600">
-                      <TrendingUp className="h-5 w-5" />
-                    </div>
-                  </div>
-                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-orange-200/75">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-300 transition-all duration-700"
-                      style={{ width: `${step * 25}%` }}
-                    />
-                  </div>
-                  <div className="mt-4 grid grid-cols-3 gap-2.5">
-                    <div className="rounded-[0.95rem] border border-orange-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-orange-200/60">
-                      <p className="text-xl font-black tracking-tight">{totalStudents}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_17a96f6e" /></p>
-                    </div>
-                    <div className="rounded-[0.95rem] border border-orange-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-orange-200/60">
-                      <p className="text-xl font-black tracking-tight">{promotableStudents}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_62281002" /></p>
-                    </div>
-                    <div className="rounded-[0.95rem] border border-orange-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-orange-200/60">
-                      <p className="text-xl font-black tracking-tight">{graduatingStudents}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_4df35e00" /></p>
-                    </div>
-                  </div>
-                  <div className="mt-4 inline-flex items-center rounded-full border border-orange-200/80 bg-white dark:bg-gray-900/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
-                    {step === 1
-                      ? 'Choose source and target years'
-                      : step === 2
-                        ? 'Preview the placement matrix'
-                        : step === 3
-                          ? 'Confirm execution'
-                          : 'Promotion complete'}
-                  </div>
-                </div>
-              </div>
-            </section>
-          </AnimatedContent>
-
-          <AnimatedContent animation="slide-up" delay={40}>
-            <section className="mt-5 flex flex-wrap items-center justify-center gap-4 rounded-[1.25rem] border border-white/70 bg-white dark:bg-gray-900/80 px-5 py-4 shadow-[0_20px_60px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
-              <StepBadge number={1} label={autoT("auto.web.locale_settings_promotion_page.k_a23043cb")} active={step >= 1} current={step === 1} />
-              <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
-              <StepBadge number={2} label={autoT("auto.web.locale_settings_promotion_page.k_dbb787a2")} active={step >= 2} current={step === 2} />
-              <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
-              <StepBadge number={3} label={autoT("auto.web.locale_settings_promotion_page.k_6e99b7cb")} active={step >= 3} current={step === 3} />
-              <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
-              <StepBadge number={4} label={autoT("auto.web.locale_settings_promotion_page.k_e4568f51")} active={step >= 4} current={step === 4} />
-            </section>
-          </AnimatedContent>
-
-          {error ? (
-            <AnimatedContent animation="slide-up" delay={60}>
-              <div className="mt-5 flex items-start justify-between gap-4 rounded-[1rem] border border-rose-100 bg-rose-50/80 px-4 py-3 text-sm font-medium text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                  <span>{error}</span>
-                </div>
-                <button type="button" onClick={() => setError('')} className="rounded p-1 hover:bg-black/5 dark:hover:bg-white dark:bg-gray-900/5">
-                  <X className="h-4 w-4" />
+              <div className="flex flex-wrap gap-3">
+                <button onClick={() => setShowPolicy(true)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm hover:border-orange-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                  <Settings2 className="h-4 w-4" /> {tx('គោលការណ៍សាលា', 'School policy')}
                 </button>
+                {cycle && <button onClick={reloadCycle} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm hover:border-orange-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"><RefreshCw className="h-4 w-4" /> {tx('ផ្ទុកឡើងវិញ', 'Refresh')}</button>}
               </div>
-            </AnimatedContent>
-          ) : null}
+            </div>
 
-          {step === 1 ? (
-            <AnimatedContent animation="slide-up" delay={80}>
-              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
-                <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_c352b259" /></p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_350e7f9d" /></h2>
-                  <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                    <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_16c779cf" />
-                  </p>
-                </div>
+            <div className="mt-7 grid gap-4 rounded-2xl border border-white/80 bg-white/75 p-4 backdrop-blur dark:border-gray-700 dark:bg-gray-950/45 md:grid-cols-[1fr_auto_1fr_auto] md:items-end">
+              <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{tx('ឆ្នាំប្រភព', 'Source year')}</span><select value={fromYearId} onChange={(event) => { setFromYearId(event.target.value); setCycle(null); }} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold outline-none focus:border-orange-400 dark:border-gray-700 dark:bg-gray-900">{sortedYears.map((year) => <option key={year.id} value={year.id}>{year.name}</option>)}</select></label>
+              <ArrowRight className="mb-3 hidden h-5 w-5 text-orange-500 md:block" />
+              <label className="block"><span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{tx('ឆ្នាំគោលដៅ', 'Target year')}</span><select value={toYearId} onChange={(event) => { setToYearId(event.target.value); setCycle(null); }} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold outline-none focus:border-orange-400 dark:border-gray-700 dark:bg-gray-900"> <option value="">{tx('ជ្រើសរើសឆ្នាំ', 'Select year')}</option>{sortedYears.filter((year) => year.id !== fromYearId).map((year) => <option key={year.id} value={year.id}>{year.name}</option>)}</select></label>
+              {!cycle && <button onClick={generate} disabled={!fromYearId || !toYearId || loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-orange-500/20 disabled:opacity-50">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{tx('បង្កើតបញ្ជីវាយតម្លៃ', 'Generate evaluation list')}</button>}
+              {cycle && <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center dark:border-gray-700 dark:bg-gray-800"><p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Status</p><p className="mt-1 text-sm font-black text-slate-900 dark:text-white">{cycle.status.replaceAll('_', ' ')}</p></div>}
+            </div>
+          </section>
 
-                <div className="space-y-6 p-5 sm:p-6">
-                  {fromYear?.isPromotionDone ? (
-                    <div className="rounded-[1rem] border border-amber-100 bg-amber-50/80 p-4 text-sm font-medium text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
-                      <div className="flex items-start gap-3">
-                        <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                        <div>
-                          <p className="font-semibold">{fromYear.name} <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_a25c62bc" /></p>
-                          <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-200/80">
-                            <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_db305d0b" />
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
+          {(error || success) && <div className={`mt-5 flex items-start gap-3 rounded-2xl border p-4 text-sm font-semibold ${error ? 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200' : 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'}`}>{error ? <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" /> : <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />}<p className="flex-1">{error || success}</p><button onClick={() => { setError(''); setSuccess(''); }}><X className="h-4 w-4" /></button></div>}
 
-                  <div className="grid gap-5 md:grid-cols-2">
-                    <label className="block">
-                      <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                        <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_82336c79" />
-                      </span>
-                      <select
-                        value={fromYearId}
-                        onChange={(event) => setFromYearId(event.target.value)}
-                        className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-orange-300 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
-                      >
-                        <option value="">{autoT("auto.web.locale_settings_promotion_page.k_c9432939")}</option>
-                        {academicYears.map((year) => (
-                          <option key={year.id} value={year.id}>
-                            {year.name}
-                            {year.isCurrent ? ' - Current' : ''}
-                            {year.isPromotionDone ? ' - Promotion complete' : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+          {loading && !cycle && <div className="mt-8 flex justify-center py-20"><Loader2 className="h-9 w-9 animate-spin text-orange-500" /></div>}
 
-                    <label className="block">
-                      <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                        <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f65a06c7" />
-                      </span>
-                      <select
-                        value={toYearId}
-                        onChange={(event) => setToYearId(event.target.value)}
-                        className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-orange-300 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
-                      >
-                        <option value="">{autoT("auto.web.locale_settings_promotion_page.k_4f5883a4")}</option>
-                        {academicYears
-                          .filter((year) => year.id !== fromYearId)
-                          .map((year) => (
-                            <option key={year.id} value={year.id}>
-                              {year.name}
-                              {year.isCurrent ? ' - Current' : ''}
-                            </option>
-                          ))}
-                      </select>
-                    </label>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/60">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_2e5d77ba" /></p>
-                      <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{fromYear?.name || 'Not selected'}</p>
-                    </div>
-                    <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/60">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_8edfbe9c" /></p>
-                      <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{toYear?.name || 'Not selected'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end border-t border-slate-200 dark:border-gray-800/70 px-5 py-4 dark:border-gray-800/70 sm:px-6">
-                  <button
-                    type="button"
-                    onClick={handleLoadPreview}
-                    disabled={!fromYearId || !toYearId || loading || fromYear?.isPromotionDone === true}
-                    className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />}
-                    <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f3b55b53" />
-                  </button>
-                </div>
+          {cycle && (
+            <>
+              <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                <Metric icon={Users} label={tx('សរុប', 'Total learners')} value={cycle.summary.total} helper={`${fromYear?.name || ''} → ${toYear?.name || ''}`} tone="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200" />
+                <Metric icon={UserRoundCheck} label={tx('ឡើងថ្នាក់', 'Promote')} value={(cycle.summary.PROMOTE || 0) + (cycle.summary.CONDITIONAL_PROMOTE || 0)} helper={tx('រួមមានមានលក្ខខណ្ឌ', 'Includes conditional')} tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" />
+                <Metric icon={UserRoundX} label={tx('ត្រួតថ្នាក់', 'Repeat')} value={cycle.summary.REPEAT || 0} helper={tx('ត្រូវមានមូលហេតុ', 'Reason required')} tone="bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300" />
+                <Metric icon={Clock3} label={tx('រង់ចាំសម្រេច', 'Pending review')} value={cycle.summary.PENDING || 0} helper={tx('ត្រូវដោះស្រាយមុន submit', 'Resolve before submit')} tone="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300" />
+                <Metric icon={GraduationCap} label={tx('បញ្ចប់ការសិក្សា', 'Graduate')} value={cycle.summary.GRADUATE || 0} helper={tx('ថ្នាក់ចុងក្រោយ', 'Terminal grade')} tone="bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300" />
               </section>
-            </AnimatedContent>
-          ) : null}
 
-          {step === 2 ? (
-            <>
-              <AnimatedContent animation="slide-up" delay={80}>
-                <section className="mt-5 grid gap-4 md:grid-cols-3">
-                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_d8ea83a4")} value={totalStudents} helper="Students evaluated across source classes." tone="orange" icon={Users} />
-                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_4539b284")} value={promotableStudents} helper="Students with a valid destination class." tone="emerald" icon={UserCheck} />
-                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_5564a2ef")} value={graduatingStudents + blockedStudents} helper="Students leaving or waiting for setup." tone="slate" icon={UserX} />
-                </section>
-              </AnimatedContent>
-
-              <AnimatedContent animation="slide-up" delay={100}>
-                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-none dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:ring-gray-800/70">
-                  <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_fac01cc9" /></p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_b256de8b" /></h2>
-                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_8b791c4b" />
-                    </p>
+              <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
+                <div className="border-b border-slate-200 p-5 dark:border-gray-800">
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                    <div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-orange-500">Decision register</p><h2 className="mt-1 text-xl font-black text-slate-950 dark:text-white">{tx('បញ្ជីសិស្សចុងឆ្នាំ', 'End-of-year student list')}</h2></div>
+                    <div className="flex flex-wrap gap-2">
+                      {cycle.status === 'DRAFT' && <button onClick={() => transition('submit')} disabled={saving || (cycle.summary.PENDING || 0) > 0} className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white disabled:opacity-40 dark:bg-white dark:text-slate-950"><ClipboardCheck className="h-4 w-4" />{tx('បញ្ជូនទៅអនុម័ត', 'Submit for approval')}</button>}
+                      {cycle.status === 'IN_REVIEW' && <button onClick={() => transition('approve')} disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-black text-white"><ShieldCheck className="h-4 w-4" />{tx('អនុម័តបញ្ជី', 'Approve register')}</button>}
+                      {cycle.status === 'APPROVED' && <button onClick={() => transition('finalize')} disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white"><Check className="h-4 w-4" />{tx('Finalize និងផ្ទេរថ្នាក់', 'Finalize & enroll')}</button>}
+                      {cycle.status === 'FINALIZED' && <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"><CheckCircle2 className="h-4 w-4" />{tx('បានបញ្ចប់', 'Finalized')}</span>}
+                    </div>
                   </div>
-
-                  <div className="space-y-4 p-5 sm:p-6">
-                    {mergedPreview.map((item) => (
-                      <div
-                        key={item.fromClass.id}
-                        className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900/90 p-5 shadow-sm dark:border-gray-800/70 dark:bg-none dark:bg-gray-950/60"
-                      >
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f5564478" /></p>
-                            <h3 className="mt-2 text-lg font-black tracking-tight text-slate-900 dark:text-white">{item.fromClass.name}</h3>
-                            <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                              {item.studentCount} <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_0e72a241" />
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-[0.95rem] bg-slate-100 dark:bg-none dark:bg-gray-800 text-slate-500 dark:bg-none dark:bg-gray-900 dark:text-gray-400">
-                              <ArrowRight className="h-4 w-4" />
-                            </div>
-                            {item.willGraduate ? (
-                              <div className="rounded-[0.95rem] border border-indigo-100 bg-indigo-50 px-4 py-3 text-right dark:border-indigo-500/20 dark:bg-indigo-500/10">
-                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-500 dark:text-indigo-300"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_2c5fd27a" /></p>
-                                <p className="mt-1 text-sm font-semibold text-indigo-700 dark:text-indigo-200"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_38389109" /></p>
-                              </div>
-                            ) : item.toClass ? (
-                              <div className="rounded-[0.95rem] border border-emerald-100 bg-emerald-50 px-4 py-3 text-right dark:border-emerald-500/20 dark:bg-emerald-500/10">
-                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500 dark:text-emerald-300"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_e63d8763" /></p>
-                                <p className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-200">{item.toClass.name}</p>
-                              </div>
-                            ) : (
-                              <div className="rounded-[0.95rem] border border-rose-100 bg-rose-50 px-4 py-3 text-right dark:border-rose-500/20 dark:bg-rose-500/10">
-                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500 dark:text-rose-300"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_8d4183a8" /></p>
-                                <p className="mt-1 text-sm font-semibold text-rose-700 dark:text-rose-200"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_5136fb7a" /></p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {item.students.slice(0, 6).map((student) => (
-                            <span
-                              key={student.id}
-                              className="inline-flex rounded-full bg-slate-100 dark:bg-none dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-none dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10"
-                            >
-                              {student.firstName} {student.lastName}
-                            </span>
-                          ))}
-                          {item.students.length > 6 ? (
-                            <span className="inline-flex rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
-                              +{item.students.length - 6} <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_ef0273d7" />
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                    ))}
+                  <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(240px,1fr)_220px_220px_auto]">
+                    <label className="relative"><Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={tx('ស្វែងរកឈ្មោះ ឬលេខសម្គាល់...', 'Search name or student ID...')} className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-3 text-sm outline-none focus:border-orange-400 dark:border-gray-700 dark:bg-gray-950" /></label>
+                    <select value={classFilter} onChange={(event) => setClassFilter(event.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold dark:border-gray-700 dark:bg-gray-950"><option value="ALL">{tx('គ្រប់ថ្នាក់', 'All classes')}</option>{sourceClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+                    <select value={outcomeFilter} onChange={(event) => setOutcomeFilter(event.target.value as YearEndOutcome | 'ALL')} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold dark:border-gray-700 dark:bg-gray-950"><option value="ALL">{tx('គ្រប់លទ្ធផល', 'All outcomes')}</option>{OUTCOMES.map((item) => <option key={item} value={item}>{item.replaceAll('_', ' ')}</option>)}</select>
+                    <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold dark:border-gray-700 dark:bg-gray-950"><input type="checkbox" checked={attentionOnly} onChange={(event) => setAttentionOnly(event.target.checked)} className="rounded border-slate-300 text-orange-600" /><Filter className="h-4 w-4" />{tx('ត្រូវពិនិត្យ', 'Needs attention')}</label>
                   </div>
+                </div>
 
-                  <div className="flex flex-col-reverse gap-3 border-t border-slate-200 dark:border-gray-800/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
-                    <button
-                      type="button"
-                      onClick={() => setStep(1)}
-                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
-                    >
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_67eac638" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setStep(3)}
-                      disabled={promotableStudents === 0}
-                      className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_939ddd38" />
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </section>
-              </AnimatedContent>
+                <div className="overflow-x-auto">
+                  <table className="min-w-[1180px] w-full">
+                    <thead className="bg-slate-50 text-left dark:bg-gray-950/70"><tr>{[tx('សិស្ស', 'Student'), tx('ថ្នាក់បច្ចុប្បន្ន', 'Current class'), tx('មធ្យមភាគ', 'Average'), tx('វត្តមាន', 'Attendance'), tx('សំណើប្រព័ន្ធ', 'Recommendation'), tx('សេចក្តីសម្រេច', 'Final decision'), tx('មូលហេតុ/ជំនួយ', 'Reason / intervention'), tx('សកម្មភាព', 'Action')].map((label) => <th key={label} className="border-b border-slate-200 px-4 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:border-gray-800">{label}</th>)}</tr></thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
+                      {visibleDecisions.map((decision) => {
+                        const displayName = [decision.student.englishFirstName || decision.student.firstName, decision.student.englishLastName || decision.student.lastName].filter(Boolean).join(' ');
+                        const flags = decision.evidence?.flags || [];
+                        return <tr key={decision.id} className={decision.finalOutcome === 'PENDING' ? 'bg-amber-50/40 dark:bg-amber-500/[0.03]' : ''}>
+                          <td className="px-4 py-4"><p className="font-black text-slate-950 dark:text-white">{displayName}</p><p className="mt-1 text-xs font-semibold text-slate-400">{decision.student.studentId || '—'}</p></td>
+                          <td className="px-4 py-4"><p className="text-sm font-bold text-slate-800 dark:text-gray-200">{decision.fromClass.name}</p><p className="mt-1 text-xs text-slate-400">Grade {decision.fromClass.grade}</p></td>
+                          <td className="px-4 py-4"><p className={`text-lg font-black ${decision.academicAverage !== null && decision.academicAverage < cycle.policySnapshot.passAverage ? 'text-rose-600' : 'text-slate-950 dark:text-white'}`}>{decision.academicAverage === null ? '—' : `${decision.academicAverage}%`}</p><p className="mt-1 text-[10px] font-bold text-slate-400">{decision.evidence?.gradeRecordCount || 0} records</p></td>
+                          <td className="px-4 py-4"><p className={`text-lg font-black ${decision.attendanceRate !== null && decision.attendanceRate < cycle.policySnapshot.minAttendanceRate ? 'text-rose-600' : 'text-slate-950 dark:text-white'}`}>{decision.attendanceRate === null ? '—' : `${decision.attendanceRate}%`}</p><p className="mt-1 text-[10px] font-bold text-slate-400">A {decision.absentCount} · L {decision.lateCount} · E {decision.excusedCount}</p></td>
+                          <td className="px-4 py-4"><OutcomeBadge outcome={decision.recommendedOutcome} compact />{flags.length > 0 && <p className="mt-2 max-w-[190px] text-[10px] font-bold leading-4 text-amber-700 dark:text-amber-300">{flags.join(', ').replaceAll('_', ' ')}</p>}</td>
+                          <td className="px-4 py-4"><OutcomeBadge outcome={decision.finalOutcome} /><p className="mt-2 text-[10px] font-bold text-slate-400">{decision.targetClass?.name || (decision.finalOutcome === 'GRADUATE' ? tx('បញ្ចប់ការសិក្សា', 'Graduate') : '—')}</p></td>
+                          <td className="px-4 py-4"><p className="max-w-[220px] text-xs font-bold text-slate-700 dark:text-gray-300">{(decision.reasonCode || '—').replaceAll('_', ' ')}</p>{decision.reasonDetails && <p className="mt-1 max-w-[220px] truncate text-xs text-slate-400" title={decision.reasonDetails}>{decision.reasonDetails}</p>}{(decision.interventions || []).length > 0 && <p className="mt-2 text-[10px] font-black text-sky-600">{decision.interventions?.length} intervention(s)</p>}</td>
+                          <td className="px-4 py-4"><button onClick={() => openEdit(decision)} disabled={!['DRAFT', 'IN_REVIEW'].includes(cycle.status)} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:border-orange-300 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-200"><PencilLine className="h-3.5 w-3.5" />{tx('ពិនិត្យ', 'Review')}</button></td>
+                        </tr>;
+                      })}
+                      {visibleDecisions.length === 0 && <tr><td colSpan={8} className="px-6 py-20 text-center text-sm font-semibold text-slate-400">{tx('មិនមានសិស្សត្រូវនឹង filter នេះទេ។', 'No students match these filters.')}</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex items-center justify-between border-t border-slate-200 px-5 py-4 text-xs font-bold text-slate-500 dark:border-gray-800"><span>{tx('បង្ហាញ', 'Showing')} {visibleDecisions.length} / {cycle.decisions.length}</span><span>{tx('បានពិនិត្យ', 'Reviewed')} {cycle.summary.reviewed} · Overrides {cycle.summary.overrides}</span></div>
+              </section>
             </>
-          ) : null}
-
-          {step === 3 ? (
-            <>
-              <AnimatedContent animation="slide-up" delay={80}>
-                <section className="mt-5 grid gap-4 md:grid-cols-3">
-                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_a99eb071")} value={promotableStudents} helper="Students ready to move into the next year." tone="emerald" icon={UserCheck} />
-                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_2fce3779")} value={graduatingStudents} helper="Students exiting this cycle at the final grade." tone="orange" icon={GraduationCap} />
-                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_9eb8a6d8")} value={blockedStudents} helper={`${blockedClasses} class${blockedClasses === 1 ? '' : 'es'} still need target setup.`} tone="slate" icon={AlertCircle} />
-                </section>
-              </AnimatedContent>
-
-              <AnimatedContent animation="slide-up" delay={100}>
-                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
-                  <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_59af0c78" /></p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_d325b24f" /></h2>
-                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_994ebb33" />
-                    </p>
-                  </div>
-
-                  <div className="space-y-5 p-5 sm:p-6">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/60">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_29c61509" /></p>
-                        <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{fromYear?.name || 'Not selected'}</p>
-                      </div>
-                      <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/60">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_e9035cfb" /></p>
-                        <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{toYear?.name || 'Not selected'}</p>
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1rem] border border-orange-100 bg-orange-50/80 p-4 text-sm font-medium text-orange-800 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300">
-                      <div className="flex items-start gap-3">
-                        <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                        <div>
-                          <p className="font-semibold"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_1adb2b30" /></p>
-                          <p className="mt-1 text-xs font-medium text-orange-700 dark:text-orange-200/80">
-                            <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f9e11891" />
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col-reverse gap-3 border-t border-slate-200 dark:border-gray-800/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
-                    <button
-                      type="button"
-                      onClick={() => setStep(2)}
-                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
-                    >
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_67eac638" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleExecutePromotion}
-                      disabled={executing || promotions.length === 0}
-                      className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {executing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_a3f4a045" />
-                    </button>
-                  </div>
-                </section>
-              </AnimatedContent>
-            </>
-          ) : null}
-
-          {step === 4 && results ? (
-            <>
-              <AnimatedContent animation="slide-up" delay={80}>
-                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-none dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:ring-gray-800/70">
-                  <div className="p-8 text-center sm:p-10">
-                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
-                      <CheckCircle2 className="h-10 w-10" />
-                    </div>
-                    <p className="mt-5 text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-300"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_d25d1d27" /></p>
-                    <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f401e0f7" /></h2>
-                    <p className="mt-3 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_c4b384f1" />
-                    </p>
-                  </div>
-
-                  <div className="grid gap-4 border-t border-slate-200 dark:border-gray-800/70 p-5 dark:border-gray-800/70 sm:grid-cols-2 sm:p-6">
-                    <MetricCard
-                      label={autoT("auto.web.locale_settings_promotion_page.k_c59b9d68")}
-                      value={results.results?.promoted ?? results.results?.successCount ?? 0}
-                      helper="Students successfully moved into the new year."
-                      tone="emerald"
-                      icon={CheckCircle2}
-                    />
-                    <MetricCard
-                      label={autoT("auto.web.locale_settings_promotion_page.k_02c67851")}
-                      value={results.results?.failed ?? results.results?.failureCount ?? 0}
-                      helper="Students that need manual review."
-                      tone="slate"
-                      icon={AlertCircle}
-                    />
-                  </div>
-
-                  {results.results?.errors?.length > 0 ? (
-                    <div className="border-t border-slate-200 dark:border-gray-800/70 p-5 dark:border-gray-800/70 sm:p-6">
-                      <div className="rounded-[1rem] border border-rose-100 bg-rose-50/80 p-4 dark:border-rose-500/20 dark:bg-rose-500/10">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500 dark:text-rose-300"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_0644185d" /></p>
-                        <div className="mt-4 space-y-3">
-                          {results.results.errors.map((item: any, index: number) => (
-                            <div
-                              key={`${item.studentId || 'error'}-${index}`}
-                              className="flex items-center gap-3 rounded-[0.95rem] border border-white/60 bg-white dark:bg-gray-900/80 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 dark:border-gray-800/70 dark:bg-gray-950/60 dark:text-gray-300"
-                            >
-                              <span className="font-mono text-xs text-slate-400 dark:text-gray-500">#{item.studentId?.slice(-4) || index}</span>
-                              <span>{item.error}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div className="flex flex-col-reverse gap-3 border-t border-slate-200 dark:border-gray-800/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/${locale}/students`)}
-                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
-                    >
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f6b4f6ad" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={resetFlow}
-                      className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_9a3bf6c5" />
-                    </button>
-                  </div>
-                </section>
-              </AnimatedContent>
-            </>
-          ) : null}
+          )}
         </main>
       </div>
+
+      {showPolicy && <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"><div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-gray-900"><div className="sticky top-0 flex items-start justify-between border-b border-slate-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"><div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-orange-500">Recommendation policy</p><h2 className="mt-1 text-2xl font-black text-slate-950 dark:text-white">{tx('គោលការណ៍ឡើងថ្នាក់របស់សាលា', 'School progression policy')}</h2><p className="mt-2 text-sm text-slate-500">{tx('ប្រព័ន្ធប្រើ policy នេះដើម្បីផ្តល់សំណើប៉ុណ្ណោះ។ អ្នកគ្រប់គ្រងជាអ្នកសម្រេចចុងក្រោយ។', 'The system uses this policy for recommendations; administrators retain the final decision.')}</p></div><button onClick={() => setShowPolicy(false)} className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-gray-800"><X className="h-5 w-5" /></button></div><div className="grid gap-5 p-6 sm:grid-cols-2">
+        <label><span className="text-xs font-black text-slate-700 dark:text-gray-200">{tx('មធ្យមភាគជាប់ (%)', 'Passing average (%)')}</span><input type="number" min={0} max={100} value={policy.passAverage} onChange={(event) => setPolicy({ ...policy, passAverage: Number(event.target.value) })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:border-orange-400 dark:border-gray-700 dark:bg-gray-950" /></label>
+        <label><span className="text-xs font-black text-slate-700 dark:text-gray-200">{tx('វត្តមានអប្បបរមា (%)', 'Minimum attendance (%)')}</span><input type="number" min={0} max={100} value={policy.minAttendanceRate} onChange={(event) => setPolicy({ ...policy, minAttendanceRate: Number(event.target.value) })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:border-orange-400 dark:border-gray-700 dark:bg-gray-950" /></label>
+        <label><span className="text-xs font-black text-slate-700 dark:text-gray-200">{tx('ថ្នាក់បញ្ចប់ការសិក្សា', 'Terminal grade')}</span><input data-testid="terminal-grade-policy" type="number" min={1} max={20} value={policy.terminalGrade} onChange={(event) => setPolicy({ ...policy, terminalGrade: Number(event.target.value) })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:border-orange-400 dark:border-gray-700 dark:bg-gray-950" /></label>
+        <label><span className="text-xs font-black text-slate-700 dark:text-gray-200">{tx('អវត្តមានឥតច្បាប់អតិបរមា', 'Max unexcused absences')}</span><input type="number" min={0} value={policy.maxUnexcusedAbsences ?? ''} placeholder={tx('មិនកំណត់', 'Not enforced')} onChange={(event) => setPolicy({ ...policy, maxUnexcusedAbsences: event.target.value === '' ? null : Number(event.target.value) })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:border-orange-400 dark:border-gray-700 dark:bg-gray-950" /></label>
+        <label><span className="text-xs font-black text-slate-700 dark:text-gray-200">{tx('ករណីវិន័យអតិបរមា', 'Max discipline incidents')}</span><input type="number" min={0} value={policy.maxDisciplineIncidents ?? ''} placeholder={tx('មិនកំណត់', 'Not enforced')} onChange={(event) => setPolicy({ ...policy, maxDisciplineIncidents: event.target.value === '' ? null : Number(event.target.value) })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 outline-none focus:border-orange-400 dark:border-gray-700 dark:bg-gray-950" /></label>
+        {[['requireCompleteGrades', tx('តម្រូវឱ្យបញ្ចូលពិន្ទុគ្រប់គ្រាន់', 'Require complete grade evidence')], ['allowConditionalPromotion', tx('អនុញ្ញាតឡើងថ្នាក់មានលក្ខខណ្ឌ', 'Allow conditional promotion')], ['allowSupplementaryExam', tx('អនុញ្ញាតប្រឡងបំពេញបន្ថែម', 'Allow supplementary exams')], ['requireReasonForOverride', tx('តម្រូវមូលហេតុពេល override', 'Require an override reason')], ['requireSecondApproval', tx('តម្រូវអ្នកអនុម័តទីពីរ', 'Require a second approver')]].map(([key, label]) => <label key={key as string} className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 dark:border-gray-700"><input type="checkbox" checked={Boolean(policy[key as keyof PromotionPolicy])} onChange={(event) => setPolicy({ ...policy, [key]: event.target.checked })} className="h-4 w-4 rounded border-slate-300 text-orange-600" /><span className="text-sm font-bold text-slate-700 dark:text-gray-200">{label as string}</span></label>)}
+      </div><div className="sticky bottom-0 flex justify-end gap-3 border-t border-slate-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"><button onClick={() => setShowPolicy(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold dark:border-gray-700">{tx('បោះបង់', 'Cancel')}</button><button onClick={savePolicy} disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-black text-white disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{tx('រក្សាទុក policy', 'Save policy')}</button></div></div></div>}
+
+      {editing && <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"><div className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-gray-900"><div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"><div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-orange-500">Individual review</p><h2 className="mt-1 text-2xl font-black text-slate-950 dark:text-white">{[editing.student.englishFirstName || editing.student.firstName, editing.student.englishLastName || editing.student.lastName].filter(Boolean).join(' ')}</h2><p className="mt-1 text-sm font-semibold text-slate-500">{editing.fromClass.name} · {editing.student.studentId || '—'}</p></div><button onClick={() => setEditing(null)} className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-gray-800"><X className="h-5 w-5" /></button></div>
+        <div className="p-6"><div className="grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-slate-50 p-4 dark:bg-gray-950"><p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Average</p><p className="mt-1 text-2xl font-black">{editing.academicAverage === null ? '—' : `${editing.academicAverage}%`}</p></div><div className="rounded-xl bg-slate-50 p-4 dark:bg-gray-950"><p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Attendance</p><p className="mt-1 text-2xl font-black">{editing.attendanceRate === null ? '—' : `${editing.attendanceRate}%`}</p></div><div className="rounded-xl bg-slate-50 p-4 dark:bg-gray-950"><p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Recommendation</p><div className="mt-2"><OutcomeBadge outcome={editing.recommendedOutcome} compact /></div></div></div>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2"><label><span className="text-xs font-black">{tx('សេចក្តីសម្រេចចុងក្រោយ', 'Final decision')}</span><select value={editForm.finalOutcome} onChange={(event) => setEditForm({ ...editForm, finalOutcome: event.target.value as YearEndOutcome })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold dark:border-gray-700 dark:bg-gray-950">{OUTCOMES.map((item) => <option key={item} value={item}>{item.replaceAll('_', ' ')}</option>)}</select></label>
+          {['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT'].includes(editForm.finalOutcome) && <label><span className="text-xs font-black">{tx('ថ្នាក់គោលដៅ', 'Target class')}</span><select value={editForm.targetClassId} onChange={(event) => setEditForm({ ...editForm, targetClassId: event.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold dark:border-gray-700 dark:bg-gray-950"><option value="">{tx('ជ្រើសរើសថ្នាក់', 'Select class')}</option>{eligibleTargetClasses.map((target) => <option key={target.id} value={target.id}>{target.name} · Grade {target.grade}</option>)}</select></label>}
+          <label><span className="text-xs font-black">{tx('កូដមូលហេតុ', 'Reason code')}</span><select value={editForm.reasonCode} onChange={(event) => setEditForm({ ...editForm, reasonCode: event.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold dark:border-gray-700 dark:bg-gray-950"><option value="">{tx('ជ្រើសរើសមូលហេតុ', 'Select reason')}</option>{REASONS.map((reason) => <option key={reason} value={reason}>{reason.replaceAll('_', ' ')}</option>)}</select></label>
+          <label><span className="text-xs font-black">{tx('ចំនួនករណីវិន័យ', 'Discipline incident count')}</span><input type="number" min={0} value={editForm.disciplineIncidentCount} onChange={(event) => setEditForm({ ...editForm, disciplineIncidentCount: event.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 dark:border-gray-700 dark:bg-gray-950" /></label></div>
+          <label className="mt-5 block"><span className="text-xs font-black">{tx('សេចក្តីពន្យល់/ភស្តុតាង', 'Explanation / evidence')}</span><textarea value={editForm.reasonDetails} onChange={(event) => setEditForm({ ...editForm, reasonDetails: event.target.value })} rows={3} placeholder={tx('សរសេរមូលហេតុជាក់លាក់ និងសេចក្តីសម្រេចរបស់គណៈកម្មការ...', 'Document the specific reason and committee rationale...')} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-orange-400 dark:border-gray-700 dark:bg-gray-950" /></label>
+          <div className="mt-5"><p className="text-xs font-black">{tx('កម្មវិធីជួយ/ការវាយតម្លៃបន្ថែម', 'Interventions / additional evaluation')}</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{INTERVENTIONS.map((intervention) => <label key={intervention} className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 text-sm font-bold dark:border-gray-700"><input type="checkbox" checked={editForm.interventions.includes(intervention)} onChange={(event) => setEditForm({ ...editForm, interventions: event.target.checked ? [...editForm.interventions, intervention] : editForm.interventions.filter((item) => item !== intervention) })} className="rounded border-slate-300 text-orange-600" />{intervention.replaceAll('_', ' ')}</label>)}</div></div>
+          {editForm.interventions.length > 0 && <label className="mt-5 block"><span className="text-xs font-black">{tx('ស្ថានភាពកម្មវិធីជួយ', 'Intervention status')}</span><select value={editForm.interventionStatus} onChange={(event) => setEditForm({ ...editForm, interventionStatus: event.target.value })} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold dark:border-gray-700 dark:bg-gray-950"><option value="">{tx('ជ្រើសរើសស្ថានភាព', 'Select status')}</option><option value="PLANNED">PLANNED</option><option value="IN_PROGRESS">IN PROGRESS</option><option value="COMPLETED_PASSED">COMPLETED · PASSED</option><option value="COMPLETED_NOT_PASSED">COMPLETED · NOT PASSED</option><option value="WAIVED">WAIVED</option></select></label>}
+        </div><div className="sticky bottom-0 flex justify-end gap-3 border-t border-slate-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"><button onClick={() => setEditing(null)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold dark:border-gray-700">{tx('បោះបង់', 'Cancel')}</button><button onClick={saveDecision} disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-black text-white disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookOpenCheck className="h-4 w-4" />}{tx('រក្សាទុកសេចក្តីសម្រេច', 'Save decision')}</button></div></div></div>}
     </>
   );
 }

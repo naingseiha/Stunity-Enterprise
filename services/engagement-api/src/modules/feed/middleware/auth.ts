@@ -20,9 +20,7 @@ export interface AuthRequest extends Request {
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.headers['authorization'];
-        const headerToken = authHeader && authHeader.split(' ')[1];
-        const queryToken = typeof req.query.token === 'string' ? req.query.token : undefined;
-        const token = headerToken || queryToken;
+        const token = authHeader && authHeader.split(' ')[1];
 
         if (!token) {
             console.log('❌ [AUTH] No token provided');

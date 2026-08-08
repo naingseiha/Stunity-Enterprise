@@ -3,6 +3,7 @@
 import useSWR, { preload } from 'swr';
 import { getAcademicYears, type AcademicYear } from '@/lib/api/academic-years';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { TokenManager } from '@/lib/api/auth';
 
 const ACADEMIC_YEARS_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -13,7 +14,7 @@ function createAcademicYearsCacheKey(schoolId?: string | null): string | null {
 
 async function fetchAcademicYears(cacheKey: string): Promise<AcademicYear[]> {
   const schoolId = cacheKey.replace('academic-years:', '');
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
 
   if (!schoolId || !token) {
     throw new Error('Missing authentication for academic years');

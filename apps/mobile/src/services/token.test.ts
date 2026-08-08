@@ -100,6 +100,17 @@ describe('refreshAccessToken — failure handling', () => {
     expect(await stored('stunity_refresh_token')).toBe('r1'); // still logged in
   });
 
+  it('SESSION_CONFLICT (409) preserves tokens and does not logout', async () => {
+    post.mockRejectedValueOnce({
+      response: { status: 409, data: { code: 'SESSION_CONFLICT' } },
+    });
+
+    const token = await tokenService.refreshAccessToken();
+
+    expect(token).toBeNull();
+    expect(await stored('stunity_refresh_token')).toBe('r1');
+  });
+
   it('returns null without a network call when there is no refresh token', async () => {
     await tokenService.clearTokens();
     const token = await tokenService.refreshAccessToken();

@@ -1,11 +1,12 @@
 import crypto from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import jwt from "jsonwebtoken";
-import { signAccessToken, signLegacyRefreshToken, signTwoFactorChallenge } from "../../../lib/auth-tokens";
+import { signAccessToken, signTwoFactorChallenge } from "../../../lib/auth-tokens";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { generateUniqueUsername } from "../utils/username";
 import { buildAccessTokenClaims } from "../utils/accessToken";
 import { normalizePhone } from "../security/identifiers";
+import { issueRefreshCredential } from "../security/refreshCredential";
 import {
   createOtpChallengeStore,
   newOtpChallengeId,
@@ -53,7 +54,7 @@ function requestId(): string {
   return `req_${crypto.randomUUID().replace(/-/g, "")}`;
 }
 
-function issueTokens(user: {
+async function issueTokens(user: {
   id: string;
   email: string | null;
   role: string;
@@ -63,17 +64,20 @@ function issueTokens(user: {
   teacherId?: string | null;
   parentId?: string | null;
   studentId?: string | null;
-}, options: PasswordlessRouteOptions) {
+}, options: PasswordlessRouteOptions, prisma: PrismaClient, req: Request) {
   const accessToken = signAccessToken(
     buildAccessTokenClaims(user, { accountType: user.accountType }),
     options.jwtSecret,
     options.accessTokenExpiration,
   );
-  const refreshToken = signLegacyRefreshToken(
-    user.id,
-    options.jwtSecret,
-    options.refreshTokenExpiration,
-  );
+  const refreshToken = await issueRefreshCredential({
+    prisma,
+    userId: user.id,
+    schoolAccessVersion: user.schoolAccessVersion,
+    jwtSecret: options.jwtSecret,
+    refreshTokenExpiration: options.refreshTokenExpiration,
+    req,
+  });
   return { accessToken, refreshToken, expiresIn: options.accessTokenExpiration };
 }
 
@@ -356,7 +360,7 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
           requestId: apiRequestId,
         });
       }
-      const tokens = issueTokens(usableContact.user, options);
+      const tokens = await issueTokens(usableContact.user, options, prisma, req);
       await prisma.user.update({
         where: { id: usableContact.userId },
         data: { lastLogin: new Date(), loginCount: { increment: 1 }, failedAttempts: 0, lockedUntil: null },
@@ -484,7 +488,7 @@ export default function passwordlessRoutes(prisma: PrismaClient, options: Passwo
       metrics.observe("auth_login_duration_ms", Math.max(0, Date.now() - loginStartedAt), { method: "PHONE_OTP" });
       return res.status(201).json({
         success: true,
-        data: { user: publicUser(user), tokens: issueTokens(user, options) },
+        data: { user: publicUser(user), tokens: await issueTokens(user, options, prisma, req) },
         error: null,
         requestId: apiRequestId,
       });

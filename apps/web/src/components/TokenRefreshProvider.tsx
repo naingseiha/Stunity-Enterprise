@@ -1,33 +1,40 @@
 'use client';
 
 import { useEffect } from 'react';
-import { TokenManager } from '@/lib/api/auth';
+import { subscribeAccessTokenSync, TokenManager } from '@/lib/api/auth';
 
 /**
- * Proactive token refresh keeps the one-hour access token fresh while the
- * long-lived rotating device session preserves remember-me UX.
+ * Proactive token refresh: hydrate short-lived access tokens from the httpOnly
+ * refresh cookie, keep them fresh while the tab is open, and sync across tabs.
  */
 export default function TokenRefreshProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    const refreshIfLoggedIn = async () => {
+    const unsub = subscribeAccessTokenSync();
+
+    const refreshIfNeeded = async () => {
       if (typeof window === 'undefined') return;
-      const tokens = TokenManager.getTokens();
-      const isLegacyRefreshToken = tokens?.refreshToken?.includes('.') === true;
-      if (tokens?.refreshToken && (isLegacyRefreshToken || TokenManager.accessTokenExpiresWithin(10 * 60))) {
-        await TokenManager.refreshTokens();
+      if (TokenManager.isAssumedLoggedOut() && !TokenManager.getAccessToken() && !TokenManager.getRefreshToken()) {
+        return;
       }
+
+      const access = TokenManager.getAccessToken();
+      if (access && !TokenManager.accessTokenExpiresWithin(10 * 60)) return;
+
+      // No access (hard refresh / new tab) or near expiry → cookie / legacy refresh.
+      await TokenManager.refreshTokens();
     };
 
     const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') void refreshIfLoggedIn();
+      if (document.visibilityState === 'visible') void refreshIfNeeded();
     };
 
-    void refreshIfLoggedIn();
-    const interval = setInterval(refreshIfLoggedIn, 5 * 60 * 1000);
+    void refreshIfNeeded();
+    const interval = setInterval(refreshIfNeeded, 5 * 60 * 1000);
     document.addEventListener('visibilitychange', refreshWhenVisible);
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
+      unsub();
     };
   }, []);
 

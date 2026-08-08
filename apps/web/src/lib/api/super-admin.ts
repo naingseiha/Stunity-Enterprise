@@ -1,3 +1,4 @@
+import { TokenManager } from '@/lib/api/auth';
 const SCHOOL_SERVICE_URL = process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL;
 
 export interface SuperAdminSchool {
@@ -68,7 +69,7 @@ export interface SuperAdminUser {
 
 async function getToken(): Promise<string | null> {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('accessToken');
+  return TokenManager.getAccessToken();
 }
 
 export async function getSuperAdminSchools(params?: {

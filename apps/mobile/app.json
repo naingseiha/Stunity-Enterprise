@@ -127,6 +127,7 @@
       "expo-video",
       "@sentry/react-native",
       "./plugins/withFmtConstevalFix.js",
+      "./plugins/withSslPinning.js",
       [
         "expo-build-properties",
         {

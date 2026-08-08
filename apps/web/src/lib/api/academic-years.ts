@@ -1,3 +1,5 @@
+import { TokenManager } from './auth';
+
 const SCHOOL_SERVICE_URL = process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002';
 
 export interface AcademicYear {
@@ -59,7 +61,7 @@ export interface CopySettingsData {
 
 // Helper to get academic years using TokenManager
 export async function getAcademicYearsAuto(): Promise<{ data: { academicYears: AcademicYear[] } }> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
   const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
   const userData = userStr ? JSON.parse(userStr) : null;
   const schoolId = userData?.schoolId;

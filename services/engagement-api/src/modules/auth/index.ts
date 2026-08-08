@@ -34,8 +34,11 @@ import { requireInternalServiceToken } from './security/internalServiceAuth';
 import { createAdminPermissionRouter } from './security/adminPermissionRoutes';
 import { PERMISSIONS, hasPermission } from '../../../../lib/admin-permissions';
 import {
+  assertSecureAuthSessionConfig,
   authDbSessionsEnabled,
+  authLegacyJwtRefreshEnabled,
   durationToMilliseconds,
+  getAuthSessionSecurityStatus,
   issueRefreshCredential,
 } from './security/refreshCredential';
 import {
@@ -52,6 +55,7 @@ import {
 import {
   AuthSessionManagementError,
   listActiveAuthSessions,
+  revokeOtherOwnedAuthSessions,
   revokeOwnedAuthSession,
 } from './domain/authSessionManagement';
 import {
@@ -67,9 +71,10 @@ import {
 
 // Load environment variables from root .env
 
+assertSecureAuthSessionConfig();
+
 const app = express.Router();
 const PORT = process.env.PORT || process.env.AUTH_SERVICE_PORT || 3001;
-// Security: fail startup in production if JWT_SECRET is unset
 const passwordlessConfig = assertPasswordlessProductionConfig();
 const authOperationalMetrics = createStructuredAuthMetrics();
 for (const warning of passwordlessConfig.warnings) {
@@ -79,7 +84,9 @@ const JWT_SECRET = getJwtSecret();
 // Remember-me UX comes from the rotating device session, not a long-lived
 // bearer token. Short access tokens limit exposure without logging users out.
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '15m';
-const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d'; // Refresh: 1 year
+// Sliding idle window: each refresh extends expiry from now. Active users stay
+// signed in indefinitely; unused sessions expire after this idle period.
+const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d';
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
 const parentDirectoryCache = new Map<string, { data: any; timestamp: number }>();
 const PARENT_DIRECTORY_CACHE_TTL_MS = 60 * 1000;
@@ -821,14 +828,21 @@ app.get('/health', (req: Request, res: Response) => {
 // distinguish a healthy legacy-password service from a ready OTP pilot.
 app.get(['/ready', '/health/ready'], async (_req: Request, res: Response) => {
   const passwordless = buildPasswordlessReadiness();
+  const sessions = getAuthSessionSecurityStatus();
   try {
     await prisma.$queryRaw`SELECT 1`;
-    return res.status(passwordless.ready ? 200 : 503).json({
-      status: passwordless.ready ? 'ready' : 'not_ready',
+    const ready = passwordless.ready && sessions.ready;
+    return res.status(ready ? 200 : 503).json({
+      status: ready ? 'ready' : 'not_ready',
       service: 'auth-service',
       checks: {
         database: { ready: true },
         passwordless,
+        sessions: {
+          ready: sessions.ready,
+          dbSessions: sessions.dbSessions,
+          legacyRefresh: sessions.legacyRefresh,
+        },
       },
     });
   } catch {
@@ -838,6 +852,11 @@ app.get(['/ready', '/health/ready'], async (_req: Request, res: Response) => {
       checks: {
         database: { ready: false },
         passwordless,
+        sessions: {
+          ready: sessions.ready,
+          dbSessions: sessions.dbSessions,
+          legacyRefresh: sessions.legacyRefresh,
+        },
       },
     });
   }
@@ -1300,8 +1319,10 @@ app.post('/auth/logout', async (req: Request, res: Response) => {
       if (authDbSessionsEnabled()) {
         await revokeAuthSession(prisma, refreshToken, 'USER_LOGOUT');
       }
-      const maxAgeMs = 365 * 24 * 60 * 60 * 1000; // 1 year
-      tokenBlacklist.revokeRefreshToken(refreshToken, maxAgeMs);
+      tokenBlacklist.revokeRefreshToken(
+        refreshToken,
+        durationToMilliseconds(REFRESH_TOKEN_EXPIRATION),
+      );
     }
     res.json({
       success: true,
@@ -1317,7 +1338,7 @@ app.post('/auth/logout', async (req: Request, res: Response) => {
 });
 
 app.get('/auth/me/sessions', authenticateToken, async (req: AuthRequest, res: Response) => {
-  if (process.env.AUTH_DB_SESSIONS_ENABLED !== 'true') {
+  if (!authDbSessionsEnabled()) {
     return res.status(503).json({
       success: false,
       code: 'AUTH_SESSIONS_NOT_ENABLED',
@@ -1325,16 +1346,46 @@ app.get('/auth/me/sessions', authenticateToken, async (req: AuthRequest, res: Re
     });
   }
   try {
+    const deviceId = req.get('x-device-id')?.trim() || '';
     const sessions = await listActiveAuthSessions(prisma, req.user!.id);
-    return res.json({ success: true, data: { sessions } });
+    return res.json({
+      success: true,
+      data: {
+        sessions: sessions.map((session) => ({
+          ...session,
+          isCurrent: Boolean(deviceId && session.deviceId && session.deviceId === deviceId),
+        })),
+      },
+    });
   } catch (error) {
     console.error('List auth sessions error:', error);
     return res.status(500).json({ success: false, error: 'Failed to list sessions' });
   }
 });
 
+app.post('/auth/me/sessions/revoke-others', authenticateToken, async (req: AuthRequest, res: Response) => {
+  if (!authDbSessionsEnabled()) {
+    return res.status(503).json({
+      success: false,
+      code: 'AUTH_SESSIONS_NOT_ENABLED',
+      error: 'Session management is not enabled for this environment.',
+    });
+  }
+  const deviceId = req.get('x-device-id')?.trim() || '';
+  try {
+    const result = await revokeOtherOwnedAuthSessions(prisma, req.user!.id, deviceId);
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    if (error instanceof AuthSessionManagementError) {
+      return res.status(error.statusCode).json({ success: false, code: error.code, error: error.message });
+    }
+    console.error('Revoke other auth sessions error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to revoke other sessions' });
+  }
+});
+
 app.delete('/auth/me/sessions/:sessionId', authenticateToken, async (req: AuthRequest, res: Response) => {
-  if (process.env.AUTH_DB_SESSIONS_ENABLED !== 'true') {
+  if (!authDbSessionsEnabled()) {
     return res.status(503).json({
       success: false,
       code: 'AUTH_SESSIONS_NOT_ENABLED',
@@ -1405,7 +1456,7 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
         }
         throw error;
       }
-    } else if (!authDbSessionsEnabled() || process.env.AUTH_LEGACY_JWT_REFRESH_ENABLED === 'true') {
+    } else if (!authDbSessionsEnabled() || authLegacyJwtRefreshEnabled()) {
       // Legacy JWT refresh credentials have a dedicated type, issuer, and
       // audience. Access and 2FA tokens must never pass this validation path.
       try {

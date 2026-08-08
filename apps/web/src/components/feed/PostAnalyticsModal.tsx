@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { TokenManager } from '@/lib/api/auth';
 import {
   X,
   Eye,
@@ -59,7 +60,7 @@ export default function PostAnalyticsModal({ isOpen, onClose, postId, apiUrl }: 
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('accessToken');
+      const token = TokenManager.getAccessToken();
       const res = await fetch(`${apiUrl}/posts/${postId}/analytics`, {
         headers: { Authorization: `Bearer ${token}` },
       });

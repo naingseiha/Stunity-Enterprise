@@ -80,6 +80,8 @@ model School {
   attendanceDelegations AttendanceDelegation[]
   quizWars              QuizWar[]
   disciplinePolicy      DisciplinePolicy?
+  promotionPolicy       PromotionPolicy?
+  yearEndCycles         YearEndCycle[]
 
   @@index([slug])
   @@index([subscriptionTier])
@@ -115,6 +117,8 @@ model AcademicYear {
   admissionApplications AdmissionApplication[]
   studentTransfers      StudentTransfer[]
   timetableEntries      TimetableEntry[]
+  yearEndCyclesFrom     YearEndCycle[]              @relation("YearEndFromYear")
+  yearEndCyclesTo       YearEndCycle[]              @relation("YearEndToYear")
 
   @@unique([schoolId, name])
   @@index([schoolId, isCurrent])
@@ -145,6 +149,121 @@ model StudentProgression {
   @@index([fromAcademicYearId])
   @@index([toAcademicYearId])
   @@map("student_progressions")
+}
+
+/// School-level rules used to generate recommendations. Final decisions are
+/// always reviewed and stored separately so policy changes never rewrite
+/// historical year-end records.
+model PromotionPolicy {
+  id                        String   @id @default(cuid())
+  schoolId                  String   @unique
+  passAverage               Float    @default(50)
+  minAttendanceRate         Float    @default(75)
+  terminalGrade             Int      @default(12)
+  maxUnexcusedAbsences      Int?
+  maxDisciplineIncidents    Int?
+  requireCompleteGrades     Boolean  @default(false)
+  allowConditionalPromotion Boolean  @default(true)
+  allowSupplementaryExam    Boolean  @default(true)
+  requireReasonForOverride  Boolean  @default(true)
+  requireSecondApproval     Boolean  @default(false)
+  additionalRules           Json?    @default("{}")
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  school                    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@map("promotion_policies")
+}
+
+/// One durable end-of-year list for a source/target academic-year pair.
+model YearEndCycle {
+  id                 String             @id @default(cuid())
+  schoolId           String
+  fromAcademicYearId String
+  toAcademicYearId   String
+  status             YearEndCycleStatus @default(DRAFT)
+  policySnapshot     Json
+  generatedBy        String
+  generatedAt        DateTime           @default(now())
+  submittedBy        String?
+  submittedAt        DateTime?
+  approvedBy         String?
+  approvedAt         DateTime?
+  finalizedBy        String?
+  finalizedAt        DateTime?
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  school             School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  fromAcademicYear   AcademicYear       @relation("YearEndFromYear", fields: [fromAcademicYearId], references: [id], onDelete: Restrict)
+  toAcademicYear     AcademicYear       @relation("YearEndToYear", fields: [toAcademicYearId], references: [id], onDelete: Restrict)
+  decisions          YearEndDecision[]
+
+  @@unique([schoolId, fromAcademicYearId, toAcademicYearId])
+  @@index([schoolId, status])
+  @@index([fromAcademicYearId])
+  @@index([toAcademicYearId])
+  @@map("year_end_cycles")
+}
+
+/// A reviewable, explainable decision for one student. Evidence is snapshotted
+/// when the list is generated and remains auditable after enrollments change.
+model YearEndDecision {
+  id                      String                 @id @default(cuid())
+  cycleId                 String
+  studentId               String
+  fromClassId             String
+  targetClassId           String?
+  recommendedOutcome      YearEndDecisionOutcome
+  finalOutcome            YearEndDecisionOutcome
+  decisionSource          YearEndDecisionSource  @default(SYSTEM)
+  reasonCode              String?
+  reasonDetails           String?
+  academicAverage         Float?
+  attendanceRate          Float?
+  totalAttendanceSessions Int                    @default(0)
+  absentCount             Int                    @default(0)
+  excusedCount            Int                    @default(0)
+  lateCount               Int                    @default(0)
+  disciplineIncidentCount Int?
+  evidence                Json?                  @default("{}")
+  interventions           Json?                  @default("[]")
+  interventionStatus      String?
+  reviewedBy              String?
+  reviewedAt              DateTime?
+  version                 Int                    @default(1)
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  cycle                   YearEndCycle           @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  student                 Student                @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  fromClass               Class                  @relation("YearEndFromClass", fields: [fromClassId], references: [id], onDelete: Restrict)
+  targetClass             Class?                 @relation("YearEndTargetClass", fields: [targetClassId], references: [id], onDelete: Restrict)
+  events                  YearEndDecisionEvent[]
+
+  @@unique([cycleId, studentId])
+  @@index([cycleId, finalOutcome])
+  @@index([studentId])
+  @@index([fromClassId])
+  @@index([targetClassId])
+  @@map("year_end_decisions")
+}
+
+model YearEndDecisionEvent {
+  id          String                  @id @default(cuid())
+  decisionId  String
+  action      String
+  fromOutcome YearEndDecisionOutcome?
+  toOutcome   YearEndDecisionOutcome?
+  reasonCode  String?
+  notes       String?
+  actorId     String
+  metadata    Json?
+  createdAt   DateTime                @default(now())
+  decision    YearEndDecision         @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  @@index([decisionId, createdAt])
+  @@index([actorId])
+  @@map("year_end_decision_events")
 }
 
 model Attendance {
@@ -191,6 +310,8 @@ model Class {
   studentMonthlySummaries StudentMonthlySummary[]
   progressionsFrom        StudentProgression[]    @relation("FromClass")
   progressionsTo          StudentProgression[]    @relation("ToClass")
+  yearEndDecisionsFrom    YearEndDecision[]       @relation("YearEndFromClass")
+  yearEndDecisionsTarget  YearEndDecision[]       @relation("YearEndTargetClass")
   transfersFrom           StudentTransfer[]       @relation("TransferFromClass")
   transfersTo             StudentTransfer[]       @relation("TransferToClass")
   students                Student[]
@@ -430,6 +551,7 @@ model Student {
   monthlySummaries           StudentMonthlySummary[]
   studentParents             StudentParent[]
   StudentProgression         StudentProgression[]
+  yearEndDecisions           YearEndDecision[]
   transcriptDocuments        StudentTranscriptDocument[]
   admissionApplications      AdmissionApplication[]
   transfers                  StudentTransfer[]
@@ -4193,6 +4315,29 @@ enum PromotionType {
   NEW_ADMISSION
   TRANSFER_IN
   TRANSFER_OUT
+}
+
+enum YearEndCycleStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  FINALIZED
+  CANCELLED
+}
+
+enum YearEndDecisionOutcome {
+  PENDING
+  PROMOTE
+  CONDITIONAL_PROMOTE
+  REPEAT
+  GRADUATE
+  WITHDRAWN
+}
+
+enum YearEndDecisionSource {
+  SYSTEM
+  MANUAL
+  OVERRIDE
 }
 
 enum EnrollmentEntryReason {

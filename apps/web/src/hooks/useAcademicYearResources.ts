@@ -3,13 +3,14 @@
 import useSWR, { preload } from 'swr';
 import { SCHOOL_SERVICE_URL } from '@/lib/api/config';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { TokenManager } from '@/lib/api/auth';
 
 const ACADEMIC_YEAR_RESOURCE_CACHE_TTL_MS = 5 * 60 * 1000;
 const ACADEMIC_YEAR_TEMPLATE_CACHE_TTL_MS = 10 * 60 * 1000;
 const SETUP_TEMPLATES_CACHE_TTL_MS = 30 * 60 * 1000;
 
 async function fetchAcademicYearResource<T>(url: string): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
 
   const response = await fetch(url, {
     headers: {

@@ -18,6 +18,7 @@ import { finishApiTiming, startApiTiming } from '@/utils/apiTiming';
 import { ApiResponse, ApiError } from '@/types';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import { getAuthDeviceId } from '@/services/authDeviceId';
 
 // Create axios instance
 export const createApiClient = (baseURL: string): AxiosInstance => {
@@ -44,6 +45,11 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
           config.headers.Authorization = `Bearer ${token}`;
         }
       }
+
+      // Bind requests to this install so refresh sessions and remote sign-out
+      // can distinguish "this device" from other active sessions.
+      config.headers['X-Device-Id'] = await getAuthDeviceId();
+      config.headers['X-Device-Name'] = Device.modelName || Platform.OS;
 
       // Add request ID for tracing
       config.headers['X-Request-ID'] = generateRequestId();
@@ -173,10 +179,17 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
           // If newToken is null, refresh failed due to network/server error.
           // Don't logout, just fail this request.
           return Promise.reject(error);
-        } catch (refreshError) {
-          // Token refresh failed TERMINALLY (401/403 rejection from server).
-          // Logout user.
-          eventEmitter.emit('auth:logout');
+        } catch (refreshError: any) {
+          // Only definitive refresh rejection clears the persistent session.
+          // Conflicts/network errors must never bounce the user to login.
+          const status = refreshError?.response?.status;
+          const code = refreshError?.response?.data?.code;
+          if (
+            (status === 401 || status === 403)
+            && code !== 'SESSION_CONFLICT'
+          ) {
+            eventEmitter.emit('auth:logout');
+          }
           return Promise.reject(refreshError);
         }
       }

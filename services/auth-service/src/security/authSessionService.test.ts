@@ -27,15 +27,16 @@ function createMemoryStore() {
       },
       findUnique: async ({ where }: any) => sessions.get(where.refreshTokenHash) || null,
       updateMany: async ({ where, data }: any) => {
-        const row = [...sessions.values()].find((candidate) => (
+        const rows = [...sessions.values()].filter((candidate) => (
           (!where.id || candidate.id === where.id)
-          && candidate.refreshTokenHash === where.refreshTokenHash
-          && ((!where.revokedAt && candidate.revokedAt === null) || where.revokedAt === undefined)
+          && (!where.userId || candidate.userId === where.userId)
+          && (!where.deviceId || candidate.deviceId === where.deviceId)
+          && (!where.refreshTokenHash || candidate.refreshTokenHash === where.refreshTokenHash)
+          && (where.revokedAt !== null || candidate.revokedAt === null)
           && (!where.expiresAt?.gt || candidate.expiresAt > where.expiresAt.gt)
         ));
-        if (!row) return { count: 0 };
-        Object.assign(row, data);
-        return { count: 1 };
+        rows.forEach((row) => Object.assign(row, data));
+        return { count: rows.length };
       },
     },
   };
@@ -79,20 +80,39 @@ test("rotation revokes the old token and preserves device/access metadata", asyn
   assert.equal(sessions.get(hashRefreshToken(second.refreshToken)).deviceName, "iPhone");
 });
 
-test("reusing a rotated token is rejected without issuing another session", async () => {
+test("near-simultaneous rotation loses safely without revoking the active family", async () => {
   const { store, sessions } = createMemoryStore();
+  const now = new Date();
   const first = await createAuthSession(store, {
     userId: "user-1",
     schoolAccessVersion: 0,
     expiresAt: new Date(Date.now() + 60_000),
   });
-  await rotateAuthSession(store, first.refreshToken, { expiresAt: new Date(Date.now() + 120_000) });
+  const second = await rotateAuthSession(store, first.refreshToken, { now, expiresAt: new Date(now.getTime() + 120_000) });
 
   await assert.rejects(
-    () => rotateAuthSession(store, first.refreshToken, { expiresAt: new Date(Date.now() + 120_000) }),
-    (error: any) => error instanceof AuthSessionError && error.code === "SESSION_REUSE_DETECTED",
+    () => rotateAuthSession(store, first.refreshToken, { now: new Date(now.getTime() + 1_000), expiresAt: new Date(now.getTime() + 120_000) }),
+    (error: any) => error instanceof AuthSessionError && error.code === "SESSION_CONFLICT",
   );
   assert.equal(sessions.size, 2);
+  assert.equal(sessions.get(hashRefreshToken(second.refreshToken)).revokedAt, null);
+});
+
+test("delayed reuse of a rotated token revokes its active device family", async () => {
+  const { store, sessions } = createMemoryStore();
+  const now = new Date();
+  const first = await createAuthSession(store, {
+    userId: "user-1",
+    schoolAccessVersion: 0,
+    expiresAt: new Date(now.getTime() + 60_000),
+  });
+  const second = await rotateAuthSession(store, first.refreshToken, { now, expiresAt: new Date(now.getTime() + 120_000) });
+
+  await assert.rejects(
+    () => rotateAuthSession(store, first.refreshToken, { now: new Date(now.getTime() + 11_000), expiresAt: new Date(now.getTime() + 120_000) }),
+    (error: any) => error instanceof AuthSessionError && error.code === "SESSION_REUSE_DETECTED",
+  );
+  assert.equal(sessions.get(hashRefreshToken(second.refreshToken)).revokeReason, "TOKEN_REUSE_DETECTED");
 });
 
 test("revocation and school access version checks are explicit", async () => {
@@ -107,4 +127,3 @@ test("revocation and school access version checks are explicit", async () => {
   assert.equal(isSessionAccessCurrent(2, 2), true);
   assert.equal(isSessionAccessCurrent(2, 3), false);
 });
-

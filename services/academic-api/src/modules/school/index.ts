@@ -40,6 +40,15 @@ import {
   canManageSchoolClaimCodes,
   isReadOnlyHttpMethod,
 } from './school-admin-access';
+import {
+  DEFAULT_PROMOTION_POLICY,
+  averagePercent,
+  duplicateIds,
+  gradePercentage,
+  normalizePromotionPolicy,
+  parseGradeNumber,
+  recommendYearEndOutcome,
+} from './year-end-evaluation';
 
 // Load environment variables from root .env in local dev, and keep process env for deployed runtimes
 
@@ -2516,7 +2525,9 @@ app.delete('/super-admin/posts/:postId', requireSuperAdmin, async (req: Request,
 app.use(
   '/schools/:schoolId/academic-years',
   async (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (isReadOnlyHttpMethod(req.method)) return next();
+    const isYearEndManagementRead = isReadOnlyHttpMethod(req.method)
+      && (req.originalUrl.includes('/year-end-cycle') || req.originalUrl.includes('/promotion-policy'));
+    if (isReadOnlyHttpMethod(req.method) && !isYearEndManagementRead) return next();
     try {
       const actor = await loadPermissionActor(req);
       if (
@@ -3206,8 +3217,737 @@ app.post('/schools/:schoolId/academic-years/:yearId/copy-settings', async (req: 
 });
 
 // ============================================================
-// STUDENT PROMOTION ENDPOINTS
+// YEAR-END REVIEW & STUDENT PROMOTION
 // ============================================================
+
+const yearEndDecisionInclude = {
+  student: {
+    select: {
+      id: true,
+      studentId: true,
+      firstName: true,
+      lastName: true,
+      englishFirstName: true,
+      englishLastName: true,
+      gender: true,
+      photoUrl: true,
+    },
+  },
+  fromClass: { select: { id: true, name: true, grade: true, section: true } },
+  targetClass: { select: { id: true, name: true, grade: true, section: true, capacity: true } },
+};
+
+class YearEndWorkflowError extends Error {
+  constructor(public readonly statusCode: number, message: string, public readonly details?: Record<string, unknown>) {
+    super(message);
+    this.name = 'YearEndWorkflowError';
+  }
+}
+
+function yearEndCycleResponse(cycle: any) {
+  const decisions = cycle?.decisions || [];
+  const outcomes = ['PENDING', 'PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT', 'GRADUATE', 'WITHDRAWN'];
+  const byOutcome = Object.fromEntries(
+    outcomes.map((outcome) => [outcome, decisions.filter((decision: any) => decision.finalOutcome === outcome).length]),
+  );
+  return {
+    ...cycle,
+    summary: {
+      total: decisions.length,
+      ...byOutcome,
+      reviewed: decisions.filter((decision: any) => Boolean(decision.reviewedAt)).length,
+      overrides: decisions.filter((decision: any) => decision.decisionSource === 'OVERRIDE').length,
+    },
+  };
+}
+
+// Policy is school-scoped while each cycle stores an immutable policy snapshot.
+app.get('/schools/:schoolId/academic-years/promotion-policy', async (req: Request, res: Response) => {
+  try {
+    const policy = await prisma.promotionPolicy.findUnique({ where: { schoolId: req.params.schoolId } });
+    return res.json({ success: true, data: normalizePromotionPolicy(policy as any) });
+  } catch (error: any) {
+    console.error('Error fetching promotion policy:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch promotion policy' });
+  }
+});
+
+app.put('/schools/:schoolId/academic-years/promotion-policy', async (req: Request, res: Response) => {
+  try {
+    const school = await prisma.school.findUnique({ where: { id: req.params.schoolId }, select: { id: true } });
+    if (!school) return res.status(404).json({ success: false, error: 'School not found' });
+
+    const policy = normalizePromotionPolicy(req.body);
+    const saved = await prisma.promotionPolicy.upsert({
+      where: { schoolId: req.params.schoolId },
+      create: { schoolId: req.params.schoolId, ...policy } as any,
+      update: policy as any,
+    });
+    return res.json({ success: true, data: saved });
+  } catch (error: any) {
+    console.error('Error saving promotion policy:', error);
+    return res.status(500).json({ success: false, error: 'Failed to save promotion policy' });
+  }
+});
+
+app.get('/schools/:schoolId/academic-years/:yearId/year-end-cycle', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, yearId } = req.params;
+    const toAcademicYearId = String(req.query.toAcademicYearId || '');
+    const cycle = await prisma.yearEndCycle.findFirst({
+      where: {
+        schoolId,
+        fromAcademicYearId: yearId,
+        ...(toAcademicYearId ? { toAcademicYearId } : {}),
+      },
+      include: {
+        fromAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
+        toAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
+        decisions: { include: yearEndDecisionInclude, orderBy: [{ fromClass: { grade: 'asc' } }, { student: { firstName: 'asc' } }] },
+      },
+      orderBy: { generatedAt: 'desc' },
+    });
+    return res.json({ success: true, data: cycle ? yearEndCycleResponse(cycle) : null });
+  } catch (error: any) {
+    console.error('Error fetching year-end cycle:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch year-end cycle' });
+  }
+});
+
+app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/generate', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, yearId } = req.params;
+    const { toAcademicYearId } = req.body;
+    const actorId = (req as AuthRequest).user?.id || 'SYSTEM';
+    if (!toAcademicYearId || toAcademicYearId === yearId) {
+      return res.status(400).json({ success: false, error: 'A different target academic year is required' });
+    }
+
+    const [fromYear, toYear, storedPolicy, existingCycle] = await Promise.all([
+      prisma.academicYear.findFirst({ where: { id: yearId, schoolId } }),
+      prisma.academicYear.findFirst({ where: { id: toAcademicYearId, schoolId } }),
+      prisma.promotionPolicy.findUnique({ where: { schoolId } }),
+      prisma.yearEndCycle.findUnique({
+        where: { schoolId_fromAcademicYearId_toAcademicYearId: { schoolId, fromAcademicYearId: yearId, toAcademicYearId } },
+        include: {
+          fromAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
+          toAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
+          decisions: { include: yearEndDecisionInclude },
+        },
+      }),
+    ]);
+    if (!fromYear || !toYear) return res.status(404).json({ success: false, error: 'Academic year not found' });
+    if (new Date(toYear.startDate) <= new Date(fromYear.startDate)) {
+      return res.status(400).json({ success: false, error: 'Target year must start after the source year' });
+    }
+    if (existingCycle) return res.json({ success: true, data: yearEndCycleResponse(existingCycle), existing: true });
+
+    const policy = normalizePromotionPolicy((storedPolicy || DEFAULT_PROMOTION_POLICY) as any);
+    const enrollments = await prisma.studentClass.findMany({
+      where: {
+        class: { schoolId, academicYearId: yearId },
+        student: { schoolId, recordStatus: 'ACTIVE' },
+        status: 'ACTIVE',
+        endedAt: null,
+      },
+      include: {
+        student: { select: { id: true } },
+        class: { select: { id: true, name: true, grade: true, section: true } },
+      },
+      orderBy: { startedAt: 'desc' },
+    });
+
+    const duplicateStudentIds = duplicateIds(enrollments.map((enrollment) => enrollment.studentId));
+    if (duplicateStudentIds.length) {
+      return res.status(409).json({
+        success: false,
+        error: 'Duplicate active source-year enrollments must be resolved before generating the year-end review',
+        details: { duplicateStudentCount: duplicateStudentIds.length },
+      });
+    }
+    const uniqueEnrollments = enrollments;
+    const studentIds = uniqueEnrollments.map((enrollment) => enrollment.studentId);
+    const fromClassIds = [...new Set(uniqueEnrollments.map((enrollment) => enrollment.classId))];
+    const [grades, attendance, targetClasses, targetEnrollmentCounts] = await Promise.all([
+      prisma.grade.findMany({
+        where: { studentId: { in: studentIds }, classId: { in: fromClassIds } },
+        select: { studentId: true, classId: true, score: true, maxScore: true, percentage: true },
+      }),
+      prisma.attendance.findMany({
+        where: {
+          studentId: { in: studentIds },
+          date: { gte: fromYear.startDate, lte: fromYear.endDate },
+          OR: [{ classId: { in: fromClassIds } }, { classId: null }],
+        },
+        select: { studentId: true, status: true },
+      }),
+      prisma.class.findMany({
+        where: { schoolId, academicYearId: toAcademicYearId },
+        orderBy: [{ grade: 'asc' }, { section: 'asc' }],
+      }),
+      prisma.studentClass.groupBy({
+        by: ['classId'],
+        where: {
+          status: 'ACTIVE',
+          endedAt: null,
+          class: { schoolId, academicYearId: toAcademicYearId },
+        },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const gradesByEnrollment = new Map<string, typeof grades>();
+    for (const grade of grades) {
+      const key = `${grade.studentId}:${grade.classId}`;
+      const records = gradesByEnrollment.get(key);
+      if (records) records.push(grade);
+      else gradesByEnrollment.set(key, [grade]);
+    }
+    const attendanceByStudent = new Map<string, typeof attendance>();
+    for (const record of attendance) {
+      const records = attendanceByStudent.get(record.studentId);
+      if (records) records.push(record);
+      else attendanceByStudent.set(record.studentId, [record]);
+    }
+    const activeCountByClass = new Map(targetEnrollmentCounts.map((row) => [row.classId, row._count._all]));
+    const projectedSeats = new Map(targetClasses.map((targetClass) => [targetClass.id, activeCountByClass.get(targetClass.id) || 0]));
+    const decisionCreates = uniqueEnrollments.map((enrollment) => {
+      const gradeNumber = parseGradeNumber(enrollment.class.grade);
+      const terminalGrade = gradeNumber !== null && gradeNumber >= policy.terminalGrade;
+      const desiredGrade = gradeNumber === null ? null : String(gradeNumber + 1);
+      const candidates = desiredGrade ? targetClasses.filter((targetClass) => parseGradeNumber(targetClass.grade) === gradeNumber! + 1) : [];
+      candidates.sort((left, right) => {
+        const leftSection = left.section === enrollment.class.section ? 0 : 1;
+        const rightSection = right.section === enrollment.class.section ? 0 : 1;
+        if (leftSection !== rightSection) return leftSection - rightSection;
+        return (projectedSeats.get(left.id) || 0) - (projectedSeats.get(right.id) || 0);
+      });
+      const targetClass = candidates.find((candidate) => candidate.capacity === null || (projectedSeats.get(candidate.id) || 0) < candidate.capacity) || candidates[0] || null;
+      if (targetClass) projectedSeats.set(targetClass.id, (projectedSeats.get(targetClass.id) || 0) + 1);
+
+      const studentGrades = gradesByEnrollment.get(`${enrollment.studentId}:${enrollment.classId}`) || [];
+      const academicAverage = averagePercent(studentGrades.map(gradePercentage));
+      const studentAttendance = attendanceByStudent.get(enrollment.studentId) || [];
+      const absentCount = studentAttendance.filter((record) => record.status === 'ABSENT').length;
+      const excusedCount = studentAttendance.filter((record) => record.status === 'EXCUSED').length;
+      const lateCount = studentAttendance.filter((record) => record.status === 'LATE').length;
+      const attendanceRate = studentAttendance.length
+        ? Math.round(((studentAttendance.length - absentCount) / studentAttendance.length) * 10000) / 100
+        : null;
+      const recommendation = recommendYearEndOutcome(
+        {
+          academicAverage,
+          attendanceRate,
+          absentCount,
+          disciplineIncidentCount: null,
+          hasTargetGrade: Boolean(targetClass),
+          isTerminalGrade: terminalGrade,
+        },
+        policy,
+      );
+
+      return {
+        studentId: enrollment.studentId,
+        fromClassId: enrollment.classId,
+        targetClassId: recommendation.outcome === 'GRADUATE' ? null : targetClass?.id || null,
+        recommendedOutcome: recommendation.outcome,
+        finalOutcome: recommendation.outcome,
+        reasonCode: recommendation.reasonCode,
+        academicAverage,
+        attendanceRate,
+        totalAttendanceSessions: studentAttendance.length,
+        absentCount,
+        excusedCount,
+        lateCount,
+        evidence: {
+          flags: recommendation.flags,
+          gradeRecordCount: studentGrades.length,
+          sourceClass: enrollment.class,
+          generatedAt: new Date().toISOString(),
+        },
+      };
+    });
+
+    const cycle = await prisma.yearEndCycle.create({
+      data: {
+        schoolId,
+        fromAcademicYearId: yearId,
+        toAcademicYearId,
+        policySnapshot: policy as any,
+        generatedBy: actorId,
+        decisions: { create: decisionCreates as any },
+      },
+      include: {
+        fromAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
+        toAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
+        decisions: { include: yearEndDecisionInclude },
+      },
+    });
+    return res.status(201).json({ success: true, data: yearEndCycleResponse(cycle) });
+  } catch (error: any) {
+    console.error('Error generating year-end cycle:', error);
+    if (error?.code === 'P2002') {
+      const { schoolId, yearId } = req.params;
+      const toAcademicYearId = String(req.body.toAcademicYearId || '');
+      const existingCycle = toAcademicYearId
+        ? await prisma.yearEndCycle.findUnique({
+            where: {
+              schoolId_fromAcademicYearId_toAcademicYearId: {
+                schoolId,
+                fromAcademicYearId: yearId,
+                toAcademicYearId,
+              },
+            },
+            include: {
+              fromAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
+              toAcademicYear: { select: { id: true, name: true, startDate: true, endDate: true, status: true } },
+              decisions: { include: yearEndDecisionInclude },
+            },
+          })
+        : null;
+      if (existingCycle) return res.json({ success: true, data: yearEndCycleResponse(existingCycle), existing: true });
+    }
+    return res.status(500).json({ success: false, error: 'Failed to generate year-end evaluation', message: error.message });
+  }
+});
+
+app.patch('/schools/:schoolId/academic-years/:yearId/year-end-cycle/decisions/:decisionId', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, yearId, decisionId } = req.params;
+    const actorId = (req as AuthRequest).user?.id || 'SYSTEM';
+    const allowedOutcomes = new Set(['PENDING', 'PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT', 'GRADUATE', 'WITHDRAWN']);
+    const existing = await prisma.yearEndDecision.findFirst({
+      where: { id: decisionId, cycle: { schoolId, fromAcademicYearId: yearId } },
+      include: { cycle: true, fromClass: true },
+    });
+    if (!existing) return res.status(404).json({ success: false, error: 'Year-end decision not found' });
+    if (['APPROVED', 'FINALIZED', 'CANCELLED'].includes(existing.cycle.status)) {
+      return res.status(409).json({ success: false, error: 'Approved or finalized cycles cannot be edited' });
+    }
+
+    const finalOutcome = req.body.finalOutcome || existing.finalOutcome;
+    const expectedVersion = Number(req.body.version);
+    if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+      return res.status(400).json({ success: false, error: 'A valid decision version is required' });
+    }
+    if (!allowedOutcomes.has(finalOutcome)) return res.status(400).json({ success: false, error: 'Invalid final outcome' });
+    const isOverride = finalOutcome !== existing.recommendedOutcome;
+    const policy = normalizePromotionPolicy(existing.cycle.policySnapshot as any);
+    if (isOverride && policy.requireReasonForOverride && (!req.body.reasonCode || String(req.body.reasonDetails || '').trim().length < 3)) {
+      return res.status(400).json({ success: false, error: 'An override reason and explanation are required' });
+    }
+
+    let targetClassId = req.body.targetClassId === undefined ? existing.targetClassId : req.body.targetClassId || null;
+    if (['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT'].includes(finalOutcome)) {
+      if (!targetClassId) return res.status(400).json({ success: false, error: 'A target class is required for this outcome' });
+      const targetClass = await prisma.class.findFirst({
+        where: { id: targetClassId, schoolId, academicYearId: existing.cycle.toAcademicYearId },
+      });
+      if (!targetClass) return res.status(400).json({ success: false, error: 'Target class must belong to the target academic year' });
+      if (finalOutcome === 'REPEAT' && parseGradeNumber(targetClass.grade) !== parseGradeNumber(existing.fromClass.grade)) {
+        return res.status(400).json({ success: false, error: 'A repeating student must be assigned to the same grade' });
+      }
+    } else {
+      targetClassId = null;
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('year-end-cycle'), hashtext(${existing.cycleId}))`;
+      const editableCycle = await tx.yearEndCycle.findFirst({
+        where: { id: existing.cycleId, schoolId, fromAcademicYearId: yearId, status: { in: ['DRAFT', 'IN_REVIEW'] } },
+        select: { id: true },
+      });
+      if (!editableCycle) throw new YearEndWorkflowError(409, 'The cycle state changed. Reload before editing this decision.');
+      const write = await tx.yearEndDecision.updateMany({
+        where: {
+          id: decisionId,
+          version: expectedVersion,
+          cycle: { status: { in: ['DRAFT', 'IN_REVIEW'] } },
+        },
+        data: {
+          finalOutcome,
+          targetClassId,
+          decisionSource: isOverride ? 'OVERRIDE' : req.body.decisionSource || existing.decisionSource,
+          reasonCode: req.body.reasonCode === undefined ? existing.reasonCode : req.body.reasonCode || null,
+          reasonDetails: req.body.reasonDetails === undefined ? existing.reasonDetails : req.body.reasonDetails || null,
+          interventions: req.body.interventions === undefined ? existing.interventions : req.body.interventions,
+          interventionStatus: req.body.interventionStatus === undefined ? existing.interventionStatus : req.body.interventionStatus || null,
+          disciplineIncidentCount: req.body.disciplineIncidentCount === undefined
+            ? existing.disciplineIncidentCount
+            : Math.max(0, Number(req.body.disciplineIncidentCount) || 0),
+          reviewedBy: actorId,
+          reviewedAt: new Date(),
+          version: { increment: 1 },
+        },
+      });
+      if (write.count !== 1) {
+        throw new YearEndWorkflowError(409, 'This decision was changed by another administrator. Reload and review the latest version.');
+      }
+      const decision = await tx.yearEndDecision.findUniqueOrThrow({
+        where: { id: decisionId },
+        include: yearEndDecisionInclude,
+      });
+      await tx.yearEndDecisionEvent.create({
+        data: {
+          decisionId,
+          action: isOverride ? 'OUTCOME_OVERRIDDEN' : 'DECISION_REVIEWED',
+          fromOutcome: existing.finalOutcome,
+          toOutcome: finalOutcome,
+          reasonCode: req.body.reasonCode || existing.reasonCode,
+          notes: req.body.reasonDetails || null,
+          actorId,
+          metadata: { targetClassId, interventions: req.body.interventions || existing.interventions } as any,
+        },
+      });
+      return decision;
+    });
+    return res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Error updating year-end decision:', error);
+    const statusCode = error instanceof YearEndWorkflowError ? error.statusCode : 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: error instanceof YearEndWorkflowError ? error.message : 'Failed to update year-end decision',
+      message: error.message,
+      ...(error instanceof YearEndWorkflowError && error.details ? { details: error.details } : {}),
+    });
+  }
+});
+
+app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/submit', async (req: Request, res: Response) => {
+  try {
+    const actorId = (req as AuthRequest).user?.id || 'SYSTEM';
+    const cycleId = String(req.body.cycleId || '');
+    if (!cycleId) return res.status(400).json({ success: false, error: 'Cycle ID is required' });
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('year-end-cycle'), hashtext(${cycleId}))`;
+      const cycle = await tx.yearEndCycle.findFirst({
+        where: { id: cycleId, schoolId: req.params.schoolId, fromAcademicYearId: req.params.yearId },
+        include: { decisions: true },
+      });
+      if (!cycle) throw new YearEndWorkflowError(404, 'Year-end cycle not found');
+      if (cycle.status !== 'DRAFT') throw new YearEndWorkflowError(409, 'Only draft cycles can be submitted');
+      const pending = cycle.decisions.filter((decision) => decision.finalOutcome === 'PENDING');
+      const missingClass = cycle.decisions.filter((decision) => ['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT'].includes(decision.finalOutcome) && !decision.targetClassId);
+      if (pending.length || missingClass.length) {
+        throw new YearEndWorkflowError(400, 'Resolve every pending decision and target-class assignment before submission', {
+          pending: pending.length,
+          missingClass: missingClass.length,
+        });
+      }
+      return tx.yearEndCycle.update({
+        where: { id: cycle.id },
+        data: { status: 'IN_REVIEW', submittedBy: actorId, submittedAt: new Date(), notes: req.body.notes || cycle.notes },
+      });
+    });
+    return res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Error submitting year-end cycle:', error);
+    const statusCode = error instanceof YearEndWorkflowError ? error.statusCode : 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: error instanceof YearEndWorkflowError ? error.message : 'Failed to submit year-end cycle',
+      ...(error instanceof YearEndWorkflowError && error.details ? { details: error.details } : {}),
+    });
+  }
+});
+
+app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/approve', async (req: Request, res: Response) => {
+  try {
+    const actorId = (req as AuthRequest).user?.id || 'SYSTEM';
+    const cycleId = String(req.body.cycleId || '');
+    if (!cycleId) return res.status(400).json({ success: false, error: 'Cycle ID is required' });
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('year-end-cycle'), hashtext(${cycleId}))`;
+      const cycle = await tx.yearEndCycle.findFirst({
+        where: { id: cycleId, schoolId: req.params.schoolId, fromAcademicYearId: req.params.yearId },
+      });
+      if (!cycle) throw new YearEndWorkflowError(404, 'Year-end cycle not found');
+      if (cycle.status !== 'IN_REVIEW') throw new YearEndWorkflowError(409, 'Cycle must be submitted before approval');
+      const policy = normalizePromotionPolicy(cycle.policySnapshot as any);
+      if (policy.requireSecondApproval && cycle.generatedBy === actorId) {
+        throw new YearEndWorkflowError(403, 'This policy requires approval by a different administrator');
+      }
+      return tx.yearEndCycle.update({
+        where: { id: cycle.id },
+        data: { status: 'APPROVED', approvedBy: actorId, approvedAt: new Date(), notes: req.body.notes || cycle.notes },
+      });
+    });
+    return res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Error approving year-end cycle:', error);
+    const statusCode = error instanceof YearEndWorkflowError ? error.statusCode : 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: error instanceof YearEndWorkflowError ? error.message : 'Failed to approve year-end cycle',
+    });
+  }
+});
+
+app.post('/schools/:schoolId/academic-years/:yearId/year-end-cycle/finalize', async (req: Request, res: Response) => {
+  try {
+    const { schoolId, yearId } = req.params;
+    const actorId = (req as AuthRequest).user?.id || 'SYSTEM';
+    const cycleId = String(req.body.cycleId || '');
+    if (!cycleId) return res.status(400).json({ success: false, error: 'Cycle ID is required' });
+    const result = await prisma.$transaction(async (tx) => {
+      // One school/source-year finalizer at a time. The lock is transaction-scoped
+      // and automatically released on commit or rollback.
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${schoolId}), hashtext(${yearId}))`;
+
+      const cycle = await tx.yearEndCycle.findFirst({
+        where: { id: cycleId, schoolId, fromAcademicYearId: yearId },
+        include: { decisions: true, fromAcademicYear: true, toAcademicYear: true },
+      });
+      if (!cycle) throw new YearEndWorkflowError(404, 'Year-end cycle not found');
+      if (cycle.status !== 'APPROVED') {
+        throw new YearEndWorkflowError(409, 'Cycle must be approved and not previously finalized');
+      }
+      if (!cycle.decisions.length) throw new YearEndWorkflowError(409, 'An empty year-end cycle cannot be finalized');
+
+      const placementOutcomes = new Set(['PROMOTE', 'CONDITIONAL_PROMOTE', 'REPEAT']);
+      const pendingCount = cycle.decisions.filter((decision) => decision.finalOutcome === 'PENDING').length;
+      const missingTargetCount = cycle.decisions.filter(
+        (decision) => placementOutcomes.has(decision.finalOutcome) && !decision.targetClassId,
+      ).length;
+      if (pendingCount || missingTargetCount) {
+        throw new YearEndWorkflowError(409, 'Every decision must be resolved before finalization', {
+          pendingCount,
+          missingTargetCount,
+        });
+      }
+
+      const studentIds = cycle.decisions.map((decision) => decision.studentId);
+      const targetClassIds = [...new Set(cycle.decisions.flatMap((decision) => decision.targetClassId ? [decision.targetClassId] : []))];
+      const [students, sourceEnrollments, targetEnrollments, targetClasses, targetEnrollmentCounts, existingProgressions] = await Promise.all([
+        tx.student.findMany({
+          where: { id: { in: studentIds }, schoolId, recordStatus: 'ACTIVE' },
+          select: { id: true },
+        }),
+        tx.studentClass.findMany({
+          where: {
+            studentId: { in: studentIds },
+            status: 'ACTIVE',
+            endedAt: null,
+            class: { schoolId, academicYearId: yearId },
+          },
+          select: { id: true, studentId: true, classId: true },
+        }),
+        tx.studentClass.findMany({
+          where: {
+            studentId: { in: studentIds },
+            status: 'ACTIVE',
+            endedAt: null,
+            class: { schoolId, academicYearId: cycle.toAcademicYearId },
+          },
+          select: { id: true, studentId: true, classId: true },
+        }),
+        tx.class.findMany({
+          where: { id: { in: targetClassIds }, schoolId, academicYearId: cycle.toAcademicYearId },
+          select: { id: true, name: true, capacity: true },
+        }),
+        tx.studentClass.groupBy({
+          by: ['classId'],
+          where: { classId: { in: targetClassIds }, status: 'ACTIVE', endedAt: null },
+          _count: { _all: true },
+        }),
+        tx.studentProgression.findMany({
+          where: { studentId: { in: studentIds }, fromAcademicYearId: yearId, toAcademicYearId: cycle.toAcademicYearId },
+          select: { studentId: true, fromClassId: true, toClassId: true },
+        }),
+      ]);
+
+      if (students.length !== studentIds.length) {
+        throw new YearEndWorkflowError(409, 'One or more students no longer belong to this school or are no longer active');
+      }
+      const duplicateSourceStudentIds = duplicateIds(sourceEnrollments.map((enrollment) => enrollment.studentId));
+      const duplicateTargetStudentIds = duplicateIds(targetEnrollments.map((enrollment) => enrollment.studentId));
+      if (duplicateSourceStudentIds.length || duplicateTargetStudentIds.length) {
+        throw new YearEndWorkflowError(409, 'Duplicate active enrollments must be resolved before finalization', {
+          duplicateSourceEnrollmentStudents: duplicateSourceStudentIds.length,
+          duplicateTargetEnrollmentStudents: duplicateTargetStudentIds.length,
+        });
+      }
+
+      const sourceByStudent = new Map(sourceEnrollments.map((enrollment) => [enrollment.studentId, enrollment]));
+      const targetByStudent = new Map(targetEnrollments.map((enrollment) => [enrollment.studentId, enrollment]));
+      const invalidSourceCount = cycle.decisions.filter(
+        (decision) => sourceByStudent.get(decision.studentId)?.classId !== decision.fromClassId,
+      ).length;
+      if (invalidSourceCount) {
+        throw new YearEndWorkflowError(409, 'Source enrollment changed after the review was generated', { invalidSourceCount });
+      }
+
+      const targetClassById = new Map(targetClasses.map((targetClass) => [targetClass.id, targetClass]));
+      const activeCountByTargetClass = new Map(targetEnrollmentCounts.map((row) => [row.classId, row._count._all]));
+      if (targetClasses.length !== targetClassIds.length) {
+        throw new YearEndWorkflowError(409, 'One or more target classes do not belong to this school and target academic year');
+      }
+      const conflictingTargetCount = cycle.decisions.filter((decision) => {
+        const existing = targetByStudent.get(decision.studentId);
+        if (!existing) return false;
+        return !placementOutcomes.has(decision.finalOutcome) || existing.classId !== decision.targetClassId;
+      }).length;
+      if (conflictingTargetCount) {
+        throw new YearEndWorkflowError(409, 'An existing target-year enrollment conflicts with the approved placement', {
+          conflictingTargetCount,
+        });
+      }
+
+      const additionsByTarget = new Map<string, number>();
+      for (const decision of cycle.decisions) {
+        if (placementOutcomes.has(decision.finalOutcome) && decision.targetClassId && !targetByStudent.has(decision.studentId)) {
+          additionsByTarget.set(decision.targetClassId, (additionsByTarget.get(decision.targetClassId) || 0) + 1);
+        }
+      }
+      for (const [targetClassId, additions] of additionsByTarget) {
+        const targetClass = targetClassById.get(targetClassId)!;
+        if (targetClass.capacity !== null && (activeCountByTargetClass.get(targetClassId) || 0) + additions > targetClass.capacity) {
+          throw new YearEndWorkflowError(409, `Target class ${targetClass.name} exceeds capacity`);
+        }
+      }
+
+      const progressionByStudent = new Map(existingProgressions.map((progression) => [progression.studentId, progression]));
+      const conflictingProgressionCount = cycle.decisions.filter((decision) => {
+        const existing = progressionByStudent.get(decision.studentId);
+        if (!existing) return false;
+        return !placementOutcomes.has(decision.finalOutcome)
+          || existing.fromClassId !== decision.fromClassId
+          || existing.toClassId !== decision.targetClassId;
+      }).length;
+      if (conflictingProgressionCount) {
+        throw new YearEndWorkflowError(409, 'Existing progression history conflicts with this year-end decision', {
+          conflictingProgressionCount,
+        });
+      }
+
+      const closeEnrollmentGroup = async (decisionIds: string[], status: string, exitReason: 'PROMOTED' | 'REPEATED' | 'GRADUATED' | 'WITHDRAWN') => {
+        if (!decisionIds.length) return 0;
+        const enrollmentIds = decisionIds.map((studentId) => sourceByStudent.get(studentId)!.id);
+        const updated = await tx.studentClass.updateMany({
+          where: { id: { in: enrollmentIds }, status: 'ACTIVE', endedAt: null },
+          data: { status, endedAt: cycle.fromAcademicYear.endDate, exitReason, endedById: actorId },
+        });
+        return updated.count;
+      };
+      const promotedIds = cycle.decisions.filter((decision) => ['PROMOTE', 'CONDITIONAL_PROMOTE'].includes(decision.finalOutcome)).map((decision) => decision.studentId);
+      const repeatedIds = cycle.decisions.filter((decision) => decision.finalOutcome === 'REPEAT').map((decision) => decision.studentId);
+      const graduatedIds = cycle.decisions.filter((decision) => decision.finalOutcome === 'GRADUATE').map((decision) => decision.studentId);
+      const withdrawnIds = cycle.decisions.filter((decision) => decision.finalOutcome === 'WITHDRAWN').map((decision) => decision.studentId);
+      const closedCount = (await closeEnrollmentGroup(promotedIds, 'INACTIVE', 'PROMOTED'))
+        + (await closeEnrollmentGroup(repeatedIds, 'REPEATED', 'REPEATED'))
+        + (await closeEnrollmentGroup(graduatedIds, 'INACTIVE', 'GRADUATED'))
+        + (await closeEnrollmentGroup(withdrawnIds, 'INACTIVE', 'WITHDRAWN'));
+      if (closedCount !== cycle.decisions.length) {
+        throw new YearEndWorkflowError(409, 'Source enrollments changed during finalization; no changes were committed');
+      }
+
+      const newEnrollmentDecisions = cycle.decisions.filter(
+        (decision) => placementOutcomes.has(decision.finalOutcome) && decision.targetClassId && !targetByStudent.has(decision.studentId),
+      );
+      if (newEnrollmentDecisions.length) {
+        await tx.studentClass.createMany({
+          data: newEnrollmentDecisions.map((decision) => ({
+            studentId: decision.studentId,
+            classId: decision.targetClassId!,
+            academicYearId: cycle.toAcademicYearId,
+            enrolledAt: cycle.toAcademicYear.startDate,
+            startedAt: cycle.toAcademicYear.startDate,
+            entryReason: 'YEAR_PROMOTION' as const,
+            createdById: actorId,
+            status: 'ACTIVE',
+          })),
+        });
+      }
+
+      const newProgressions = cycle.decisions.filter(
+        (decision) => placementOutcomes.has(decision.finalOutcome) && decision.targetClassId && !progressionByStudent.has(decision.studentId),
+      );
+      if (newProgressions.length) {
+        await tx.studentProgression.createMany({
+          data: newProgressions.map((decision) => ({
+            studentId: decision.studentId,
+            fromAcademicYearId: yearId,
+            toAcademicYearId: cycle.toAcademicYearId,
+            fromClassId: decision.fromClassId,
+            toClassId: decision.targetClassId!,
+            promotionType: decision.finalOutcome === 'REPEAT' ? 'REPEAT' as const : decision.decisionSource === 'SYSTEM' ? 'AUTOMATIC' as const : 'MANUAL' as const,
+            promotionDate: new Date(),
+            promotedBy: actorId,
+            notes: [decision.reasonCode, decision.reasonDetails].filter(Boolean).join(': ') || null,
+          })),
+        });
+      }
+
+      const placementsByClass = new Map<string, string[]>();
+      for (const decision of cycle.decisions) {
+        if (!placementOutcomes.has(decision.finalOutcome) || !decision.targetClassId) continue;
+        placementsByClass.set(decision.targetClassId, [...(placementsByClass.get(decision.targetClassId) || []), decision.studentId]);
+      }
+      let updatedStudents = 0;
+      for (const [targetClassId, ids] of placementsByClass) {
+        const update = await tx.student.updateMany({ where: { id: { in: ids }, schoolId }, data: { classId: targetClassId } });
+        updatedStudents += update.count;
+      }
+      const studentsLeavingSchool = [...graduatedIds, ...withdrawnIds];
+      if (studentsLeavingSchool.length) {
+        const update = await tx.student.updateMany({ where: { id: { in: studentsLeavingSchool }, schoolId }, data: { classId: null } });
+        updatedStudents += update.count;
+      }
+      if (updatedStudents !== cycle.decisions.length) {
+        throw new YearEndWorkflowError(409, 'Student school ownership changed during finalization; no changes were committed');
+      }
+
+      const finalized = await tx.yearEndCycle.updateMany({
+        where: { id: cycle.id, schoolId, fromAcademicYearId: yearId, status: 'APPROVED' },
+        data: { status: 'FINALIZED', finalizedBy: actorId, finalizedAt: new Date() },
+      });
+      const endedYear = await tx.academicYear.updateMany({
+        where: { id: yearId, schoolId },
+        data: { isPromotionDone: true, promotionDate: new Date(), status: 'ENDED', isCurrent: false },
+      });
+      if (finalized.count !== 1 || endedYear.count !== 1) {
+        throw new YearEndWorkflowError(409, 'Cycle or academic year state changed during finalization; no changes were committed');
+      }
+
+      return {
+        promoted: promotedIds.length - cycle.decisions.filter((decision) => decision.finalOutcome === 'CONDITIONAL_PROMOTE').length,
+        conditional: cycle.decisions.filter((decision) => decision.finalOutcome === 'CONDITIONAL_PROMOTE').length,
+        repeated: repeatedIds.length,
+        graduated: graduatedIds.length,
+        withdrawn: withdrawnIds.length,
+        total: cycle.decisions.length,
+      };
+    }, {
+      maxWait: 30_000,
+      timeout: 120_000,
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
+
+    clearAcademicYearCache(schoolId);
+    return res.json({ success: true, data: result, message: 'Year-end decisions finalized successfully' });
+  } catch (error: any) {
+    console.error('Error finalizing year-end cycle:', error);
+    const isSerializationConflict = error?.code === 'P2034';
+    const statusCode = error instanceof YearEndWorkflowError || isSerializationConflict
+      ? (error instanceof YearEndWorkflowError ? error.statusCode : 409)
+      : 500;
+    const publicError = error instanceof YearEndWorkflowError
+      ? error.message
+      : isSerializationConflict
+        ? 'Another enrollment change occurred at the same time. Reload and finalize again.'
+        : 'Failed to finalize year-end cycle';
+    return res.status(statusCode).json({
+      success: false,
+      error: publicError,
+      message: error.message,
+      ...(error instanceof YearEndWorkflowError && error.details ? { details: error.details } : {}),
+    });
+  }
+});
+
+// Legacy endpoints remain available for previously integrated clients. New
+// administrative workflows use the review cycle above.
 
 // GET /schools/:schoolId/academic-years/:yearId/promotion/eligible-students
 app.get('/schools/:schoolId/academic-years/:yearId/promotion/eligible-students', async (req: Request, res: Response) => {
@@ -3409,6 +4149,17 @@ app.post('/schools/:schoolId/academic-years/:yearId/promotion/preview', async (r
 // POST /schools/:schoolId/academic-years/:yearId/promote-students
 app.post('/schools/:schoolId/academic-years/:yearId/promote-students', async (req: Request, res: Response) => {
   try {
+    // Direct promotion bypasses policy review, approval, audit evidence, and
+    // concurrency controls. Keep the route for an explicit migration response,
+    // but require all writes to use the year-end cycle workflow.
+    return res.status(409).json({
+      success: false,
+      code: 'YEAR_END_REVIEW_REQUIRED',
+      error: 'Direct promotion is disabled. Generate, review, approve, and finalize a year-end cycle instead.',
+    });
+
+    /* istanbul ignore next -- retained temporarily as reference for old API clients */
+    {
     const { schoolId, yearId } = req.params;
     const { toAcademicYearId, promotions, promotedBy } = req.body;
 
@@ -3452,26 +4203,26 @@ app.post('/schools/:schoolId/academic-years/:yearId/promote-students', async (re
 
     // Pre-fetch all required data outside transaction for validation
     const studentIds = promotions.map((p: any) => p.studentId);
-    const toClassIds = Array.from(new Set(promotions.map((p: any) => p.toClassId)));
-    const fromClassIds = Array.from(new Set(promotions.map((p: any) => p.fromClassId)));
+    const toClassIds = Array.from(new Set(promotions.map((p: any) => String(p.toClassId)))) as string[];
+    const fromClassIds = Array.from(new Set(promotions.map((p: any) => String(p.fromClassId)))) as string[];
 
     // Batch fetch students
     const students = await prisma.student.findMany({
-      where: { id: { in: studentIds } },
+      where: { id: { in: studentIds }, schoolId },
       select: { id: true },
     });
     const studentIdSet = new Set(students.map(s => s.id));
 
     // Batch fetch target classes
     const targetClasses = await prisma.class.findMany({
-      where: { id: { in: toClassIds } },
+      where: { id: { in: toClassIds }, schoolId, academicYearId: toAcademicYearId },
       select: { id: true, academicYearId: true },
     });
     const targetClassMap = new Map(targetClasses.map(c => [c.id, c]));
 
     // Batch fetch from classes (for graduation check)
     const fromClasses = await prisma.class.findMany({
-      where: { id: { in: fromClassIds } },
+      where: { id: { in: fromClassIds }, schoolId, academicYearId: yearId },
       select: { id: true, grade: true },
     });
     const fromClassMap = new Map(fromClasses.map(c => [c.id, c]));
@@ -3563,7 +4314,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/promote-students', async (re
 
           if (studentsForClass.length > 0) {
             await tx.student.updateMany({
-              where: { id: { in: studentsForClass } },
+              where: { id: { in: studentsForClass }, schoolId },
               data: { classId: toClassId },
             });
           }
@@ -3610,6 +4361,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/promote-students', async (re
         results,
       },
     });
+    }
   } catch (error: any) {
     console.error('Error promoting students:', error);
     res.status(500).json({
@@ -3623,6 +4375,14 @@ app.post('/schools/:schoolId/academic-years/:yearId/promote-students', async (re
 // POST /schools/:schoolId/academic-years/:yearId/promotion/undo
 app.post('/schools/:schoolId/academic-years/:yearId/promotion/undo', async (req: Request, res: Response) => {
   try {
+    return res.status(409).json({
+      success: false,
+      code: 'CONTROLLED_REVERSAL_REQUIRED',
+      error: 'Legacy promotion undo is disabled because finalized year-end records are immutable and auditable.',
+    });
+
+    /* istanbul ignore next -- retained temporarily as reference for old API clients */
+    {
     const { schoolId, yearId } = req.params;
 
     // Get academic year
@@ -3698,6 +4458,7 @@ app.post('/schools/:schoolId/academic-years/:yearId/promotion/undo', async (req:
         undoneCount,
       },
     });
+    }
   } catch (error: any) {
     console.error('Error undoing promotion:', error);
     res.status(500).json({

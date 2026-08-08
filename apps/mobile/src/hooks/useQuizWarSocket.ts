@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { QuizWar } from '@/types';
 import { Config } from '@/config';
-import { tokenService } from '@/services/token';
+import { feedApi } from '@/api/client';
 
 export function useQuizWarSocket(initialWar: QuizWar) {
   const [war, setWar] = useState<QuizWar>(initialWar);
@@ -14,32 +14,44 @@ export function useQuizWarSocket(initialWar: QuizWar) {
     if (!war || war.status !== 'LIVE') return;
 
     let ws: WebSocket | null = null;
-    let reconnectTimer: any = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let isClosedIntentional = false;
 
     const connect = async () => {
       try {
-        const token = await tokenService.getAccessToken();
-        if (!token) return;
+        // Exchange the Authorization-header JWT for a short-lived opaque
+        // ticket so the access token never appears on the WS URL.
+        const ticketResponse = await feedApi.get<{
+          success: boolean;
+          data?: { ticket: string };
+        }>(`/quiz-wars/${war.id}/ws-ticket`);
+
+        const ticket = ticketResponse.data?.data?.ticket;
+        if (!ticketResponse.data?.success || !ticket) return;
 
         const wsBaseUrl = Config.feedUrl.replace(/^http/, 'ws');
-        const wsUrl = `${wsBaseUrl}/quiz-wars/${war.id}/ws?token=${encodeURIComponent(token)}`;
+        const wsUrl = `${wsBaseUrl}/quiz-wars/${war.id}/ws?ticket=${encodeURIComponent(ticket)}`;
 
-        console.log(`🔌 [QuizWarSocket] Connecting to ${wsUrl}`);
+        if (__DEV__) {
+          console.log(`🔌 [QuizWarSocket] Connecting to war ${war.id}`);
+        }
         ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
-          console.log('🔌 [QuizWarSocket] Connected successfully');
+          if (__DEV__) {
+            console.log('🔌 [QuizWarSocket] Connected successfully');
+          }
         };
 
         ws.onmessage = (event) => {
           try {
             const message = JSON.parse(event.data);
             if (message && message.type === 'QUIZ_WAR_UPDATED' && message.data) {
-              console.log('🔌 [QuizWarSocket] Score delta push received:', message.data);
+              if (__DEV__) {
+                console.log('🔌 [QuizWarSocket] Score delta push received:', message.data);
+              }
               setWar((prev) => {
                 if (!prev) return prev;
-                // Merge data to preserve user-specific fields (userTeamId, isUserParticipating)
                 return {
                   ...prev,
                   status: message.data.status,
@@ -63,10 +75,13 @@ export function useQuizWarSocket(initialWar: QuizWar) {
         };
 
         ws.onclose = (e) => {
-          console.log('🔌 [QuizWarSocket] Closed:', e.code, e.reason);
+          if (__DEV__) {
+            console.log('🔌 [QuizWarSocket] Closed:', e.code, e.reason);
+          }
           if (!isClosedIntentional) {
-            // Reconnect in 5 seconds
-            reconnectTimer = setTimeout(connect, 5000);
+            reconnectTimer = setTimeout(() => {
+              void connect();
+            }, 5000);
           }
         };
 
@@ -75,10 +90,15 @@ export function useQuizWarSocket(initialWar: QuizWar) {
         };
       } catch (err) {
         console.error('🔌 [QuizWarSocket] Connection error:', err);
+        if (!isClosedIntentional) {
+          reconnectTimer = setTimeout(() => {
+            void connect();
+          }, 5000);
+        }
       }
     };
 
-    connect();
+    void connect();
 
     return () => {
       isClosedIntentional = true;

@@ -35,9 +35,13 @@ import analyticsRouter from './modules/analytics';
 import { initWebSocketServer } from './modules/feed/websocket';
 import { isQuizWarEnabled } from './modules/feed/featureFlags';
 import { requestIdMiddleware } from './core/requestId';
+import { getJwtSecret } from '../../lib/jwt-secret';
 
 const app = express();
 app.set('trust proxy', 1); // Cloud Run / proxy X-Forwarded-For
+
+// Fail boot early on weak/missing production JWT_SECRET (before accepting traffic).
+getJwtSecret();
 
 const prisma = getSharedPrisma();
 

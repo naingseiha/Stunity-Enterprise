@@ -1,3 +1,4 @@
+import { TokenManager } from '@/lib/api/auth';
 // API client for teacher service
 
 const TEACHER_SERVICE_URL = process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004';
@@ -122,7 +123,7 @@ export interface TeachersResponse {
 }
 
 async function getAuthHeaders(): Promise<HeadersInit> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
   return {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` }),
@@ -313,7 +314,7 @@ export async function deleteTeacher(id: string): Promise<{ success: boolean; mes
 }
 
 export async function uploadTeacherPhoto(id: string, file: File): Promise<{ success: boolean; data: { photoUrl: string; teacher: Teacher } }> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
   const formData = new FormData();
   formData.append('photo', file);
 

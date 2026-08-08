@@ -3,6 +3,7 @@
 import useSWR, { preload } from 'swr';
 import type { Class } from '@/lib/api/classes';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { TokenManager } from '@/lib/api/auth';
 
 const CLASS_SERVICE_URL = process.env.NEXT_PUBLIC_CLASS_SERVICE_URL || 'http://localhost:3005';
 const CLASSES_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -65,7 +66,7 @@ function transformClasses(data: any[]): Class[] {
 }
 
 async function fetchClasses(url: string) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
   
   const response = await fetch(url, {
     headers: {

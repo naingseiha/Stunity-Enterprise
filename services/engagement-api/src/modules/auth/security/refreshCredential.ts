@@ -11,8 +11,55 @@ const DURATION_MULTIPLIERS: Record<string, number> = {
   d: 24 * 60 * 60_000,
 };
 
+/**
+ * Opaque DB sessions. Explicit `true`/`false` win; unset fails closed to ON
+ * in production so a missing Cloud Run env var cannot silently weaken auth.
+ */
 export function authDbSessionsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.AUTH_DB_SESSIONS_ENABLED === 'true';
+  if (env.AUTH_DB_SESSIONS_ENABLED === 'true') return true;
+  if (env.AUTH_DB_SESSIONS_ENABLED === 'false') return false;
+  return env.NODE_ENV === 'production';
+}
+
+/**
+ * Legacy JWT refresh. Never honored in production unless the explicit
+ * AUTH_ALLOW_INSECURE_SESSIONS escape hatch is set (break-glass only).
+ */
+export function authLegacyJwtRefreshEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  if (env.AUTH_LEGACY_JWT_REFRESH_ENABLED !== 'true') return false;
+  if (env.NODE_ENV === 'production' && env.AUTH_ALLOW_INSECURE_SESSIONS !== 'true') {
+    return false;
+  }
+  return true;
+}
+
+export function getAuthSessionSecurityStatus(env: NodeJS.ProcessEnv = process.env) {
+  const production = env.NODE_ENV === 'production';
+  const dbSessions = authDbSessionsEnabled(env);
+  const legacyRefresh = authLegacyJwtRefreshEnabled(env);
+  const allowInsecure = env.AUTH_ALLOW_INSECURE_SESSIONS === 'true';
+  const secure = !production || (dbSessions && !legacyRefresh);
+  return {
+    production,
+    dbSessions,
+    legacyRefresh,
+    allowInsecure,
+    secure,
+    ready: secure || allowInsecure,
+  };
+}
+
+/** Throw in production when session config is insecure (unless break-glass). */
+export function assertSecureAuthSessionConfig(env: NodeJS.ProcessEnv = process.env): void {
+  const status = getAuthSessionSecurityStatus(env);
+  if (status.ready) return;
+  throw new Error(
+    '[auth] Refusing insecure session config in production: '
+    + `AUTH_DB_SESSIONS_ENABLED=${env.AUTH_DB_SESSIONS_ENABLED ?? '(unset→fail-closed ON expected)'} `
+    + `AUTH_LEGACY_JWT_REFRESH_ENABLED=${env.AUTH_LEGACY_JWT_REFRESH_ENABLED ?? 'false'}. `
+    + 'Set AUTH_DB_SESSIONS_ENABLED=true and AUTH_LEGACY_JWT_REFRESH_ENABLED=false, '
+    + 'or AUTH_ALLOW_INSECURE_SESSIONS=true for break-glass only.',
+  );
 }
 
 export function durationToMilliseconds(duration: string): number {

@@ -1,3 +1,4 @@
+import { TokenManager } from '@/lib/api/auth';
 // API client for class-student assignment operations
 
 const CLASS_SERVICE_URL = process.env.NEXT_PUBLIC_CLASS_SERVICE_URL || 'http://localhost:3005';
@@ -24,7 +25,7 @@ export interface AssignStudentRequest {
 }
 
 async function getAuthHeaders(): Promise<HeadersInit> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
   return {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` }),

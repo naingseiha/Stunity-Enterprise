@@ -3,6 +3,7 @@
 import useSWR, { preload } from 'swr';
 import type { GetParentsParams, ParentDirectoryResponse } from '@/lib/api/parents';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { TokenManager } from '@/lib/api/auth';
 
 const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
 const PARENTS_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -22,7 +23,7 @@ function createParentsCacheKey(params?: GetParentsParams): string | null {
 }
 
 async function fetchParents(url: string) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
 
   const response = await fetch(url, {
     headers: {

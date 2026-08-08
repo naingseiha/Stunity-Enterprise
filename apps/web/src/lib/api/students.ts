@@ -1,5 +1,6 @@
 // API client for student service
 import { cachedFetch, invalidateCache } from '../cache';
+import { TokenManager } from '@/lib/api/auth';
 
 const STUDENT_SERVICE_URL = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003';
 
@@ -140,7 +141,7 @@ export class StudentImportError extends Error {
 }
 
 async function getAuthHeaders(): Promise<HeadersInit> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
   return {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -432,7 +433,7 @@ export async function reassignStudents(
 }
 
 export async function uploadStudentPhoto(id: string, file: File): Promise<{ success: boolean; data: { photoUrl: string; student: Student } }> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
   const formData = new FormData();
   formData.append('photo', file);
 

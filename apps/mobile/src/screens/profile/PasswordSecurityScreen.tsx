@@ -19,6 +19,12 @@ import * as Passkeys from 'react-native-passkeys';
 import { ProfileStackParamList } from '@/navigation/types';
 import { authApi } from '@/api/client';
 import * as passkeysApi from '@/api/passkeys';
+import {
+    listAuthSessions,
+    revokeAuthSession,
+    revokeOtherAuthSessions,
+    type AuthSession,
+} from '@/api/authSessions';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@/contexts';
@@ -56,6 +62,10 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
     const [passkeys, setPasskeys] = useState<PasskeyEntry[]>([]);
     const [passkeysLoading, setPasskeysLoading] = useState(false);
     const [enrollingPasskey, setEnrollingPasskey] = useState(false);
+    const [sessions, setSessions] = useState<AuthSession[]>([]);
+    const [sessionsLoading, setSessionsLoading] = useState(false);
+    const [sessionsUnavailable, setSessionsUnavailable] = useState(false);
+    const [revokingOthers, setRevokingOthers] = useState(false);
 
     const loadPasskeys = async () => {
         if (!passkeysSupported) return;
@@ -70,8 +80,26 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
         }
     };
 
+    const loadSessions = async () => {
+        setSessionsLoading(true);
+        try {
+            const next = await listAuthSessions();
+            setSessions(next);
+            setSessionsUnavailable(false);
+        } catch (error: any) {
+            const code = error?.response?.data?.code;
+            if (code === 'AUTH_SESSIONS_NOT_ENABLED' || error?.response?.status === 503) {
+                setSessionsUnavailable(true);
+                setSessions([]);
+            }
+        } finally {
+            setSessionsLoading(false);
+        }
+    };
+
     useEffect(() => {
         void loadPasskeys();
+        void loadSessions();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -105,6 +133,71 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
                 },
             },
         ]);
+    };
+
+    const handleRevokeSession = (session: AuthSession) => {
+        if (session.isCurrent) {
+            Alert.alert(
+                t('settings.sessionsCurrentTitle'),
+                t('settings.sessionsCurrentBody'),
+            );
+            return;
+        }
+
+        Alert.alert(
+            t('settings.sessionsRevokeTitle'),
+            t('settings.sessionsRevokeBody'),
+            [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                    text: t('settings.sessionsRevokeAction'),
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await revokeAuthSession(session.id);
+                            void loadSessions();
+                        } catch (error: any) {
+                            Alert.alert(
+                                t('common.error'),
+                                error?.response?.data?.error || t('settings.sessionsRevokeFailed'),
+                            );
+                        }
+                    },
+                },
+            ],
+        );
+    };
+
+    const handleRevokeOtherSessions = () => {
+        Alert.alert(
+            t('settings.sessionsRevokeOthersTitle'),
+            t('settings.sessionsRevokeOthersBody'),
+            [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                    text: t('settings.sessionsRevokeOthersAction'),
+                    style: 'destructive',
+                    onPress: async () => {
+                        setRevokingOthers(true);
+                        try {
+                            const count = await revokeOtherAuthSessions();
+                            await loadSessions();
+                            Alert.alert(
+                                t('settings.sessionsRevokeOthersDoneTitle'),
+                                t('settings.sessionsRevokeOthersDoneBody', { count }),
+                            );
+                        } catch (error: any) {
+                            Alert.alert(
+                                t('common.error'),
+                                error?.response?.data?.error || t('settings.sessionsRevokeFailed'),
+                            );
+                        } finally {
+                            setRevokingOthers(false);
+                        }
+                    },
+                },
+            ],
+        );
     };
 
     const handleSave = async () => {
@@ -275,6 +368,67 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
                                     <>
                                         <Ionicons name="finger-print-outline" size={18} color="#0EA5E9" />
                                         <Text style={styles.passkeyAddButtonText}>Add a passkey</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {!sessionsUnavailable && (
+                        <View style={[styles.rulesCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 20 }]}>
+                            <Text style={[styles.rulesTitle, { color: colors.text }]}>
+                                {t('settings.sessionsTitle')}
+                            </Text>
+                            <Text style={[styles.description, { color: colors.textSecondary, marginBottom: 12 }]}>
+                                {t('settings.sessionsSub')}
+                            </Text>
+
+                            {sessionsLoading ? (
+                                <ActivityIndicator size="small" color={colors.textSecondary} />
+                            ) : sessions.length === 0 ? (
+                                <Text style={[styles.passkeyMeta, { color: colors.textSecondary }]}>
+                                    {t('settings.sessionsEmpty')}
+                                </Text>
+                            ) : (
+                                sessions.map((session) => (
+                                    <View key={session.id} style={styles.passkeyRow}>
+                                        <View style={styles.passkeyInfo}>
+                                            <Text style={[styles.passkeyLabel, { color: colors.text }]}>
+                                                {session.deviceName || t('settings.sessionsUnknownDevice')}
+                                                {session.isCurrent ? ` · ${t('settings.sessionsThisDevice')}` : ''}
+                                            </Text>
+                                            <Text style={[styles.passkeyMeta, { color: colors.textSecondary }]}>
+                                                {t('settings.sessionsLastActive', {
+                                                    date: new Date(session.lastUsedAt).toLocaleString(),
+                                                })}
+                                            </Text>
+                                        </View>
+                                        {!session.isCurrent && (
+                                            <TouchableOpacity
+                                                onPress={() => handleRevokeSession(session)}
+                                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                            >
+                                                <Ionicons name="log-out-outline" size={18} color="#EF4444" />
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                ))
+                            )}
+
+                            <TouchableOpacity
+                                style={[styles.passkeyAddButton, (revokingOthers || sessionsLoading) && styles.saveButtonDisabled]}
+                                onPress={handleRevokeOtherSessions}
+                                activeOpacity={0.8}
+                                disabled={revokingOthers || sessionsLoading || sessions.filter((s) => !s.isCurrent).length === 0}
+                            >
+                                {revokingOthers ? (
+                                    <ActivityIndicator size="small" color="#0EA5E9" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="phone-portrait-outline" size={18} color="#0EA5E9" />
+                                        <Text style={styles.passkeyAddButtonText}>
+                                            {t('settings.sessionsRevokeOthersAction')}
+                                        </Text>
                                     </>
                                 )}
                             </TouchableOpacity>

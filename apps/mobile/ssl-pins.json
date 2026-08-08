@@ -1,0 +1,24 @@
+{
+  "comment": "SPKI-SHA256 pins for production Stunity API hosts. Prefer CA pins (WR3 + GTS Root R1) so leaf cert rotation on Cloud Run does not brick the app. Rotate via release if Google changes intermediates. Generated 2026-08-08.",
+  "hosts": [
+    "api.stunity.app",
+    "academic.stunity.app",
+    "ai.stunity.app"
+  ],
+  "pins": [
+    {
+      "name": "Google Trust Services WR3",
+      "spkiSha256": "OdSlmQD9NWJh4EbcOHBxkhygPwNSwA9Q91eounfbcoE="
+    },
+    {
+      "name": "GTS Root R1",
+      "spkiSha256": "hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc="
+    }
+  ],
+  "androidPinSetExpiration": "2027-12-31",
+  "leafPinsForReferenceOnly": {
+    "api.stunity.app": "zWyyB/We+W7W2pNJVn/51uXtAjRBj0N2XwUZbrbESUQ=",
+    "academic.stunity.app": "LnwPnvU6lOLZHE9p3+YFZf2eSL/6TRQGOoyJRno3jg4=",
+    "ai.stunity.app": "awe8pBRAN6eKAq37IIjYmXuew8nI6cVTu4ewEnfrFS8="
+  }
+}

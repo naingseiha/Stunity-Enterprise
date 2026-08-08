@@ -3,6 +3,7 @@
 import useSWR, { preload } from 'swr';
 import { MESSAGING_SERVICE_URL } from '@/lib/api/config';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { TokenManager } from '@/lib/api/auth';
 
 const MESSAGING_CONVERSATIONS_CACHE_TTL_MS = 60 * 1000;
 const MESSAGING_PARENTS_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -79,7 +80,7 @@ function getParentsCacheKey(): string | null {
 }
 
 async function fetchWithAuth<T>(url: string): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
 
   const response = await fetch(url, {
     headers: {

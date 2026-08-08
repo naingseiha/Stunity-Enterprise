@@ -234,11 +234,13 @@ spacing: {
 
 ## 🔐 Security Features
 
-- **Secure Token Storage** - Using Expo SecureStore (Keychain/Keystore)
-- **Biometric Auth** - Face ID / Touch ID / Fingerprint
-- **Token Auto-Refresh** - Automatic access token renewal
-- **Request Signing** - X-Request-ID for tracing
-- **Certificate Pinning** - (Production only)
+- **Persistent login** - Stay signed in until you tap Logout (or revoke a device / theft reuse is detected). Access tokens refresh silently; refresh sessions use a sliding idle window.
+- **Secure Token Storage** - Expo SecureStore with `WHEN_UNLOCKED_THIS_DEVICE_ONLY` (Keychain/Keystore)
+- **Biometric Auth** - Face ID / Touch ID / Fingerprint unlock gate (does not clear the session)
+- **Token Auto-Refresh** - Automatic access token renewal with refresh rotation + reuse detection
+- **Request Signing** - X-Request-ID for tracing; `X-Device-Id` binds sessions to this install
+- **Remote session revoke** - Sign out other devices from Password & Security
+- **Certificate Pinning** - Production EAS builds pin `api` / `academic` / `ai.stunity.app` to Google Trust Services WR3 + GTS Root R1 SPKI hashes (`ssl-pins.json` + `plugins/withSslPinning.js`). Dev LAN HTTP is unaffected. Set `EXPO_PUBLIC_SSL_PINNING=true` to force-enable on non-production profiles.
 
 ## 📲 Building for Production
 

@@ -2,6 +2,7 @@
 
 import useSWR, { preload } from 'swr';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { TokenManager } from '@/lib/api/auth';
 
 const TEACHER_SERVICE_URL = process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004';
 const TEACHERS_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -104,7 +105,7 @@ function createTeachersCacheKey(params?: TeachersParams): string {
 }
 
 async function fetchTeachers(url: string) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
 
   const response = await fetch(url, {
     headers: {

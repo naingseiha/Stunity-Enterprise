@@ -1,3 +1,4 @@
+import { TokenManager } from '@/lib/api/auth';
 // Anonymous, device-local drafts for the creator Tools.
 // Lets users work without an account; signing in later lets them sync to cloud.
 // (Cloud sync endpoint is a follow-up — this layer is the offline-first store.)
@@ -72,7 +73,7 @@ export function deleteDraft(id: string) {
 /** True when the user has signed in (has an access token). */
 export function isAuthed(): boolean {
   if (typeof window === 'undefined') return false;
-  return !!window.localStorage.getItem('accessToken');
+  return !!TokenManager.getAccessToken();
 }
 
 // ─── Cloud sync (learn-service /tool-drafts) ───────────────────────
@@ -84,7 +85,7 @@ const LEARN_URL = process.env.NEXT_PUBLIC_LEARN_SERVICE_URL || '';
 
 function token(): string | null {
   if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem('accessToken');
+  return TokenManager.getAccessToken();
 }
 
 /** Cloud sync is possible only when signed in and the service URL is configured. */

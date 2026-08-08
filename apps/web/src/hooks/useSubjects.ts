@@ -3,6 +3,7 @@
 import useSWR, { preload } from 'swr';
 import type { Subject, SubjectStatistics } from '@/lib/api/subjects';
 import { readPersistentCache, writePersistentCache, removePersistentCache } from '@/lib/persistent-cache';
+import { TokenManager } from '@/lib/api/auth';
 
 const SUBJECT_SERVICE_URL = process.env.NEXT_PUBLIC_SUBJECT_SERVICE_URL || 'http://localhost:3006';
 const SUBJECTS_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -43,7 +44,7 @@ export function invalidateSubjectsPersistentCache(params?: SubjectsParams): void
 }
 
 async function fetchSubjects(url: string) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
   
   const response = await fetch(url, {
     headers: {
@@ -65,7 +66,7 @@ async function fetchSubjects(url: string) {
 const SUBJECT_STATS_KEY = `${SUBJECT_SERVICE_URL}/subjects/statistics`;
 
 async function fetchStatistics() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = TokenManager.getAccessToken();
   
   const response = await fetch(SUBJECT_STATS_KEY, {
     headers: {
