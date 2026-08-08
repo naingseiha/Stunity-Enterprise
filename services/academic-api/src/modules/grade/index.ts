@@ -1015,7 +1015,12 @@ async function getStudentsForClassGradeGrid(
   });
 
   if (enrollmentRows.length > 0) {
-    return enrollmentRows.map((row) => row.student);
+    // Historical imports can leave more than one overlapping enrollment for
+    // the same learner (for example ACTIVE + DROPPED with no endedAt). A grade
+    // ledger must contain one row per learner regardless of enrollment noise.
+    return Array.from(
+      new Map(enrollmentRows.map((row) => [row.student.id, row.student])).values(),
+    );
   }
 
   return prisma.student.findMany({
@@ -1125,6 +1130,187 @@ app.get(
       console.error("❌ Error getting grades:", error);
       res.status(500).json({
         message: "Error getting grades",
+        error: error.message,
+      });
+    }
+  },
+);
+
+/**
+ * GET /grades/class/:classId/month-grid
+ * Return one Excel-style ledger payload containing every applicable subject,
+ * the class roster, and all existing scores for a calendar month.
+ */
+app.get(
+  "/grades/class/:classId/month-grid",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { classId } = req.params;
+      const schoolId = getSchoolId(req);
+      const access = await resolveGradeAccess(req, classId, null);
+
+      if (!access.allowed) {
+        if (!("status" in access)) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        return res.status(access.status).json({ message: access.message });
+      }
+
+      const classRecord = await prisma.class.findFirst({
+        where: { id: classId, ...(schoolId ? { schoolId } : {}) },
+        select: {
+          id: true,
+          name: true,
+          grade: true,
+          track: true,
+          academicYearId: true,
+          academicYear: { select: { startDate: true, endDate: true } },
+        },
+      });
+
+      if (!classRecord) {
+        return res.status(404).json({ message: "Class not found" });
+      }
+
+      const providedMonthNumber = Number(req.query.monthNumber);
+      const monthLabel =
+        typeof req.query.month === "string" && req.query.month.trim()
+          ? req.query.month.trim()
+          : `Month ${providedMonthNumber}`;
+      const monthNumber = resolveMonthNumber(
+        monthLabel,
+        Number.isFinite(providedMonthNumber) ? providedMonthNumber : undefined,
+      );
+
+      if (monthNumber < 1 || monthNumber > 12) {
+        return res.status(400).json({ message: "A valid monthNumber is required" });
+      }
+
+      const explicitYear = Number(req.query.year);
+      const startYear = classRecord.academicYear.startDate.getUTCFullYear();
+      const endYear = classRecord.academicYear.endDate.getUTCFullYear();
+      const candidateYears = Array.from(
+        { length: endYear - startYear + 1 },
+        (_, index) => startYear + index,
+      );
+      const inferredYear = candidateYears.find((candidate) => {
+        const candidateStart = monthStart(candidate, monthNumber);
+        const candidateEnd = monthEnd(candidate, monthNumber);
+        return (
+          candidateEnd >= classRecord.academicYear.startDate &&
+          candidateStart <= classRecord.academicYear.endDate
+        );
+      });
+      const calendarYear =
+        Number.isFinite(explicitYear) && explicitYear > 0
+          ? explicitYear
+          : inferredYear || startYear;
+      const period = {
+        start: monthStart(calendarYear, monthNumber),
+        end: monthEnd(calendarYear, monthNumber),
+      };
+
+      const trackFilters: any[] = [
+        { track: null },
+        { track: "" },
+        { track: "common" },
+      ];
+      if (classRecord.track) trackFilters.push({ track: classRecord.track });
+
+      let subjects = await prisma.subject.findMany({
+        where: {
+          grade: classRecord.grade,
+          isActive: true,
+          OR: trackFilters,
+        },
+        select: {
+          id: true,
+          name: true,
+          nameKh: true,
+          nameEn: true,
+          nameKhShort: true,
+          code: true,
+          coefficient: true,
+          maxScore: true,
+          track: true,
+          category: true,
+        },
+        orderBy: [{ category: "asc" }, { nameKh: "asc" }],
+      });
+
+      // Teachers see only the subjects they are assigned to for this class.
+      if (access.teacherId) {
+        const assignments = await prisma.timetableEntry.findMany({
+          where: {
+            classId,
+            teacherId: access.teacherId,
+            schoolId: access.classData.schoolId,
+            academicYearId: classRecord.academicYearId,
+          },
+          select: { subjectId: true },
+          distinct: ["subjectId"],
+        });
+        const assignedIds = new Set(assignments.map((item) => item.subjectId));
+        subjects = subjects.filter((subject) => assignedIds.has(subject.id));
+      }
+
+      const students = await getStudentsForClassGradeGrid(
+        classId,
+        schoolId,
+        period,
+      );
+      const subjectIds = subjects.map((subject) => subject.id);
+      const studentIds = students.map((student) => student.id);
+      const gradeRows =
+        subjectIds.length && studentIds.length
+          ? await prisma.grade.findMany({
+              where: {
+                classId,
+                subjectId: { in: subjectIds },
+                studentId: { in: studentIds },
+                year: calendarYear,
+                OR: [{ monthNumber }, { month: monthLabel }],
+              },
+              orderBy: { updatedAt: "desc" },
+            })
+          : [];
+
+      // Imported data can contain alternate labels for the same month. Keep
+      // the most recently updated score for each student/subject cell.
+      const gradeByCell = new Map<string, (typeof gradeRows)[number]>();
+      gradeRows.forEach((grade) => {
+        const key = `${grade.studentId}:${grade.subjectId}`;
+        if (!gradeByCell.has(key)) gradeByCell.set(key, grade);
+      });
+      const grades = Array.from(gradeByCell.values());
+
+      return res.json({
+        class: {
+          id: classRecord.id,
+          name: classRecord.name,
+          grade: classRecord.grade,
+          track: classRecord.track,
+        },
+        month: { label: monthLabel, monthNumber, year: calendarYear },
+        students: students.map((student) => ({
+          id: student.id,
+          studentId: student.studentId,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          khmerName:
+            (student.customFields as any)?.regional?.khmerName ||
+            (student.customFields as any)?.khmerName ||
+            "",
+          photoUrl: student.photoUrl,
+        })),
+        subjects,
+        grades,
+      });
+    } catch (error: any) {
+      console.error("❌ Error getting class month grid:", error);
+      return res.status(500).json({
+        message: "Error getting class month grid",
         error: error.message,
       });
     }
@@ -1866,6 +2052,7 @@ app.post(
       const results = {
         created: 0,
         updated: 0,
+        deleted: 0,
         errors: [] as any[],
       };
 
@@ -1886,7 +2073,6 @@ app.post(
         try {
           const { normalizedMonth, normalizedMonthNumber, normalizedYear } =
             normalizeGradePayloadMonthContext(month, monthNumber, year);
-          const percentage = calculatePercentage(score, maxScore);
 
           // Get subject to calculate weighted score
           const subject = await prisma.subject.findUnique({
@@ -1898,12 +2084,6 @@ app.post(
             continue;
           }
 
-          const weightedScore = calculateWeightedScore(
-            score,
-            subject.coefficient,
-          );
-
-          // Try to find existing grade
           const existing = await prisma.grade.findFirst({
             where: {
               studentId,
@@ -1915,15 +2095,57 @@ app.post(
                 { monthNumber: normalizedMonthNumber },
               ],
             },
+            orderBy: { updatedAt: "desc" },
           });
+
+          // A blank Excel-style cell removes an existing score. Sending a
+          // blank for a cell that was already empty is a safe no-op.
+          if (score === null || score === "") {
+            if (existing) {
+              await prisma.grade.delete({ where: { id: existing.id } });
+              results.deleted++;
+              const summaryKey = `${studentId}:${classId}:${existing.month}:${existing.year}`;
+              affectedSummaries.set(summaryKey, {
+                studentId,
+                classId,
+                month: existing.month || normalizedMonth,
+                monthNumber:
+                  existing.monthNumber || normalizedMonthNumber,
+                year: existing.year || normalizedYear,
+              });
+            }
+            continue;
+          }
+
+          const numericScore = Number(score);
+          const numericMaxScore = Number(maxScore);
+          if (
+            !Number.isFinite(numericScore) ||
+            !Number.isFinite(numericMaxScore) ||
+            numericScore < 0 ||
+            numericScore > numericMaxScore
+          ) {
+            results.errors.push({
+              studentId,
+              subjectId,
+              error: `Score must be between 0 and ${numericMaxScore}`,
+            });
+            continue;
+          }
+
+          const percentage = calculatePercentage(numericScore, numericMaxScore);
+          const weightedScore = calculateWeightedScore(
+            numericScore,
+            subject.coefficient,
+          );
 
           if (existing) {
             // Update existing
             await prisma.grade.update({
               where: { id: existing.id },
               data: {
-                score,
-                maxScore,
+                score: numericScore,
+                maxScore: numericMaxScore,
                 percentage,
                 weightedScore,
                 remarks,
@@ -1939,8 +2161,8 @@ app.post(
                 studentId,
                 subjectId,
                 classId,
-                score,
-                maxScore,
+                score: numericScore,
+                maxScore: numericMaxScore,
                 month: normalizedMonth,
                 monthNumber: normalizedMonthNumber,
                 year: normalizedYear,
@@ -1969,13 +2191,15 @@ app.post(
             );
           }
 
-          const summaryKey = `${studentId}:${classId}:${normalizedMonth}:${normalizedYear}`;
+          const summaryMonth = existing?.month || normalizedMonth;
+          const summaryYear = existing?.year || normalizedYear;
+          const summaryKey = `${studentId}:${classId}:${summaryMonth}:${summaryYear}`;
           affectedSummaries.set(summaryKey, {
             studentId,
             classId,
-            month: normalizedMonth,
+            month: summaryMonth,
             monthNumber: normalizedMonthNumber,
-            year: normalizedYear,
+            year: summaryYear,
           });
         } catch (gradeError: any) {
           results.errors.push({ studentId, error: gradeError.message });

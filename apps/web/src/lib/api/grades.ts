@@ -66,6 +66,46 @@ export interface GradeGridItem {
   };
 }
 
+export interface ClassMonthGradeGrid {
+  class: {
+    id: string;
+    name: string;
+    grade: string;
+    track?: string | null;
+  };
+  month: {
+    label: string;
+    monthNumber: number;
+    year: number;
+  };
+  students: GradeGridItem["student"][];
+  subjects: Array<{
+    id: string;
+    name: string;
+    nameKh: string;
+    nameEn?: string | null;
+    nameKhShort?: string | null;
+    code: string;
+    coefficient: number;
+    maxScore: number;
+    track?: string | null;
+    category?: string | null;
+  }>;
+  grades: Grade[];
+}
+
+export type GradeBatchInput = {
+  studentId: string;
+  subjectId: string;
+  classId: string;
+  score: number | null;
+  maxScore: number;
+  month: string;
+  monthNumber: number;
+  year: number;
+  remarks?: string;
+};
+
 export interface StudentAverage {
   studentId: string;
   totalScore: number;
@@ -313,6 +353,32 @@ class GradeAPI {
     return response.json();
   }
 
+  /** Load every subject and existing score for one class/month ledger. */
+  async getClassMonthGradeGrid(params: {
+    classId: string;
+    month: string;
+    monthNumber: number;
+    year?: number;
+  }): Promise<ClassMonthGradeGrid> {
+    const query = new URLSearchParams({
+      month: params.month,
+      monthNumber: params.monthNumber.toString(),
+    });
+    if (params.year) query.set("year", params.year.toString());
+
+    const response = await fetch(
+      `${API_BASE_URL}/grades/class/${params.classId}/month-grid?${query.toString()}`,
+      { method: "GET", headers: this.getHeaders() },
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to fetch class month grade grid");
+    }
+
+    return response.json();
+  }
+
   /**
    * Get all grades for a student
    */
@@ -343,10 +409,11 @@ class GradeAPI {
   /**
    * Batch create/update grades
    */
-  async batchGrades(grades: Partial<Grade>[]): Promise<{
+  async batchGrades(grades: GradeBatchInput[]): Promise<{
     message: string;
     created: number;
     updated: number;
+    deleted?: number;
     errors: any[];
   }> {
     const response = await fetch(`${API_BASE_URL}/grades/batch`, {
